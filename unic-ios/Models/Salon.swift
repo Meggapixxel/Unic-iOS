@@ -51,13 +51,15 @@ enum LeadTemp: String, Codable, CaseIterable {
     case C = "C"
 }
 
-enum SalonStatus: String, Codable, CaseIterable {
+enum SalonStatus: String, Codable, CaseIterable, Identifiable {
     case new = "new"
     case contacted = "contacted"
     case demoScheduled = "demo_scheduled"
     case testing = "testing"
     case ordered = "ordered"
     case lost = "lost"
+
+    var id: String { rawValue }
 }
 
 struct Salon: Codable, Identifiable, Hashable {

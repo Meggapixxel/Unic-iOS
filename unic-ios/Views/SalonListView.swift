@@ -86,7 +86,7 @@ struct SalonListView: View {
                                 .padding(.horizontal)
 
                             // Filter Chips
-                            FilterChipsView(selectedStatus: $viewModel.selectedStatus)
+                            FilterChipsView(statusOptions: $viewModel.statusOptions)
                         }
                         .padding(.vertical)
                         .glassBackgroundRectangle(cornerRadius: 20)
@@ -97,15 +97,30 @@ struct SalonListView: View {
                 .navigationTitle("UNIC CRM")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            viewModel.showSortPopover = true
-                        } label: {
-                            Image(systemName: "arrow.up.arrow.down")
-                        }
-                        .popover(isPresented: $viewModel.showSortPopover) {
-                            SortPopoverView(viewModel: viewModel)
-                                .presentationCompactAdaptation(.popover)
+                    if !viewModel.showMap {
+                        ToolbarItem(placement: .topBarLeading) {
+                            HStack(spacing: 16) {
+                                Button {
+                                    viewModel.showSortPopover = true
+                                } label: {
+                                    Image(systemName: "arrow.up.arrow.down")
+                                }
+                                .popover(isPresented: $viewModel.showSortPopover) {
+                                    SortPopoverView(viewModel: viewModel)
+                                        .presentationCompactAdaptation(.popover)
+                                }
+
+                                Button {
+                                    viewModel.showFilterPopover = true
+                                } label: {
+                                    Image(systemName: "line.3.horizontal.decrease.circle")
+                                        .symbolVariant(viewModel.typeOptions.hasSelection ? .fill : .none)
+                                }
+                                .popover(isPresented: $viewModel.showFilterPopover) {
+                                    TypeFilterPopoverView(viewModel: viewModel)
+                                        .presentationCompactAdaptation(.popover)
+                                }
+                            }
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
@@ -149,12 +164,14 @@ struct StatBadge: View {
     let title: String
     let value: Int
     let color: Color
-    
+
     var body: some View {
         VStack(spacing: 4) {
             Text("\(value)")
                 .font(.title2.bold())
                 .foregroundColor(color)
+                .contentTransition(.numericText())
+                .animation(.snappy, value: value)
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -166,21 +183,21 @@ struct StatBadge: View {
 // MARK: - Filter Chips
 
 struct FilterChipsView: View {
-    @Binding var selectedStatus: SalonStatus?
+    @Binding var statusOptions: Options<SalonStatus>
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                FilterChip(title: "Всі", isSelected: selectedStatus == nil) {
-                    selectedStatus = nil
+                FilterChip(title: "Всі", isSelected: !statusOptions.hasSelection) {
+                    statusOptions.clear()
                 }
 
-                ForEach(SalonStatus.allCases, id: \.self) { status in
+                ForEach(statusOptions.all) { status in
                     FilterChip(
                         title: status.displayName,
-                        isSelected: selectedStatus == status
+                        isSelected: statusOptions.isSelected(status)
                     ) {
-                        selectedStatus = status
+                        statusOptions.toggle(status)
                     }
                 }
             }
@@ -341,6 +358,57 @@ struct SortPopoverView: View {
         }
         .padding(20)
         .frame(width: 200)
+    }
+}
+
+// MARK: - Type Filter Popover
+
+struct TypeFilterPopoverView: View {
+    @ObservedObject var viewModel: SalonsViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Тип закладу")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                Spacer()
+                if viewModel.typeOptions.hasSelection {
+                    Button("Скинути") {
+                        viewModel.typeOptions.clear()
+                    }
+                    .font(.caption)
+                }
+            }
+
+            if viewModel.typeOptions.all.isEmpty {
+                Text("Немає даних")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(viewModel.typeOptions.all) { type in
+                        Button {
+                            viewModel.typeOptions.toggle(type)
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: viewModel.typeOptions.isSelected(type) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(viewModel.typeOptions.isSelected(type) ? .accentColor : .secondary)
+                                    .font(.subheadline)
+                                Text(type.displayName)
+                                    .font(.subheadline)
+                                Spacer()
+                            }
+                            .padding(.vertical, 4)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(20)
+        .frame(width: 220)
     }
 }
 

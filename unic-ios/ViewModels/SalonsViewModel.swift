@@ -31,11 +31,13 @@ final class SalonsViewModel: ObservableObject {
     @Published var salons: IdentifiedArrayOf<Salon> = []
     @Published var isLoading = false
     @Published var searchText = ""
-    @Published var selectedStatus: SalonStatus?
+    @Published var statusOptions = Options<SalonStatus>(all: IdentifiedArrayOf(uniqueElements: SalonStatus.allCases), selected: [])
     @Published var sortOption: SalonSortOption = .name
     @Published var sortAscending: Bool = true
+    @Published var typeOptions = Options<BusinessType>()
     @Published var showMap = false
     @Published var showSortPopover = false
+    @Published var showFilterPopover = false
     @Published var errorMessage: String?
 
     // Alert
@@ -49,8 +51,8 @@ final class SalonsViewModel: ObservableObject {
         var result = salons
 
         // Filter by status
-        if let status = selectedStatus {
-            result = result.filter { $0.statusEnum == status }
+        if statusOptions.hasSelection {
+            result = result.filter { statusOptions.selected.contains($0.statusEnum.id) }
         }
 
         // Filter by search (name or address)
@@ -59,6 +61,14 @@ final class SalonsViewModel: ObservableObject {
             result = result.filter { salon in
                 salon.name.lowercased().contains(query) ||
                 (salon.address?.lowercased().contains(query) ?? false)
+            }
+        }
+
+        // Filter by types
+        if typeOptions.hasSelection {
+            result = result.filter { salon in
+                guard let types = salon.googlePlacesTypes else { return false }
+                return !typeOptions.selected.isDisjoint(with: types)
             }
         }
 
@@ -111,12 +121,33 @@ final class SalonsViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Stats
+    // MARK: - Stats (filtered by search & type, but NOT by status)
 
-    var totalCount: Int { salons.count }
-    var newCount: Int { salons.filter { $0.statusEnum == .new }.count }
-    var contactedCount: Int { salons.filter { $0.statusEnum == .contacted }.count }
-    var orderedCount: Int { salons.filter { $0.statusEnum == .ordered }.count }
+    private var salonsForStats: [Salon] {
+        var result = Array(salons)
+
+        if !searchText.isEmpty {
+            let query = searchText.lowercased()
+            result = result.filter {
+                $0.name.lowercased().contains(query) ||
+                ($0.address?.lowercased().contains(query) ?? false)
+            }
+        }
+
+        if typeOptions.hasSelection {
+            result = result.filter { salon in
+                guard let types = salon.googlePlacesTypes else { return false }
+                return !typeOptions.selected.isDisjoint(with: types)
+            }
+        }
+
+        return result
+    }
+
+    var totalCount: Int { salonsForStats.count }
+    var newCount: Int { salonsForStats.filter { $0.statusEnum == .new }.count }
+    var contactedCount: Int { salonsForStats.filter { $0.statusEnum == .contacted }.count }
+    var orderedCount: Int { salonsForStats.filter { $0.statusEnum == .ordered }.count }
 
     // MARK: - Actions
 
@@ -132,11 +163,21 @@ final class SalonsViewModel: ObservableObject {
         do {
             let fetchedSalons = try await service.fetchAllSalons()
             salons = IdentifiedArrayOf(uniqueElements: fetchedSalons)
+            buildTypeOptions()
         } catch {
             errorMessage = error.localizedDescription
         }
 
         isLoading = false
+    }
+
+    private func buildTypeOptions() {
+        let ignoredTypes: Set<String> = ["establishment", "point_of_interest", "health", "store"]
+        let types = Set(salons.compactMap(\.googlePlacesTypes).flatMap { $0 })
+        let businessTypes = types.subtracting(ignoredTypes)
+            .sorted()
+            .map { BusinessType(id: $0) }
+        typeOptions.setAll(IdentifiedArrayOf(uniqueElements: businessTypes))
     }
 
     func retry() {

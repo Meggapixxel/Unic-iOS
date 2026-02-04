@@ -7,11 +7,33 @@
 
 import SwiftUI
 import MapKit
+import CoreLocation
+
+// MARK: - Location Manager
+
+final class LocationManager: NSObject, CLLocationManagerDelegate {
+    static let shared = LocationManager()
+    private let manager = CLLocationManager()
+
+    override init() {
+        super.init()
+        manager.delegate = self
+    }
+
+    func requestPermission() {
+        manager.requestWhenInUseAuthorization()
+    }
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        // Permission changed
+    }
+}
+
+// MARK: - Salon Map View
 
 struct SalonMapView: View {
     @ObservedObject var viewModel: SalonsViewModel
     @State private var selectedSalon: Salon?
-    @State private var showingDetail = false
 
     // Prague center coordinates
     @State private var position: MapCameraPosition = .region(MKCoordinateRegion(
@@ -21,6 +43,8 @@ struct SalonMapView: View {
 
     var body: some View {
         Map(position: $position, selection: $selectedSalon) {
+            UserAnnotation()
+
             ForEach(viewModel.displayedSalons.filter { $0.coordinate != nil }) { salon in
                 if let coordinate = salon.coordinate {
                     Marker(salon.displayName, systemImage: markerIcon(for: salon.statusEnum), coordinate: coordinate)
@@ -33,6 +57,9 @@ struct SalonMapView: View {
             MapUserLocationButton()
             MapCompass()
             MapScaleView()
+        }
+        .onAppear {
+            LocationManager.shared.requestPermission()
         }
         .sheet(item: $selectedSalon) { salon in
             NavigationStack {
@@ -58,7 +85,7 @@ struct SalonMapView: View {
                     .foregroundColor(.secondary)
 
                 // Filter Chips
-                FilterChipsView(selectedStatus: $viewModel.selectedStatus)
+                FilterChipsView(statusOptions: $viewModel.statusOptions)
             }
             .padding(.vertical)
             .glassBackgroundRectangle(cornerRadius: 20)
