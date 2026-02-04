@@ -90,7 +90,10 @@ struct SalonMapView: View {
                     .foregroundColor(.secondary)
 
                 // Filter Chips
-                FilterChipsView(statusOptions: $viewModel.statusOptions, showStatusInfo: $viewModel.showStatusInfo)
+                FilterChipsView(
+                    statusOptions: $viewModel.statusOptions,
+                    showStatusInfo: $viewModel.showStatusInfo
+                )
             }
             .padding(.vertical)
             .glassBackgroundRectangle(cornerRadius: 20)

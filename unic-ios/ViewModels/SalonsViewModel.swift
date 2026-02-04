@@ -32,6 +32,7 @@ final class SalonsViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var searchText = ""
     @Published var statusOptions = Options<SalonStatus>(all: IdentifiedArrayOf(uniqueElements: SalonStatus.allCases), selected: [])
+    @Published var categoryOptions = Options<Category>()
     @Published var sortOption: SalonSortOption = .name
     @Published var sortAscending: Bool = true
     @Published var typeOptions = Options<BusinessType>()
@@ -54,6 +55,14 @@ final class SalonsViewModel: ObservableObject {
         // Filter by status
         if statusOptions.hasSelection {
             result = result.filter { statusOptions.selected.contains($0.statusEnum.id) }
+        }
+
+        // Filter by category
+        if categoryOptions.hasSelection {
+            result = result.filter { salon in
+                guard let category = salon.categoryName else { return false }
+                return categoryOptions.selected.contains(category)
+            }
         }
 
         // Filter by search (name or address)
@@ -127,6 +136,13 @@ final class SalonsViewModel: ObservableObject {
     private var salonsForStats: [Salon] {
         var result = Array(salons)
 
+        if categoryOptions.hasSelection {
+            result = result.filter { salon in
+                guard let category = salon.categoryName else { return false }
+                return categoryOptions.selected.contains(category)
+            }
+        }
+
         if !searchText.isEmpty {
             let query = searchText.lowercased()
             result = result.filter {
@@ -164,12 +180,20 @@ final class SalonsViewModel: ObservableObject {
         do {
             let fetchedSalons = try await service.fetchAllSalons()
             salons = IdentifiedArrayOf(uniqueElements: fetchedSalons)
+            buildCategoryOptions()
             buildTypeOptions()
         } catch {
             errorMessage = error.localizedDescription
         }
 
         isLoading = false
+    }
+
+    private func buildCategoryOptions() {
+        let categories = Set(salons.compactMap(\.categoryName))
+            .sorted()
+            .map { Category(id: $0) }
+        categoryOptions.setAll(IdentifiedArrayOf(uniqueElements: categories))
     }
 
     private func buildTypeOptions() {

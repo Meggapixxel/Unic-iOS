@@ -88,7 +88,10 @@ struct SalonListView: View {
                                 .padding(.horizontal)
 
                             // Filter Chips
-                            FilterChipsView(statusOptions: $viewModel.statusOptions, showStatusInfo: $viewModel.showStatusInfo)
+                            FilterChipsView(
+                                statusOptions: $viewModel.statusOptions,
+                                showStatusInfo: $viewModel.showStatusInfo
+                            )
                         }
                         .padding(.vertical)
                         .glassBackgroundRectangle(cornerRadius: 20)
@@ -197,6 +200,7 @@ struct FilterChipsView: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
+                // Status info button
                 Button {
                     showStatusInfo = true
                 } label: {
@@ -208,10 +212,12 @@ struct FilterChipsView: View {
                         .clipShape(Circle())
                 }
 
+                // Status "All" chip
                 FilterChip(title: "Всі", isSelected: !statusOptions.hasSelection) {
                     statusOptions.clear()
                 }
 
+                // Status chips
                 ForEach(statusOptions.all) { status in
                     FilterChip(
                         title: "\(status.emoji) \(status.displayName)",
@@ -386,48 +392,89 @@ struct SortPopoverView: View {
 struct TypeFilterPopoverView: View {
     @ObservedObject var viewModel: SalonsViewModel
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Тип закладу")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Spacer()
-                if viewModel.typeOptions.hasSelection {
-                    Button("Скинути") {
-                        viewModel.typeOptions.clear()
-                    }
-                    .font(.caption)
-                }
-            }
+    private var hasAnySelection: Bool {
+        viewModel.categoryOptions.hasSelection || viewModel.typeOptions.hasSelection
+    }
 
-            if viewModel.typeOptions.all.isEmpty {
-                Text("Немає даних")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(viewModel.typeOptions.all) { type in
-                        Button {
-                            viewModel.typeOptions.toggle(type)
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: viewModel.typeOptions.isSelected(type) ? "checkmark.circle.fill" : "circle")
-                                    .foregroundColor(viewModel.typeOptions.isSelected(type) ? .accentColor : .secondary)
-                                    .font(.subheadline)
-                                Text(type.displayName)
-                                    .font(.subheadline)
-                                Spacer()
-                            }
-                            .padding(.vertical, 4)
-                            .contentShape(Rectangle())
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                // Header
+                HStack {
+                    Text("Категорія")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    if hasAnySelection {
+                        Button("Скинути") {
+                            viewModel.categoryOptions.clear()
+                            viewModel.typeOptions.clear()
                         }
-                        .buttonStyle(.plain)
+                        .font(.caption)
                     }
                 }
+
+                // Categories
+                if !viewModel.categoryOptions.all.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(viewModel.categoryOptions.all) { category in
+                            Button {
+                                viewModel.categoryOptions.toggle(category)
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: viewModel.categoryOptions.isSelected(category) ? "checkmark.circle.fill" : "circle")
+                                        .foregroundColor(viewModel.categoryOptions.isSelected(category) ? .accentColor : .secondary)
+                                        .font(.subheadline)
+                                    Text(category.displayName)
+                                        .font(.subheadline)
+                                    Spacer()
+                                }
+                                .padding(.vertical, 4)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+
+                // Separator
+                if !viewModel.categoryOptions.all.isEmpty && !viewModel.typeOptions.all.isEmpty {
+                    Divider()
+                        .padding(.vertical, 4)
+                }
+
+                // Business Types
+                if !viewModel.typeOptions.all.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(viewModel.typeOptions.all) { type in
+                            Button {
+                                viewModel.typeOptions.toggle(type)
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: viewModel.typeOptions.isSelected(type) ? "checkmark.circle.fill" : "circle")
+                                        .foregroundColor(viewModel.typeOptions.isSelected(type) ? .accentColor : .secondary)
+                                        .font(.subheadline)
+                                    Text(type.displayName)
+                                        .font(.subheadline)
+                                    Spacer()
+                                }
+                                .padding(.vertical, 4)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+
+                // Empty state
+                if viewModel.categoryOptions.all.isEmpty && viewModel.typeOptions.all.isEmpty {
+                    Text("Немає даних")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
             }
+            .padding(20)
         }
-        .padding(20)
         .frame(width: 220)
     }
 }
