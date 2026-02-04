@@ -63,9 +63,14 @@ struct SalonMapView: View {
         }
         .sheet(item: $selectedSalon) { salon in
             NavigationStack {
-                SalonDetailView(salon: salon) { updatedSalon in
-                    viewModel.updateSalon(updatedSalon)
-                }
+                SalonDetailView(
+                    salon: salon,
+                    onSalonUpdated: { viewModel.updateSalon($0) },
+                    onSalonDeleted: {
+                        viewModel.deleteSalon(salon)
+                        selectedSalon = nil
+                    }
+                )
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -85,11 +90,14 @@ struct SalonMapView: View {
                     .foregroundColor(.secondary)
 
                 // Filter Chips
-                FilterChipsView(statusOptions: $viewModel.statusOptions)
+                FilterChipsView(statusOptions: $viewModel.statusOptions, showStatusInfo: $viewModel.showStatusInfo)
             }
             .padding(.vertical)
             .glassBackgroundRectangle(cornerRadius: 20)
             .padding(.horizontal)
+        }
+        .sheet(isPresented: $viewModel.showStatusInfo) {
+            StatusInfoView()
         }
     }
 

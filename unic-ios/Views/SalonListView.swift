@@ -67,9 +67,11 @@ struct SalonListView: View {
                 } else {
                     List(viewModel.displayedSalons) { salon in
                         NavigationLink {
-                            SalonDetailView(salon: salon) { updatedSalon in
-                                viewModel.updateSalon(updatedSalon)
-                            }
+                            SalonDetailView(
+                                salon: salon,
+                                onSalonUpdated: { viewModel.updateSalon($0) },
+                                onSalonDeleted: { viewModel.deleteSalon(salon) }
+                            )
                         } label: {
                             SalonRowView(salon: salon)
                         }
@@ -86,11 +88,14 @@ struct SalonListView: View {
                                 .padding(.horizontal)
 
                             // Filter Chips
-                            FilterChipsView(statusOptions: $viewModel.statusOptions)
+                            FilterChipsView(statusOptions: $viewModel.statusOptions, showStatusInfo: $viewModel.showStatusInfo)
                         }
                         .padding(.vertical)
                         .glassBackgroundRectangle(cornerRadius: 20)
                         .padding(.horizontal)
+                    }
+                    .sheet(isPresented: $viewModel.showStatusInfo) {
+                        StatusInfoView()
                     }
                 }
             }
@@ -104,6 +109,7 @@ struct SalonListView: View {
                                     viewModel.showSortPopover = true
                                 } label: {
                                     Image(systemName: "arrow.up.arrow.down")
+                                        .imageScale(.large)
                                 }
                                 .popover(isPresented: $viewModel.showSortPopover) {
                                     SortPopoverView(viewModel: viewModel)
@@ -115,6 +121,7 @@ struct SalonListView: View {
                                 } label: {
                                     Image(systemName: "line.3.horizontal.decrease.circle")
                                         .symbolVariant(viewModel.typeOptions.hasSelection ? .fill : .none)
+                                        .imageScale(.large)
                                 }
                                 .popover(isPresented: $viewModel.showFilterPopover) {
                                     TypeFilterPopoverView(viewModel: viewModel)
@@ -130,6 +137,7 @@ struct SalonListView: View {
                             }
                         } label: {
                             Image(systemName: viewModel.showMap ? "list.bullet" : "map")
+                                .imageScale(.large)
                         }
                     }
                 }
@@ -154,8 +162,8 @@ struct StatsHeaderView: View {
         HStack(spacing: 16) {
             StatBadge(title: "Всього", value: viewModel.totalCount, color: .blue)
             StatBadge(title: "Нові", value: viewModel.newCount, color: .green)
-            StatBadge(title: "В роботі", value: viewModel.contactedCount, color: .orange)
-            StatBadge(title: "Замовили", value: viewModel.orderedCount, color: .purple)
+            StatBadge(title: "Контакт", value: viewModel.contactedCount, color: .orange)
+            StatBadge(title: "Клієнти", value: viewModel.orderedCount, color: .mint)
         }
     }
 }
@@ -184,17 +192,29 @@ struct StatBadge: View {
 
 struct FilterChipsView: View {
     @Binding var statusOptions: Options<SalonStatus>
+    @Binding var showStatusInfo: Bool
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
+                Button {
+                    showStatusInfo = true
+                } label: {
+                    Image(systemName: "questionmark.circle")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .frame(width: 28, height: 28)
+                        .background(Color(.systemGray5))
+                        .clipShape(Circle())
+                }
+
                 FilterChip(title: "Всі", isSelected: !statusOptions.hasSelection) {
                     statusOptions.clear()
                 }
 
                 ForEach(statusOptions.all) { status in
                     FilterChip(
-                        title: status.displayName,
+                        title: "\(status.emoji) \(status.displayName)",
                         isSelected: statusOptions.isSelected(status)
                     ) {
                         statusOptions.toggle(status)
@@ -435,7 +455,114 @@ struct ErrorView: View {
     }
 }
 
+// MARK: - Status Info View
+
+struct StatusInfoView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(SalonStatus.allCases) { status in
+                    StatusInfoRow(status: status)
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Статуси салонів")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Закрити") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct StatusInfoRow: View {
+    let status: SalonStatus
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(status.emoji)
+                Text(status.fullDisplayName)
+                    .font(.headline)
+            }
+
+            Text(status.infoDescription)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            Text(status.nextAction)
+                .font(.caption)
+                .foregroundColor(status.color)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
 // MARK: - Extensions
+
+extension SalonStatus {
+    var emoji: String {
+        switch self {
+        case .new: return "🆕"
+        case .contacted: return "💬"
+        case .demoScheduled: return "📅"
+        case .testing: return "🧪"
+        case .ordered: return "📦"
+        case .lost: return "❌"
+        }
+    }
+
+    var fullDisplayName: String {
+        switch self {
+        case .new: return "Новий салон"
+        case .contacted: return "Контакт був"
+        case .demoScheduled: return "Заплановано демо / зустріч"
+        case .testing: return "Тестують продукти"
+        case .ordered: return "Клієнт"
+        case .lost: return "Закрито / не актуально"
+        }
+    }
+
+    var infoDescription: String {
+        switch self {
+        case .new:
+            return "Салон є в базі, але з ним ще не було жодного контакту."
+        case .contacted:
+            return "Перший контакт уже відбувся (Instagram, дзвінок або особисто), але без домовленостей."
+        case .demoScheduled:
+            return "Є конкретна домовленість: демо, зустріч або показ продуктів."
+        case .testing:
+            return "Салон уже пробує продукти в роботі, але рішення ще не прийняте."
+        case .ordered:
+            return "Салон зробив перше замовлення та став клієнтом."
+        case .lost:
+            return "Салон відмовився або не реагує після кількох спроб."
+        }
+    }
+
+    var nextAction: String {
+        switch self {
+        case .new:
+            return "→ Написати, подзвонити або зайти в салон для першого знайомства."
+        case .contacted:
+            return "→ Дочекатись відповіді, зробити фолоу-ап або запропонувати демо."
+        case .demoScheduled:
+            return "→ Підготувати продукти, матеріали та провести демо."
+        case .testing:
+            return "→ Зібрати фідбек, підтримати майстрів, закрити перше замовлення."
+        case .ordered:
+            return "→ Підтримувати співпрацю, допродажі, повторні замовлення."
+        case .lost:
+            return "→ Нічого. Можна повернутись пізніше або залишити як закритий."
+        }
+    }
+}
 
 extension SalonStatus {
     var displayName: String {
@@ -444,8 +571,8 @@ extension SalonStatus {
         case .contacted: return "Контакт"
         case .demoScheduled: return "Демо"
         case .testing: return "Тест"
-        case .ordered: return "Замовив"
-        case .lost: return "Втрачено"
+        case .ordered: return "Клієнт"
+        case .lost: return "Закрито"
         }
     }
     

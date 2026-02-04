@@ -166,6 +166,12 @@ class FirebaseService: ObservableObject {
             .delete()
     }
 
+    // MARK: - Delete Salon
+
+    func deleteSalon(salonId: String) async throws {
+        try await db.collection("salons").document(salonId).delete()
+    }
+
     // MARK: - Batch Update LeadTemp
 
     /// Sets default leadTemp for all salons where it's currently nil

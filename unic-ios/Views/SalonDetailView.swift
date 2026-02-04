@@ -11,9 +11,14 @@ import IdentifiedCollections
 
 struct SalonDetailView: View {
     @StateObject private var viewModel: SalonDetailViewModel
+    @Environment(\.dismiss) private var dismiss
 
-    init(salon: Salon, onSalonUpdated: ((Salon) -> Void)? = nil) {
-        _viewModel = StateObject(wrappedValue: SalonDetailViewModel(salon: salon, onSalonUpdated: onSalonUpdated))
+    init(salon: Salon, onSalonUpdated: @escaping (Salon) -> Void, onSalonDeleted: @escaping () -> Void) {
+        _viewModel = StateObject(wrappedValue: SalonDetailViewModel(
+            salon: salon,
+            onSalonUpdated: onSalonUpdated,
+            onSalonDeleted: onSalonDeleted
+        ))
     }
 
     private var salon: Salon { viewModel.salon }
@@ -35,6 +40,9 @@ struct SalonDetailView: View {
 
                 // CRM Section
                 crmSection
+
+                // Delete Section
+                deleteSection
             }
             .padding()
         }
@@ -63,6 +71,19 @@ struct SalonDetailView: View {
         }
         .sheet(isPresented: $viewModel.showStatusHistory) {
             StatusHistorySheet(viewModel: viewModel)
+        }
+        .confirmationDialog(
+            "Видалити салон?",
+            isPresented: $viewModel.showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Видалити", role: .destructive) {
+                viewModel.deleteSalon()
+                dismiss()
+            }
+            Button("Скасувати", role: .cancel) {}
+        } message: {
+            Text("Ця дія незворотна. Салон \"\(salon.displayName)\" буде видалено назавжди.")
         }
     }
 
@@ -159,8 +180,8 @@ struct SalonDetailView: View {
                 VStack(spacing: 0) {
                     // Map
                     if let coordinate = salon.coordinate {
-                        Button {
-                            viewModel.showFullMap = true
+                        NavigationLink {
+                            SalonFullMapView(salon: salon)
                         } label: {
                             Map(initialPosition: .region(MKCoordinateRegion(
                                 center: coordinate,
@@ -179,10 +200,6 @@ struct SalonDetailView: View {
                                     .cornerRadius(6)
                                     .padding(8)
                             }
-                        }
-                        .buttonStyle(.plain)
-                        .fullScreenCover(isPresented: $viewModel.showFullMap) {
-                            SalonFullMapView(salon: salon)
                         }
                     }
 
@@ -352,6 +369,22 @@ struct SalonDetailView: View {
         }
     }
 
+    // MARK: - Delete Section
+
+    private var deleteSection: some View {
+        Button(role: .destructive) {
+            viewModel.showDeleteConfirmation = true
+        } label: {
+            HStack {
+                Spacer()
+                Label("Видалити салон", systemImage: "trash")
+                Spacer()
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
+        }
+    }
 }
 
 // MARK: - Supporting Views
@@ -678,32 +711,36 @@ struct ScoringRow: View {
 
 #Preview {
     NavigationStack {
-        SalonDetailView(salon: Salon(
-            salonId: "test",
-            name: "Test Salon",
-            city: "Prague",
-            address: "Test Address 123",
-            categoryName: "Hair Salon",
-            category: ["hair"],
-            tags: [],
-            maps: Maps(provider: "google", mapsUrl: "https://maps.google.com", placeId: "test", location: Location(lat: 50.0, lng: 14.4), source: "excel", confidence: 1.0),
-            contacts: Contacts(
-                website: Contact(value: "https://test.com", alt: nil, foundFrom: "excel", isPrimary: true, confidence: nil),
-                phone: Contact(value: "+420123456789", alt: nil, foundFrom: "excel", isPrimary: true, confidence: nil),
-                email: nil,
-                instagram: Contact(value: "https://instagram.com/test", alt: nil, foundFrom: "website", isPrimary: true, confidence: 0.95),
-                facebook: nil,
-                tiktok: nil
+        SalonDetailView(
+            salon: Salon(
+                salonId: "test",
+                name: "Test Salon",
+                city: "Prague",
+                address: "Test Address 123",
+                categoryName: "Hair Salon",
+                category: ["hair"],
+                tags: [],
+                maps: Maps(provider: "google", mapsUrl: "https://maps.google.com", placeId: "test", location: Location(lat: 50.0, lng: 14.4), source: "excel", confidence: 1.0),
+                contacts: Contacts(
+                    website: Contact(value: "https://test.com", alt: nil, foundFrom: "excel", isPrimary: true, confidence: nil),
+                    phone: Contact(value: "+420123456789", alt: nil, foundFrom: "excel", isPrimary: true, confidence: nil),
+                    email: nil,
+                    instagram: Contact(value: "https://instagram.com/test", alt: nil, foundFrom: "website", isPrimary: true, confidence: 0.95),
+                    facebook: nil,
+                    tiktok: nil
+                ),
+                leadTemp: "A",
+                status: "new",
+                ownerDriven: nil,
+                notes: "Test notes",
+                nextStep: nil,
+                source: nil,
+                enrichmentStatus: "enriched",
+                enrichmentBatch: "001",
+                googlePlacesTypes: ["hair_care", "beauty_salon", "establishment"]
             ),
-            leadTemp: "A",
-            status: "new",
-            ownerDriven: nil,
-            notes: "Test notes",
-            nextStep: nil,
-            source: nil,
-            enrichmentStatus: "enriched",
-            enrichmentBatch: "001",
-            googlePlacesTypes: ["hair_care", "beauty_salon", "establishment"]
-        ))
+            onSalonUpdated: { _ in },
+            onSalonDeleted: { }
+        )
     }
 }

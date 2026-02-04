@@ -38,6 +38,7 @@ final class SalonsViewModel: ObservableObject {
     @Published var showMap = false
     @Published var showSortPopover = false
     @Published var showFilterPopover = false
+    @Published var showStatusInfo = false
     @Published var errorMessage: String?
 
     // Alert
@@ -188,6 +189,10 @@ final class SalonsViewModel: ObservableObject {
 
     func updateSalon(_ updatedSalon: Salon) {
         salons[id: updatedSalon.id] = updatedSalon
+    }
+
+    func deleteSalon(_ salon: Salon) {
+        salons.remove(id: salon.id)
     }
 
     // MARK: - Error Handling

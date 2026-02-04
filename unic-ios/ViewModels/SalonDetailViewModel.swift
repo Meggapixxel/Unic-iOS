@@ -14,7 +14,6 @@ class SalonDetailViewModel: ObservableObject {
     @Published var salon: Salon
     @Published var selectedLeadTemp: LeadTemp?
     @Published var isSaving = false
-    @Published var showFullMap = false
     @Published var showLeadTempInfo = false
 
     // Status History
@@ -28,19 +27,24 @@ class SalonDetailViewModel: ObservableObject {
     @Published var alertTitle = ""
     @Published var alertMessage = ""
 
+    // Delete
+    @Published var showDeleteConfirmation = false
+
     private let service = FirebaseService.shared
     private var cancellables = Set<AnyCancellable>()
 
-    var onSalonUpdated: ((Salon) -> Void)?
+    var onSalonUpdated: (Salon) -> Void
+    var onSalonDeleted: () -> Void
 
     var currentStatus: SalonStatus {
         salon.statusEnum
     }
 
-    init(salon: Salon, onSalonUpdated: ((Salon) -> Void)? = nil) {
+    init(salon: Salon, onSalonUpdated: @escaping (Salon) -> Void, onSalonDeleted: @escaping () -> Void) {
         self.salon = salon
         self.selectedLeadTemp = salon.leadTempEnum
         self.onSalonUpdated = onSalonUpdated
+        self.onSalonDeleted = onSalonDeleted
 
         setupBindings()
     }
@@ -90,7 +94,7 @@ class SalonDetailViewModel: ObservableObject {
                 // Update local salon object
                 if let updatedSalon = try await service.getSalon(id: salon.salonId) {
                     salon = updatedSalon
-                    onSalonUpdated?(updatedSalon)
+                    onSalonUpdated(updatedSalon)
                 }
 
                 showAddStatus = false
@@ -144,6 +148,22 @@ class SalonDetailViewModel: ObservableObject {
         alertTitle = title
         alertMessage = message
         showAlert = true
+    }
+
+    // MARK: - Delete
+
+    func deleteSalon() {
+        Task {
+            isSaving = true
+            defer { isSaving = false }
+
+            do {
+                try await service.deleteSalon(salonId: salon.salonId)
+                onSalonDeleted()
+            } catch {
+                showError("Помилка", message: error.localizedDescription)
+            }
+        }
     }
 
     // MARK: - Computed Properties
