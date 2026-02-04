@@ -50,7 +50,6 @@ extension View {
 
 struct SalonListView: View {
     @StateObject private var viewModel = SalonsViewModel()
-    @State private var showMap = false
     
     var body: some View {
         NavigationStack {
@@ -63,7 +62,7 @@ struct SalonListView: View {
                     ErrorView(message: error) {
                         viewModel.retry()
                     }
-                } else if showMap {
+                } else if viewModel.showMap {
                     SalonMapView(viewModel: viewModel)
                 } else {
                     List(viewModel.displayedSalons) { salon in
@@ -98,13 +97,24 @@ struct SalonListView: View {
                 .navigationTitle("UNIC CRM")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            viewModel.showSortPopover = true
+                        } label: {
+                            Image(systemName: "arrow.up.arrow.down")
+                        }
+                        .popover(isPresented: $viewModel.showSortPopover) {
+                            SortPopoverView(viewModel: viewModel)
+                                .presentationCompactAdaptation(.popover)
+                        }
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             withAnimation {
-                                showMap.toggle()
+                                viewModel.showMap.toggle()
                             }
                         } label: {
-                            Image(systemName: showMap ? "list.bullet" : "map")
+                            Image(systemName: viewModel.showMap ? "list.bullet" : "map")
                         }
                     }
                 }
@@ -266,10 +276,80 @@ struct StatusBadge: View {
 
 // MARK: - Error View
 
+// MARK: - Sort Popover
+
+struct SortPopoverView: View {
+    @ObservedObject var viewModel: SalonsViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Sort options
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Сортування")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+
+                ForEach(SalonSortOption.allCases) { option in
+                    Button {
+                        viewModel.sortOption = option
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(option.displayName)
+                                .font(.subheadline)
+                            Spacer()
+                            if viewModel.sortOption == option {
+                                Image(systemName: "checkmark")
+                                    .font(.caption)
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            Divider()
+
+            // Direction
+            HStack(spacing: 8) {
+                Button {
+                    viewModel.sortAscending = true
+                } label: {
+                    Image(systemName: "arrow.up")
+                        .font(.subheadline)
+                        .frame(width: 28, height: 28)
+                        .background(viewModel.sortAscending ? Color.accentColor : Color(.systemGray5))
+                        .foregroundColor(viewModel.sortAscending ? .white : .primary)
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    viewModel.sortAscending = false
+                } label: {
+                    Image(systemName: "arrow.down")
+                        .font(.subheadline)
+                        .frame(width: 28, height: 28)
+                        .background(!viewModel.sortAscending ? Color.accentColor : Color(.systemGray5))
+                        .foregroundColor(!viewModel.sortAscending ? .white : .primary)
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(20)
+        .frame(width: 200)
+    }
+}
+
+// MARK: - Error View
+
 struct ErrorView: View {
     let message: String
     let retry: () -> Void
-    
+
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")

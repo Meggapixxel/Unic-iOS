@@ -10,12 +10,32 @@ import SwiftUI
 import Combine
 import IdentifiedCollections
 
+enum SalonSortOption: String, CaseIterable, Identifiable {
+    case name = "name"
+    case leadTemp = "leadTemp"
+    case status = "status"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .name: return "За назвою"
+        case .leadTemp: return "За Lead Temp"
+        case .status: return "За статусом"
+        }
+    }
+}
+
 @MainActor
-class SalonsViewModel: ObservableObject {
+final class SalonsViewModel: ObservableObject {
     @Published var salons: IdentifiedArrayOf<Salon> = []
     @Published var isLoading = false
     @Published var searchText = ""
     @Published var selectedStatus: SalonStatus?
+    @Published var sortOption: SalonSortOption = .name
+    @Published var sortAscending: Bool = true
+    @Published var showMap = false
+    @Published var showSortPopover = false
     @Published var errorMessage: String?
 
     // Alert
@@ -28,20 +48,67 @@ class SalonsViewModel: ObservableObject {
     var displayedSalons: IdentifiedArrayOf<Salon> {
         var result = salons
 
+        // Filter by status
         if let status = selectedStatus {
             result = result.filter { $0.statusEnum == status }
         }
 
+        // Filter by search (name or address)
         if !searchText.isEmpty {
             let query = searchText.lowercased()
             result = result.filter { salon in
                 salon.name.lowercased().contains(query) ||
-                (salon.address?.lowercased().contains(query) ?? false) ||
-                (salon.instagramHandle?.lowercased().contains(query) ?? false)
+                (salon.address?.lowercased().contains(query) ?? false)
             }
         }
 
-        return result
+        // Sort
+        let sorted = result.sorted { a, b in
+            let result: Bool
+            switch sortOption {
+            case .name:
+                result = a.name.localizedCompare(b.name) == .orderedAscending
+            case .leadTemp:
+                let orderA = leadTempOrder(a.leadTempEnum)
+                let orderB = leadTempOrder(b.leadTempEnum)
+                if orderA != orderB {
+                    result = orderA < orderB
+                } else {
+                    result = a.name.localizedCompare(b.name) == .orderedAscending
+                }
+            case .status:
+                let orderA = statusOrder(a.statusEnum)
+                let orderB = statusOrder(b.statusEnum)
+                if orderA != orderB {
+                    result = orderA < orderB
+                } else {
+                    result = a.name.localizedCompare(b.name) == .orderedAscending
+                }
+            }
+            return sortAscending ? result : !result
+        }
+
+        return IdentifiedArrayOf(uniqueElements: sorted)
+    }
+
+    private func leadTempOrder(_ temp: LeadTemp?) -> Int {
+        switch temp {
+        case .A: return 0
+        case .B: return 1
+        case .C: return 2
+        case nil: return 3
+        }
+    }
+
+    private func statusOrder(_ status: SalonStatus) -> Int {
+        switch status {
+        case .new: return 0
+        case .contacted: return 1
+        case .demoScheduled: return 2
+        case .testing: return 3
+        case .ordered: return 4
+        case .lost: return 5
+        }
     }
 
     // MARK: - Stats
