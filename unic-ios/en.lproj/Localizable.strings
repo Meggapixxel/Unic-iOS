@@ -1,0 +1,120 @@
+/* Common */
+"loading" = "Loading...";
+"close" = "Close";
+"cancel" = "Cancel";
+"done" = "Done";
+"save" = "Save";
+"delete" = "Delete";
+"error" = "Error";
+
+/* Navigation */
+"UNIC CRM" = "UNIC CRM";
+
+/* Salon List */
+"search_salons" = "Search salons...";
+"stat_total" = "Total";
+"stat_new" = "New";
+"stat_contacted" = "Contacted";
+"stat_clients" = "Clients";
+"filter_all" = "All";
+"sorting" = "Sorting";
+"category" = "Category";
+"reset" = "Reset";
+"no_data" = "No data";
+"salon_statuses" = "Salon statuses";
+"retry" = "Try again";
+
+/* Status — short names */
+"status_new" = "New";
+"status_contacted" = "Contact";
+"status_demo" = "Demo";
+"status_testing" = "Test";
+"status_ordered" = "Client";
+"status_lost" = "Closed";
+
+/* Status — full names */
+"status_new_full" = "New salon";
+"status_contacted_full" = "Was contacted";
+"status_demo_full" = "Demo / meeting scheduled";
+"status_testing_full" = "Testing products";
+"status_ordered_full" = "Client";
+"status_lost_full" = "Closed / not relevant";
+
+/* Status — descriptions */
+"status_new_desc" = "The salon is in the database, but no contact has been made yet.";
+"status_contacted_desc" = "First contact has been made (Instagram, call or in person), but no agreements yet.";
+"status_demo_desc" = "There is a specific agreement: demo, meeting or product showcase.";
+"status_testing_desc" = "The salon is already trying products, but no decision has been made yet.";
+"status_ordered_desc" = "The salon has placed its first order and became a client.";
+"status_lost_desc" = "The salon refused or does not respond after several attempts.";
+
+/* Status — next actions */
+"status_new_action" = "-> Write, call or visit the salon for introduction.";
+"status_contacted_action" = "-> Wait for a response, follow up or offer a demo.";
+"status_demo_action" = "-> Prepare products, materials and conduct the demo.";
+"status_testing_action" = "-> Collect feedback, support stylists, close first order.";
+"status_ordered_action" = "-> Maintain cooperation, upsell, repeat orders.";
+"status_lost_action" = "-> Nothing. You can return later or leave as closed.";
+
+/* Sort options */
+"sort_by_name" = "By name";
+"sort_by_lead_temp" = "By Lead Temp";
+"sort_by_status" = "By status";
+
+/* Salon Detail */
+"call" = "Call";
+"copy_number" = "Copy number";
+"website" = "Website";
+"location" = "Location";
+"current_status" = "Current:";
+"change_history" = "Change history";
+"status" = "Status";
+"lead_temp_label" = "Lead Temp:";
+"enrichment" = "Enrichment:";
+"delete_salon" = "Delete salon";
+"delete_salon_question" = "Delete salon?";
+"delete_confirmation %@" = "This action is irreversible. Salon \"%@\" will be permanently deleted.";
+"new_status" = "New status";
+"status_picker" = "Status";
+"note_optional" = "Note (optional)";
+"add_comment" = "Add comment...";
+"add_status" = "Add status";
+"no_history" = "No history";
+"history_empty" = "Status history is empty";
+"status_history" = "Status history";
+
+/* Lead Temp */
+"lead_temp_a" = "A — Hot";
+"lead_temp_b" = "B — Warm";
+"lead_temp_c" = "C — Cold";
+"lead_temp_a_desc" = "High priority. The salon has Instagram, website, contacts and specializes in coloring/extensions.";
+"lead_temp_b_desc" = "Medium priority. The salon has some contacts or partial specialization.";
+"lead_temp_c_desc" = "Low priority. Little contact information or mismatched specialization (barbershop, kids).";
+"lead_temp_intro" = "Lead Temp is an automatic priority score for a salon based on available information.";
+"scoring_header" = "How the score is calculated";
+"scoring_website" = "Website";
+"scoring_phone" = "Phone";
+"scoring_google_maps" = "Google Maps data";
+"scoring_coloring" = "Coloring/Balayage";
+"scoring_extensions" = "Hair extensions";
+"scoring_barbershop" = "Barbershop";
+"scoring_kids" = "Kids only";
+"scoring_thresholds" = "A >= 7 points  *  B >= 4 points  *  C < 4 points";
+
+/* Map */
+"salons_on_map %lld" = "%lld salons on map";
+"no_coordinates" = "No coordinates";
+"no_location_data" = "No location data for this salon";
+"map_standard" = "Standard";
+"map_satellite" = "Satellite";
+"map_hybrid" = "Hybrid";
+
+/* Errors */
+"history_load_error" = "Failed to load history";
+"save_error" = "Save error";
+
+/* Salon model */
+"unnamed_salon" = "Unnamed Salon";
+
+/* Info.plist */
+"NSLocationWhenInUseUsageDescription" = "To display your location on the map";

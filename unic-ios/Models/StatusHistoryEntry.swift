@@ -22,7 +22,7 @@ struct StatusHistoryEntry: Codable, Identifiable, Hashable {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: "uk_UA")
+        formatter.locale = Locale.current
         return formatter.string(from: timestamp)
     }
 }

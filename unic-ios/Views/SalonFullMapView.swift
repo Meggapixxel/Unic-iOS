@@ -36,9 +36,9 @@ struct SalonFullMapView: View {
                 }
             } else {
                 ContentUnavailableView(
-                    "Немає координат",
+                    "no_coordinates",
                     systemImage: "map.fill",
-                    description: Text("Для цього салону немає даних про локацію")
+                    description: Text("no_location_data")
                 )
             }
         }
@@ -50,19 +50,19 @@ struct SalonFullMapView: View {
                     Button {
                         mapStyle = .standard
                     } label: {
-                        Label("Стандартна", systemImage: "map")
+                        Label("map_standard", systemImage: "map")
                     }
 
                     Button {
                         mapStyle = .imagery
                     } label: {
-                        Label("Супутник", systemImage: "globe.americas")
+                        Label("map_satellite", systemImage: "globe.americas")
                     }
 
                     Button {
                         mapStyle = .hybrid
                     } label: {
-                        Label("Гібрид", systemImage: "map.fill")
+                        Label("map_hybrid", systemImage: "map.fill")
                     }
                 } label: {
                     Image(systemName: "map.circle")
@@ -121,7 +121,7 @@ struct SalonFullMapView: View {
                             UIApplication.shared.open(url)
                         }
                     } label: {
-                        Label("Зателефонувати", systemImage: "phone.fill")
+                        Label("call", systemImage: "phone.fill")
                             .font(.subheadline)
                     }
                     .buttonStyle(.borderedProminent)
@@ -133,7 +133,7 @@ struct SalonFullMapView: View {
                         Button {
                             UIPasteboard.general.string = phone
                         } label: {
-                            Label("Скопіювати номер", systemImage: "doc.on.doc")
+                            Label("copy_number", systemImage: "doc.on.doc")
                         }
 
                         Button {
@@ -141,7 +141,7 @@ struct SalonFullMapView: View {
                                 UIApplication.shared.open(url)
                             }
                         } label: {
-                            Label("Зателефонувати", systemImage: "phone.fill")
+                            Label("call", systemImage: "phone.fill")
                         }
                     }
                 }

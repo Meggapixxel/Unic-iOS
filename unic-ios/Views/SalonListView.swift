@@ -50,13 +50,13 @@ extension View {
 
 struct SalonListView: View {
     @StateObject private var viewModel = SalonsViewModel()
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
                 // Content: List or Map
                 if viewModel.isLoading {
-                    ProgressView("Завантаження...")
+                    ProgressView("loading")
                         .frame(maxHeight: .infinity)
                 } else if let error = viewModel.errorMessage {
                     ErrorView(message: error) {
@@ -80,7 +80,7 @@ struct SalonListView: View {
                     .refreshable {
                         await viewModel.loadSalons()
                     }
-                    .searchable(text: $viewModel.searchText, prompt: "Пошук салонів...")
+                    .searchable(text: $viewModel.searchText, prompt: Text("search_salons"))
                     .safeAreaInset(edge: .bottom) {
                         VStack {
                             // Stats Header
@@ -163,10 +163,10 @@ struct StatsHeaderView: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            StatBadge(title: "Всього", value: viewModel.totalCount, color: .blue)
-            StatBadge(title: "Нові", value: viewModel.newCount, color: .green)
-            StatBadge(title: "Контакт", value: viewModel.contactedCount, color: .orange)
-            StatBadge(title: "Клієнти", value: viewModel.orderedCount, color: .mint)
+            StatBadge(title: String(localized: "stat_total"), value: viewModel.totalCount, color: .blue)
+            StatBadge(title: String(localized: "stat_new"), value: viewModel.newCount, color: .green)
+            StatBadge(title: String(localized: "stat_contacted"), value: viewModel.contactedCount, color: .orange)
+            StatBadge(title: String(localized: "stat_clients"), value: viewModel.orderedCount, color: .mint)
         }
     }
 }
@@ -213,7 +213,7 @@ struct FilterChipsView: View {
                 }
 
                 // Status "All" chip
-                FilterChip(title: "Всі", isSelected: !statusOptions.hasSelection) {
+                FilterChip(title: String(localized: "filter_all"), isSelected: !statusOptions.hasSelection) {
                     statusOptions.clear()
                 }
 
@@ -236,7 +236,7 @@ struct FilterChip: View {
     let title: String
     let isSelected: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             Text(title)
@@ -254,32 +254,32 @@ struct FilterChip: View {
 
 struct SalonRowView: View {
     let salon: Salon
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(salon.displayName)
                     .font(.headline)
-                
+
                 Spacer()
-                
+
                 StatusBadge(status: salon.statusEnum)
             }
-            
+
             if let address = salon.address {
                 Text(address)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
             }
-            
+
             HStack(spacing: 8) {
                 if salon.phoneNumber != nil {
                     Image(systemName: "phone.fill")
                         .font(.caption)
                         .foregroundColor(.green)
                 }
-                
+
                 if salon.instagramHandle != nil {
                     Image(systemName: "camera.fill")
                         .font(.caption)
@@ -305,7 +305,7 @@ struct SalonRowView: View {
 
 struct StatusBadge: View {
     let status: SalonStatus
-    
+
     var body: some View {
         Text(status.displayName)
             .font(.caption)
@@ -328,7 +328,7 @@ struct SortPopoverView: View {
         VStack(alignment: .leading, spacing: 12) {
             // Sort options
             VStack(alignment: .leading, spacing: 4) {
-                Text("Сортування")
+                Text("sorting")
                     .font(.caption2)
                     .foregroundColor(.secondary)
 
@@ -401,12 +401,12 @@ struct TypeFilterPopoverView: View {
             VStack(alignment: .leading, spacing: 12) {
                 // Header
                 HStack {
-                    Text("Категорія")
+                    Text("category")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     Spacer()
                     if hasAnySelection {
-                        Button("Скинути") {
+                        Button(String(localized: "reset")) {
                             viewModel.categoryOptions.clear()
                             viewModel.typeOptions.clear()
                         }
@@ -468,7 +468,7 @@ struct TypeFilterPopoverView: View {
 
                 // Empty state
                 if viewModel.categoryOptions.all.isEmpty && viewModel.typeOptions.all.isEmpty {
-                    Text("Немає даних")
+                    Text("no_data")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -490,11 +490,11 @@ struct ErrorView: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.largeTitle)
                 .foregroundColor(.orange)
-            
+
             Text(message)
                 .multilineTextAlignment(.center)
-            
-            Button("Спробувати знову", action: retry)
+
+            Button("retry", action: retry)
                 .buttonStyle(.borderedProminent)
         }
         .padding()
@@ -515,11 +515,11 @@ struct StatusInfoView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("Статуси салонів")
+            .navigationTitle("salon_statuses")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Закрити") {
+                    Button("close") {
                         dismiss()
                     }
                 }
@@ -567,46 +567,34 @@ extension SalonStatus {
 
     var fullDisplayName: String {
         switch self {
-        case .new: return "Новий салон"
-        case .contacted: return "Контакт був"
-        case .demoScheduled: return "Заплановано демо / зустріч"
-        case .testing: return "Тестують продукти"
-        case .ordered: return "Клієнт"
-        case .lost: return "Закрито / не актуально"
+        case .new: return String(localized: "status_new_full")
+        case .contacted: return String(localized: "status_contacted_full")
+        case .demoScheduled: return String(localized: "status_demo_full")
+        case .testing: return String(localized: "status_testing_full")
+        case .ordered: return String(localized: "status_ordered_full")
+        case .lost: return String(localized: "status_lost_full")
         }
     }
 
     var infoDescription: String {
         switch self {
-        case .new:
-            return "Салон є в базі, але з ним ще не було жодного контакту."
-        case .contacted:
-            return "Перший контакт уже відбувся (Instagram, дзвінок або особисто), але без домовленостей."
-        case .demoScheduled:
-            return "Є конкретна домовленість: демо, зустріч або показ продуктів."
-        case .testing:
-            return "Салон уже пробує продукти в роботі, але рішення ще не прийняте."
-        case .ordered:
-            return "Салон зробив перше замовлення та став клієнтом."
-        case .lost:
-            return "Салон відмовився або не реагує після кількох спроб."
+        case .new: return String(localized: "status_new_desc")
+        case .contacted: return String(localized: "status_contacted_desc")
+        case .demoScheduled: return String(localized: "status_demo_desc")
+        case .testing: return String(localized: "status_testing_desc")
+        case .ordered: return String(localized: "status_ordered_desc")
+        case .lost: return String(localized: "status_lost_desc")
         }
     }
 
     var nextAction: String {
         switch self {
-        case .new:
-            return "→ Написати, подзвонити або зайти в салон для першого знайомства."
-        case .contacted:
-            return "→ Дочекатись відповіді, зробити фолоу-ап або запропонувати демо."
-        case .demoScheduled:
-            return "→ Підготувати продукти, матеріали та провести демо."
-        case .testing:
-            return "→ Зібрати фідбек, підтримати майстрів, закрити перше замовлення."
-        case .ordered:
-            return "→ Підтримувати співпрацю, допродажі, повторні замовлення."
-        case .lost:
-            return "→ Нічого. Можна повернутись пізніше або залишити як закритий."
+        case .new: return String(localized: "status_new_action")
+        case .contacted: return String(localized: "status_contacted_action")
+        case .demoScheduled: return String(localized: "status_demo_action")
+        case .testing: return String(localized: "status_testing_action")
+        case .ordered: return String(localized: "status_ordered_action")
+        case .lost: return String(localized: "status_lost_action")
         }
     }
 }
@@ -614,15 +602,15 @@ extension SalonStatus {
 extension SalonStatus {
     var displayName: String {
         switch self {
-        case .new: return "Новий"
-        case .contacted: return "Контакт"
-        case .demoScheduled: return "Демо"
-        case .testing: return "Тест"
-        case .ordered: return "Клієнт"
-        case .lost: return "Закрито"
+        case .new: return String(localized: "status_new")
+        case .contacted: return String(localized: "status_contacted")
+        case .demoScheduled: return String(localized: "status_demo")
+        case .testing: return String(localized: "status_testing")
+        case .ordered: return String(localized: "status_ordered")
+        case .lost: return String(localized: "status_lost")
         }
     }
-    
+
     var color: Color {
         switch self {
         case .new: return .green

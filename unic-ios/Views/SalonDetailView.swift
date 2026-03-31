@@ -73,17 +73,17 @@ struct SalonDetailView: View {
             StatusHistorySheet(viewModel: viewModel)
         }
         .confirmationDialog(
-            "Видалити салон?",
+            "delete_salon_question",
             isPresented: $viewModel.showDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Видалити", role: .destructive) {
+            Button("delete", role: .destructive) {
                 viewModel.deleteSalon()
                 dismiss()
             }
-            Button("Скасувати", role: .cancel) {}
+            Button("cancel", role: .cancel) {}
         } message: {
-            Text("Ця дія незворотна. Салон \"\(salon.displayName)\" буде видалено назавжди.")
+            Text("delete_confirmation \(salon.displayName)")
         }
     }
 
@@ -105,7 +105,7 @@ struct SalonDetailView: View {
         HStack(spacing: 12) {
             if let phone = salon.phoneNumber {
                 ActionButton(
-                    title: "Зателефонувати",
+                    title: String(localized: "call"),
                     icon: "phone.fill",
                     color: .green
                 ) {
@@ -120,7 +120,7 @@ struct SalonDetailView: View {
                     Button {
                         UIPasteboard.general.string = phone
                     } label: {
-                        Label("Скопіювати номер", systemImage: "doc.on.doc")
+                        Label("copy_number", systemImage: "doc.on.doc")
                     }
 
                     Button {
@@ -128,7 +128,7 @@ struct SalonDetailView: View {
                             UIApplication.shared.open(url)
                         }
                     } label: {
-                        Label("Зателефонувати", systemImage: "phone.fill")
+                        Label("call", systemImage: "phone.fill")
                     }
                 }
             }
@@ -157,7 +157,7 @@ struct SalonDetailView: View {
 
             if let url = salon.websiteURL {
                 ActionButton(
-                    title: "Сайт",
+                    title: String(localized: "website"),
                     icon: "globe",
                     color: .orange
                 ) {
@@ -175,7 +175,7 @@ struct SalonDetailView: View {
 
         if hasLocation {
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "Локація")
+                SectionHeader(title: String(localized: "location"))
 
                 VStack(spacing: 0) {
                     // Map
@@ -266,12 +266,12 @@ struct SalonDetailView: View {
 
     private var statusSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Статус")
+            SectionHeader(title: String(localized: "status"))
 
             VStack(spacing: 0) {
                 // Current Status
                 HStack {
-                    Text("Поточний:")
+                    Text("current_status")
                         .foregroundColor(.secondary)
 
                     Spacer()
@@ -298,7 +298,7 @@ struct SalonDetailView: View {
                     HStack {
                         Image(systemName: "clock.arrow.circlepath")
                             .foregroundColor(.secondary)
-                        Text("Історія змін")
+                        Text("change_history")
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption)
@@ -324,7 +324,7 @@ struct SalonDetailView: View {
                 // Lead Temp
                 HStack {
                     HStack(spacing: 4) {
-                        Text("Lead Temp:")
+                        Text("lead_temp_label")
                             .foregroundColor(.secondary)
 
                         Button {
@@ -351,7 +351,7 @@ struct SalonDetailView: View {
                 // Enrichment Status
                 if let enrichmentStatus = salon.enrichmentStatus {
                     HStack {
-                        Text("Збагачення:")
+                        Text("enrichment")
                             .foregroundColor(.secondary)
                         Spacer()
                         Text(enrichmentStatus)
@@ -377,7 +377,7 @@ struct SalonDetailView: View {
         } label: {
             HStack {
                 Spacer()
-                Label("Видалити салон", systemImage: "trash")
+                Label("delete_salon", systemImage: "trash")
                 Spacer()
             }
             .padding()
@@ -474,8 +474,8 @@ struct AddStatusSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Новий статус") {
-                    Picker("Статус", selection: $selectedStatus) {
+                Section("new_status") {
+                    Picker("status_picker", selection: $selectedStatus) {
                         ForEach(SalonStatus.allCases, id: \.self) { status in
                             HStack {
                                 Circle()
@@ -490,21 +490,21 @@ struct AddStatusSheet: View {
                     .labelsHidden()
                 }
 
-                Section("Нотатка (опційно)") {
-                    TextField("Додати коментар...", text: $note, axis: .vertical)
+                Section("note_optional") {
+                    TextField(String(localized: "add_comment"), text: $note, axis: .vertical)
                         .lineLimit(3...6)
                 }
             }
-            .navigationTitle("Додати статус")
+            .navigationTitle("add_status")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Скасувати") {
+                    Button("cancel") {
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Зберегти") {
+                    Button("save") {
                         viewModel.addStatusEntry(status: selectedStatus, note: note)
                     }
                     .disabled(viewModel.isSaving)
@@ -532,13 +532,13 @@ struct StatusHistorySheet: View {
         NavigationStack {
             Group {
                 if viewModel.isLoadingHistory {
-                    ProgressView("Завантаження...")
+                    ProgressView("loading")
                         .frame(maxHeight: .infinity)
                 } else if viewModel.statusHistory.isEmpty {
                     ContentUnavailableView(
-                        "Немає історії",
+                        "no_history",
                         systemImage: "clock.arrow.circlepath",
-                        description: Text("Історія статусів поки порожня")
+                        description: Text("history_empty")
                     )
                 } else {
                     List {
@@ -555,11 +555,11 @@ struct StatusHistorySheet: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationTitle("Історія статусів")
+            .navigationTitle("status_history")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Готово") {
+                    Button("done") {
                         dismiss()
                     }
                 }
@@ -598,20 +598,17 @@ extension LeadTemp {
 
     var title: String {
         switch self {
-        case .A: return "A — Гарячий"
-        case .B: return "B — Теплий"
-        case .C: return "C — Холодний"
+        case .A: return String(localized: "lead_temp_a")
+        case .B: return String(localized: "lead_temp_b")
+        case .C: return String(localized: "lead_temp_c")
         }
     }
 
     var description: String {
         switch self {
-        case .A:
-            return "Високий пріоритет. Салон має Instagram, сайт, контакти та спеціалізується на колоруванні/нарощуванні."
-        case .B:
-            return "Середній пріоритет. Салон має деякі контакти або часткову спеціалізацію."
-        case .C:
-            return "Низький пріоритет. Мало контактної інформації або невідповідна спеціалізація (барбершоп, дитячі)."
+        case .A: return String(localized: "lead_temp_a_desc")
+        case .B: return String(localized: "lead_temp_b_desc")
+        case .C: return String(localized: "lead_temp_c_desc")
         }
     }
 }
@@ -626,7 +623,7 @@ struct LeadTempInfoView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // Intro
-                    Text("Lead Temp — автоматична оцінка пріоритетності салону на основі наявної інформації.")
+                    Text("lead_temp_intro")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
 
@@ -656,22 +653,22 @@ struct LeadTempInfoView: View {
 
                     // Scoring explanation
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Як рахується оцінка")
+                        Text("scoring_header")
                             .font(.headline)
 
                         VStack(alignment: .leading, spacing: 8) {
                             ScoringRow(title: "Instagram", points: "+3")
-                            ScoringRow(title: "Сайт", points: "+2")
-                            ScoringRow(title: "Телефон", points: "+1")
+                            ScoringRow(title: String(localized: "scoring_website"), points: "+2")
+                            ScoringRow(title: String(localized: "scoring_phone"), points: "+1")
                             ScoringRow(title: "Email", points: "+1")
-                            ScoringRow(title: "Google Maps дані", points: "+1")
-                            ScoringRow(title: "Колорування/Balayage", points: "+2-4")
-                            ScoringRow(title: "Нарощування", points: "+2")
-                            ScoringRow(title: "Барбершоп", points: "-2", isNegative: true)
-                            ScoringRow(title: "Тільки діти", points: "-1", isNegative: true)
+                            ScoringRow(title: String(localized: "scoring_google_maps"), points: "+1")
+                            ScoringRow(title: String(localized: "scoring_coloring"), points: "+2-4")
+                            ScoringRow(title: String(localized: "scoring_extensions"), points: "+2")
+                            ScoringRow(title: String(localized: "scoring_barbershop"), points: "-2", isNegative: true)
+                            ScoringRow(title: String(localized: "scoring_kids"), points: "-1", isNegative: true)
                         }
 
-                        Text("A ≥ 7 балів  •  B ≥ 4 балів  •  C < 4 балів")
+                        Text("scoring_thresholds")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.top, 4)
@@ -683,7 +680,7 @@ struct LeadTempInfoView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Готово") {
+                    Button("done") {
                         dismiss()
                     }
                 }

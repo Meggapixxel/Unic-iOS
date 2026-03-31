@@ -1,0 +1,120 @@
+/* Common */
+"loading" = "Загрузка...";
+"close" = "Закрыть";
+"cancel" = "Отмена";
+"done" = "Готово";
+"save" = "Сохранить";
+"delete" = "Удалить";
+"error" = "Ошибка";
+
+/* Navigation */
+"UNIC CRM" = "UNIC CRM";
+
+/* Salon List */
+"search_salons" = "Поиск салонов...";
+"stat_total" = "Всего";
+"stat_new" = "Новые";
+"stat_contacted" = "Контакт";
+"stat_clients" = "Клиенты";
+"filter_all" = "Все";
+"sorting" = "Сортировка";
+"category" = "Категория";
+"reset" = "Сбросить";
+"no_data" = "Нет данных";
+"salon_statuses" = "Статусы салонов";
+"retry" = "Попробовать снова";
+
+/* Status — short names */
+"status_new" = "Новый";
+"status_contacted" = "Контакт";
+"status_demo" = "Демо";
+"status_testing" = "Тест";
+"status_ordered" = "Клиент";
+"status_lost" = "Закрыто";
+
+/* Status — full names */
+"status_new_full" = "Новый салон";
+"status_contacted_full" = "Был контакт";
+"status_demo_full" = "Запланировано демо / встреча";
+"status_testing_full" = "Тестируют продукты";
+"status_ordered_full" = "Клиент";
+"status_lost_full" = "Закрыто / не актуально";
+
+/* Status — descriptions */
+"status_new_desc" = "Салон есть в базе, но с ним ещё не было ни одного контакта.";
+"status_contacted_desc" = "Первый контакт уже состоялся (Instagram, звонок или лично), но без договорённостей.";
+"status_demo_desc" = "Есть конкретная договорённость: демо, встреча или показ продуктов.";
+"status_testing_desc" = "Салон уже пробует продукты в работе, но решение ещё не принято.";
+"status_ordered_desc" = "Салон сделал первый заказ и стал клиентом.";
+"status_lost_desc" = "Салон отказался или не отвечает после нескольких попыток.";
+
+/* Status — next actions */
+"status_new_action" = "→ Написать, позвонить или зайти в салон для первого знакомства.";
+"status_contacted_action" = "→ Дождаться ответа, сделать фолоу-ап или предложить демо.";
+"status_demo_action" = "→ Подготовить продукты, материалы и провести демо.";
+"status_testing_action" = "→ Собрать фидбек, поддержать мастеров, закрыть первый заказ.";
+"status_ordered_action" = "→ Поддерживать сотрудничество, допродажи, повторные заказы.";
+"status_lost_action" = "→ Ничего. Можно вернуться позже или оставить как закрытый.";
+
+/* Sort options */
+"sort_by_name" = "По названию";
+"sort_by_lead_temp" = "По Lead Temp";
+"sort_by_status" = "По статусу";
+
+/* Salon Detail */
+"call" = "Позвонить";
+"copy_number" = "Скопировать номер";
+"website" = "Сайт";
+"location" = "Локация";
+"current_status" = "Текущий:";
+"change_history" = "История изменений";
+"status" = "Статус";
+"lead_temp_label" = "Lead Temp:";
+"enrichment" = "Обогащение:";
+"delete_salon" = "Удалить салон";
+"delete_salon_question" = "Удалить салон?";
+"delete_confirmation %@" = "Это действие необратимо. Салон \"%@\" будет удалён навсегда.";
+"new_status" = "Новый статус";
+"status_picker" = "Статус";
+"note_optional" = "Заметка (опционально)";
+"add_comment" = "Добавить комментарий...";
+"add_status" = "Добавить статус";
+"no_history" = "Нет истории";
+"history_empty" = "История статусов пока пуста";
+"status_history" = "История статусов";
+
+/* Lead Temp */
+"lead_temp_a" = "A — Горячий";
+"lead_temp_b" = "B — Тёплый";
+"lead_temp_c" = "C — Холодный";
+"lead_temp_a_desc" = "Высокий приоритет. Салон имеет Instagram, сайт, контакты и специализируется на окрашивании/наращивании.";
+"lead_temp_b_desc" = "Средний приоритет. Салон имеет некоторые контакты или частичную специализацию.";
+"lead_temp_c_desc" = "Низкий приоритет. Мало контактной информации или неподходящая специализация (барбершоп, детские).";
+"lead_temp_intro" = "Lead Temp — автоматическая оценка приоритетности салона на основе имеющейся информации.";
+"scoring_header" = "Как рассчитывается оценка";
+"scoring_website" = "Сайт";
+"scoring_phone" = "Телефон";
+"scoring_google_maps" = "Данные Google Maps";
+"scoring_coloring" = "Окрашивание/Balayage";
+"scoring_extensions" = "Наращивание";
+"scoring_barbershop" = "Барбершоп";
+"scoring_kids" = "Только дети";
+"scoring_thresholds" = "A ≥ 7 баллов  •  B ≥ 4 баллов  •  C < 4 баллов";
+
+/* Map */
+"salons_on_map %lld" = "%lld салонов на карте";
+"no_coordinates" = "Нет координат";
+"no_location_data" = "Для этого салона нет данных о локации";
+"map_standard" = "Стандартная";
+"map_satellite" = "Спутник";
+"map_hybrid" = "Гибрид";
+
+/* Errors */
+"history_load_error" = "Не удалось загрузить историю";
+"save_error" = "Ошибка сохранения";
+
+/* Salon model */
+"unnamed_salon" = "Безымянный салон";
+
+/* Info.plist */
+"NSLocationWhenInUseUsageDescription" = "Для отображения вашей локации на карте";

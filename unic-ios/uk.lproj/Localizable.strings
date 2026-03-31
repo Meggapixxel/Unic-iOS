@@ -1,0 +1,120 @@
+/* Common */
+"loading" = "Завантаження...";
+"close" = "Закрити";
+"cancel" = "Скасувати";
+"done" = "Готово";
+"save" = "Зберегти";
+"delete" = "Видалити";
+"error" = "Помилка";
+
+/* Navigation */
+"UNIC CRM" = "UNIC CRM";
+
+/* Salon List */
+"search_salons" = "Пошук салонів...";
+"stat_total" = "Всього";
+"stat_new" = "Нові";
+"stat_contacted" = "Контакт";
+"stat_clients" = "Клієнти";
+"filter_all" = "Всі";
+"sorting" = "Сортування";
+"category" = "Категорія";
+"reset" = "Скинути";
+"no_data" = "Немає даних";
+"salon_statuses" = "Статуси салонів";
+"retry" = "Спробувати знову";
+
+/* Status — short names */
+"status_new" = "Новий";
+"status_contacted" = "Контакт";
+"status_demo" = "Демо";
+"status_testing" = "Тест";
+"status_ordered" = "Клієнт";
+"status_lost" = "Закрито";
+
+/* Status — full names */
+"status_new_full" = "Новий салон";
+"status_contacted_full" = "Контакт був";
+"status_demo_full" = "Заплановано демо / зустріч";
+"status_testing_full" = "Тестують продукти";
+"status_ordered_full" = "Клієнт";
+"status_lost_full" = "Закрито / не актуально";
+
+/* Status — descriptions */
+"status_new_desc" = "Салон є в базі, але з ним ще не було жодного контакту.";
+"status_contacted_desc" = "Перший контакт уже відбувся (Instagram, дзвінок або особисто), але без домовленостей.";
+"status_demo_desc" = "Є конкретна домовленість: демо, зустріч або показ продуктів.";
+"status_testing_desc" = "Салон уже пробує продукти в роботі, але рішення ще не прийняте.";
+"status_ordered_desc" = "Салон зробив перше замовлення та став клієнтом.";
+"status_lost_desc" = "Салон відмовився або не реагує після кількох спроб.";
+
+/* Status — next actions */
+"status_new_action" = "→ Написати, подзвонити або зайти в салон для першого знайомства.";
+"status_contacted_action" = "→ Дочекатись відповіді, зробити фолоу-ап або запропонувати демо.";
+"status_demo_action" = "→ Підготувати продукти, матеріали та провести демо.";
+"status_testing_action" = "→ Зібрати фідбек, підтримати майстрів, закрити перше замовлення.";
+"status_ordered_action" = "→ Підтримувати співпрацю, допродажі, повторні замовлення.";
+"status_lost_action" = "→ Нічого. Можна повернутись пізніше або залишити як закритий.";
+
+/* Sort options */
+"sort_by_name" = "За назвою";
+"sort_by_lead_temp" = "За Lead Temp";
+"sort_by_status" = "За статусом";
+
+/* Salon Detail */
+"call" = "Зателефонувати";
+"copy_number" = "Скопіювати номер";
+"website" = "Сайт";
+"location" = "Локація";
+"current_status" = "Поточний:";
+"change_history" = "Історія змін";
+"status" = "Статус";
+"lead_temp_label" = "Lead Temp:";
+"enrichment" = "Збагачення:";
+"delete_salon" = "Видалити салон";
+"delete_salon_question" = "Видалити салон?";
+"delete_confirmation %@" = "Ця дія незворотна. Салон \"%@\" буде видалено назавжди.";
+"new_status" = "Новий статус";
+"status_picker" = "Статус";
+"note_optional" = "Нотатка (опційно)";
+"add_comment" = "Додати коментар...";
+"add_status" = "Додати статус";
+"no_history" = "Немає історії";
+"history_empty" = "Історія статусів поки порожня";
+"status_history" = "Історія статусів";
+
+/* Lead Temp */
+"lead_temp_a" = "A — Гарячий";
+"lead_temp_b" = "B — Теплий";
+"lead_temp_c" = "C — Холодний";
+"lead_temp_a_desc" = "Високий пріоритет. Салон має Instagram, сайт, контакти та спеціалізується на колоруванні/нарощуванні.";
+"lead_temp_b_desc" = "Середній пріоритет. Салон має деякі контакти або часткову спеціалізацію.";
+"lead_temp_c_desc" = "Низький пріоритет. Мало контактної інформації або невідповідна спеціалізація (барбершоп, дитячі).";
+"lead_temp_intro" = "Lead Temp — автоматична оцінка пріоритетності салону на основі наявної інформації.";
+"scoring_header" = "Як рахується оцінка";
+"scoring_website" = "Сайт";
+"scoring_phone" = "Телефон";
+"scoring_google_maps" = "Google Maps дані";
+"scoring_coloring" = "Колорування/Balayage";
+"scoring_extensions" = "Нарощування";
+"scoring_barbershop" = "Барбершоп";
+"scoring_kids" = "Тільки діти";
+"scoring_thresholds" = "A ≥ 7 балів  •  B ≥ 4 балів  •  C < 4 балів";
+
+/* Map */
+"salons_on_map %lld" = "%lld салонів на карті";
+"no_coordinates" = "Немає координат";
+"no_location_data" = "Для цього салону немає даних про локацію";
+"map_standard" = "Стандартна";
+"map_satellite" = "Супутник";
+"map_hybrid" = "Гібрид";
+
+/* Errors */
+"history_load_error" = "Не вдалося завантажити історію";
+"save_error" = "Помилка збереження";
+
+/* Salon model */
+"unnamed_salon" = "Безіменний салон";
+
+/* Info.plist */
+"NSLocationWhenInUseUsageDescription" = "Для відображення вашої локації на карті";

@@ -74,7 +74,7 @@ struct SalonMapView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Закрити") {
+                        Button("close") {
                             selectedSalon = nil
                         }
                     }
@@ -85,7 +85,7 @@ struct SalonMapView: View {
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
                 // Salon count
-                Text("\(viewModel.displayedSalons.filter { $0.coordinate != nil }.count) салонів на карті")
+                Text("salons_on_map \(viewModel.displayedSalons.filter { $0.coordinate != nil }.count)")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
