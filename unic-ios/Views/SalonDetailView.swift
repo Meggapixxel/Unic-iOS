@@ -499,9 +499,7 @@ struct AddStatusSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("cancel") {
-                        dismiss()
-                    }
+                    CloseButton { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("save") {
@@ -559,9 +557,7 @@ struct StatusHistorySheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("done") {
-                        dismiss()
-                    }
+                    CloseButton { dismiss() }
                 }
             }
         }
@@ -680,9 +676,7 @@ struct LeadTempInfoView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("done") {
-                        dismiss()
-                    }
+                    CloseButton { dismiss() }
                 }
             }
         }

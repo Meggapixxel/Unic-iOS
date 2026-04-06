@@ -109,6 +109,25 @@
 "map_satellite" = "Satellite";
 "map_hybrid" = "Hybrid";
 
+/* Route Planner */
+"route_planner" = "Route Planner";
+"route_select_salons" = "Select salons";
+"route_selected %lld" = "Selected: %lld";
+"route_select_all" = "Select all";
+"route_deselect_all" = "Deselect all";
+"route_build" = "Build route";
+"route_driving" = "Driving";
+"route_walking" = "Walking";
+"route_distance" = "Distance";
+"route_time" = "Time";
+"route_stops" = "Stops";
+"route_navigate" = "Navigate";
+"route_transport" = "Transport mode";
+"route_error" = "Route Error";
+"route_not_enough_salons" = "At least 2 salons with coordinates are required to build a route.";
+"route_no_salons" = "No salons for route";
+"route_no_salons_desc" = "No salons with coordinates in the current filter to plan a route.";
+
 /* Errors */
 "history_load_error" = "Failed to load history";
 "save_error" = "Save error";

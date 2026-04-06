@@ -74,9 +74,7 @@ struct SalonMapView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("close") {
-                            selectedSalon = nil
-                        }
+                        CloseButton { selectedSalon = nil }
                     }
                 }
             }

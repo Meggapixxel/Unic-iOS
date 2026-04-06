@@ -50,6 +50,7 @@ extension View {
 
 struct SalonListView: View {
     @StateObject private var viewModel = SalonsViewModel()
+    @State private var showRoutePlanner = false
 
     var body: some View {
         NavigationStack {
@@ -134,13 +135,23 @@ struct SalonListView: View {
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            withAnimation {
-                                viewModel.showMap.toggle()
+                        HStack(spacing: 16) {
+                            Button {
+                                showRoutePlanner = true
+                            } label: {
+                                Image(systemName: "point.topleft.down.to.point.bottomright.curvepath.fill")
+                                    .imageScale(.large)
                             }
-                        } label: {
-                            Image(systemName: viewModel.showMap ? "list.bullet" : "map")
-                                .imageScale(.large)
+                            .disabled(viewModel.displayedSalons.filter { $0.coordinate != nil }.count < 2)
+
+                            Button {
+                                withAnimation {
+                                    viewModel.showMap.toggle()
+                                }
+                            } label: {
+                                Image(systemName: viewModel.showMap ? "list.bullet" : "map")
+                                    .imageScale(.large)
+                            }
                         }
                     }
                 }
@@ -151,6 +162,9 @@ struct SalonListView: View {
                     Button("OK", role: .cancel) { }
                 } message: {
                     Text(viewModel.alertMessage)
+                }
+                .sheet(isPresented: $showRoutePlanner) {
+                    RoutePlannerView(salons: viewModel.displayedSalons, isPresented: $showRoutePlanner)
                 }
         }
     }
@@ -479,6 +493,20 @@ struct TypeFilterPopoverView: View {
     }
 }
 
+// MARK: - Close Button
+
+struct CloseButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.secondary)
+                .imageScale(.large)
+        }
+    }
+}
+
 // MARK: - Error View
 
 struct ErrorView: View {
@@ -519,9 +547,7 @@ struct StatusInfoView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("close") {
-                        dismiss()
-                    }
+                    CloseButton { dismiss() }
                 }
             }
         }

@@ -109,6 +109,25 @@
 "map_satellite" = "Спутник";
 "map_hybrid" = "Гибрид";
 
+/* Route Planner */
+"route_planner" = "Планировщик маршрута";
+"route_select_salons" = "Выберите салоны";
+"route_selected %lld" = "Выбрано: %lld";
+"route_select_all" = "Выбрать все";
+"route_deselect_all" = "Снять все";
+"route_build" = "Построить маршрут";
+"route_driving" = "Авто";
+"route_walking" = "Пешком";
+"route_distance" = "Расстояние";
+"route_time" = "Время";
+"route_stops" = "Остановки";
+"route_navigate" = "Навигация";
+"route_transport" = "Тип транспорта";
+"route_error" = "Ошибка маршрута";
+"route_not_enough_salons" = "Для построения маршрута необходимо как минимум 2 салона с координатами.";
+"route_no_salons" = "Нет салонов для маршрута";
+"route_no_salons_desc" = "Среди текущих фильтров нет салонов с координатами для планирования маршрута.";
+
 /* Errors */
 "history_load_error" = "Не удалось загрузить историю";
 "save_error" = "Ошибка сохранения";
