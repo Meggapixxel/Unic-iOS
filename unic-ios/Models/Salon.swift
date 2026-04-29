@@ -51,6 +51,12 @@ enum LeadTemp: String, Codable, CaseIterable {
     case C = "C"
 }
 
+enum SalonCategory: String, Codable, CaseIterable {
+    case A = "A"
+    case B = "B"
+    case C = "C"
+}
+
 enum SalonStatus: String, Codable, CaseIterable, Identifiable {
     case new = "new"
     case contacted = "contacted"
@@ -79,8 +85,11 @@ struct Salon: Codable, Identifiable, Hashable {
     let status: String?
     let ownerDriven: Bool?
     let notes: String?
+    let worksOn: String?
+    let language: String?
     let nextStep: String?
 
+    let salonCategory: String?
     let source: Source?
     let enrichmentStatus: String?
     let enrichmentBatch: String?
@@ -119,5 +128,10 @@ struct Salon: Codable, Identifiable, Hashable {
     var leadTempEnum: LeadTemp? {
         guard let temp = leadTemp else { return nil }
         return LeadTemp(rawValue: temp)
+    }
+
+    var salonCategoryEnum: SalonCategory? {
+        guard let cat = salonCategory else { return nil }
+        return SalonCategory(rawValue: cat)
     }
 }

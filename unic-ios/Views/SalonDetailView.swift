@@ -12,6 +12,7 @@ import IdentifiedCollections
 struct SalonDetailView: View {
     @StateObject private var viewModel: SalonDetailViewModel
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var isWorksOnFocused: Bool
 
     init(salon: Salon, onSalonUpdated: @escaping (Salon) -> Void, onSalonDeleted: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: SalonDetailViewModel(
@@ -71,6 +72,9 @@ struct SalonDetailView: View {
         }
         .sheet(isPresented: $viewModel.showStatusHistory) {
             StatusHistorySheet(viewModel: viewModel)
+        }
+        .onChange(of: isWorksOnFocused) { _, focused in
+            if !focused { viewModel.saveWorksOn() }
         }
         .confirmationDialog(
             "delete_salon_question",
@@ -344,8 +348,63 @@ struct SalonDetailView: View {
                                 temp: temp,
                                 isSelected: viewModel.selectedLeadTemp == temp
                             )
+                            .onTapGesture {
+                                viewModel.selectedLeadTemp = viewModel.selectedLeadTemp == temp ? nil : temp
+                            }
                         }
                     }
+                }
+
+                // Salon Category
+                HStack {
+                    Text("salon_category_label")
+                        .foregroundColor(.secondary)
+
+                    Spacer()
+
+                    HStack(spacing: 8) {
+                        ForEach(SalonCategory.allCases, id: \.self) { cat in
+                            SalonCategoryBadge(
+                                category: cat,
+                                isSelected: viewModel.selectedSalonCategory == cat
+                            )
+                            .onTapGesture {
+                                viewModel.selectedSalonCategory = viewModel.selectedSalonCategory == cat ? nil : cat
+                            }
+                        }
+                    }
+                }
+
+                // Works On
+                HStack(alignment: .top) {
+                    Text("works_on_label")
+                        .foregroundColor(.secondary)
+
+                    Spacer()
+
+                    TextField(
+                        String(localized: "works_on_placeholder"),
+                        text: $viewModel.worksOn,
+                        axis: .vertical
+                    )
+                    .lineLimit(1...4)
+                    .multilineTextAlignment(.trailing)
+                    .focused($isWorksOnFocused)
+                    .frame(maxWidth: 220)
+                }
+
+                // Language
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("language_label")
+                        .foregroundColor(.secondary)
+
+                    Picker("language_label", selection: $viewModel.selectedLanguage) {
+                        Text("УКР").tag("uk")
+                        Text("РУС").tag("ru")
+                        Text("ЧЕХ").tag("cs")
+                        Text("АНГ").tag("en")
+                    }
+                    .pickerStyle(.segmented)
                 }
 
                 // Enrichment Status
@@ -567,6 +626,40 @@ struct StatusHistorySheet: View {
     }
 }
 
+// MARK: - Salon Category Badge
+
+struct SalonCategoryBadge: View {
+    let category: SalonCategory
+    let isSelected: Bool
+
+    var body: some View {
+        Text(category.rawValue)
+            .font(.subheadline.bold())
+            .frame(width: 32, height: 32)
+            .background(isSelected ? category.color : Color(.systemGray5))
+            .foregroundColor(isSelected ? .white : .secondary)
+            .cornerRadius(8)
+    }
+}
+
+extension SalonCategory {
+    var color: Color {
+        switch self {
+        case .A: return .green
+        case .B: return .teal
+        case .C: return Color(.systemGray2)
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .A: return String(localized: "salon_category_a")
+        case .B: return String(localized: "salon_category_b")
+        case .C: return String(localized: "salon_category_c")
+        }
+    }
+}
+
 // MARK: - Lead Temp Badge
 
 struct LeadTempBadge: View {
@@ -724,7 +817,10 @@ struct ScoringRow: View {
                 status: "new",
                 ownerDriven: nil,
                 notes: "Test notes",
+                worksOn: "Колорування, нарощування",
+                language: "cs",
                 nextStep: nil,
+                salonCategory: "A",
                 source: nil,
                 enrichmentStatus: "enriched",
                 enrichmentBatch: "001",

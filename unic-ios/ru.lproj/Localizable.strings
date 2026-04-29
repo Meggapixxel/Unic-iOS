@@ -83,6 +83,15 @@
 "history_empty" = "История статусов пока пуста";
 "status_history" = "История статусов";
 
+/* Salon Category */
+"salon_category_label" = "Категория:";
+"language_label" = "Язык:";
+"salon_category_a" = "A — Премиум";
+"salon_category_b" = "B — Средний";
+"salon_category_c" = "C — Базовый";
+"works_on_label" = "Работают с:";
+"works_on_placeholder" = "Окрашивание, наращивание...";
+
 /* Lead Temp */
 "lead_temp_a" = "A — Горячий";
 "lead_temp_b" = "B — Тёплый";

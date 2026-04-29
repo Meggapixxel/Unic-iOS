@@ -83,6 +83,15 @@
 "history_empty" = "Status history is empty";
 "status_history" = "Status history";
 
+/* Salon Category */
+"salon_category_label" = "Category:";
+"language_label" = "Language:";
+"salon_category_a" = "A — Premium";
+"salon_category_b" = "B — Mid";
+"salon_category_c" = "C — Basic";
+"works_on_label" = "Works on:";
+"works_on_placeholder" = "Coloring, extensions...";
+
 /* Lead Temp */
 "lead_temp_a" = "A — Hot";
 "lead_temp_b" = "B — Warm";

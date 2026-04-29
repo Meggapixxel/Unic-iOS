@@ -121,6 +121,24 @@ class FirebaseService: ObservableObject {
         ])
     }
 
+    func updateSalonCategory(salonId: String, category: SalonCategory?) async throws {
+        try await db.collection("salons").document(salonId).updateData([
+            "salonCategory": category?.rawValue as Any
+        ])
+    }
+
+    func updateSalonLanguage(salonId: String, language: String) async throws {
+        try await db.collection("salons").document(salonId).updateData([
+            "language": language
+        ])
+    }
+
+    func updateSalonWorksOn(salonId: String, worksOn: String?) async throws {
+        try await db.collection("salons").document(salonId).updateData([
+            "worksOn": worksOn as Any
+        ])
+    }
+
     func updateSalonNextStep(salonId: String, nextStep: String?) async throws {
         try await db.collection("salons").document(salonId).updateData([
             "nextStep": nextStep as Any

@@ -13,6 +13,9 @@ import IdentifiedCollections
 class SalonDetailViewModel: ObservableObject {
     @Published var salon: Salon
     @Published var selectedLeadTemp: LeadTemp?
+    @Published var selectedSalonCategory: SalonCategory?
+    @Published var selectedLanguage: String = ""
+    @Published var worksOn: String = ""
     @Published var isSaving = false
     @Published var showLeadTempInfo = false
 
@@ -43,6 +46,9 @@ class SalonDetailViewModel: ObservableObject {
     init(salon: Salon, onSalonUpdated: @escaping (Salon) -> Void, onSalonDeleted: @escaping () -> Void) {
         self.salon = salon
         self.selectedLeadTemp = salon.leadTempEnum
+        self.selectedSalonCategory = salon.salonCategoryEnum
+        self.selectedLanguage = salon.language ?? "cs"
+        self.worksOn = salon.worksOn ?? ""
         self.onSalonUpdated = onSalonUpdated
         self.onSalonDeleted = onSalonDeleted
 
@@ -55,6 +61,22 @@ class SalonDetailViewModel: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] newLeadTemp in
                 self?.handleLeadTempChange(newLeadTemp)
+            }
+            .store(in: &cancellables)
+
+        $selectedSalonCategory
+            .dropFirst()
+            .removeDuplicates()
+            .sink { [weak self] newCategory in
+                self?.handleSalonCategoryChange(newCategory)
+            }
+            .store(in: &cancellables)
+
+        $selectedLanguage
+            .dropFirst()
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                self?.handleLanguageChange()
             }
             .store(in: &cancellables)
     }
@@ -128,6 +150,12 @@ class SalonDetailViewModel: ObservableObject {
         }
     }
 
+    private func handleSalonCategoryChange(_ category: SalonCategory?) {
+        Task {
+            await updateSalonCategory(category)
+        }
+    }
+
     // MARK: - Update Methods
 
     private func updateLeadTemp(_ leadTemp: LeadTemp?) async {
@@ -139,6 +167,57 @@ class SalonDetailViewModel: ObservableObject {
         } catch {
             showError(String(localized: "save_error"), message: error.localizedDescription)
             selectedLeadTemp = salon.leadTempEnum
+        }
+    }
+
+    private func updateSalonCategory(_ category: SalonCategory?) async {
+        isSaving = true
+        defer { isSaving = false }
+
+        do {
+            try await service.updateSalonCategory(salonId: salon.salonId, category: category)
+        } catch {
+            showError(String(localized: "save_error"), message: error.localizedDescription)
+            selectedSalonCategory = salon.salonCategoryEnum
+        }
+    }
+
+    private func handleLanguageChange() {
+        Task {
+            await saveLanguage()
+        }
+    }
+
+    private func saveLanguage() async {
+        isSaving = true
+        defer { isSaving = false }
+
+        do {
+            try await service.updateSalonLanguage(salonId: salon.salonId, language: selectedLanguage)
+        } catch {
+            showError(String(localized: "save_error"), message: error.localizedDescription)
+            selectedLanguage = salon.language ?? "cs"
+        }
+    }
+
+    func saveWorksOn() {
+        let trimmed = worksOn.trimmingCharacters(in: .whitespacesAndNewlines)
+        let existing = salon.worksOn?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard trimmed != existing else { return }
+
+        Task {
+            isSaving = true
+            defer { isSaving = false }
+
+            do {
+                try await service.updateSalonWorksOn(
+                    salonId: salon.salonId,
+                    worksOn: trimmed.isEmpty ? nil : trimmed
+                )
+            } catch {
+                showError(String(localized: "save_error"), message: error.localizedDescription)
+                worksOn = salon.worksOn ?? ""
+            }
         }
     }
 
