@@ -168,6 +168,24 @@
 "discard_changes" = "Discard changes?";
 "discard" = "Discard";
 
+/* Test Drive */
+"test_drive" = "Test Drive";
+"test_drive_empty" = "No Test Drives";
+
+/* Notifications disabled banner */
+"notif_disabled_title" = "Notifications disabled";
+"notif_disabled_body" = "Test drive reminders will not be delivered.";
+"notif_disabled_action" = "Settings";
+
+/* Test Drive Notifications */
+"notif_testdrive_soon_title" = "Test Drive ends tomorrow";
+"notif_testdrive_soon_body" = "Salon \"%@\" — last day is tomorrow. Collect feedback.";
+"notif_testdrive_deadline_title" = "Test Drive ends today";
+"notif_testdrive_deadline_body" = "Salon \"%@\" — today is the last day of the test drive.";
+
+/* Created by */
+"created_by_label" = "By:";
+
 /* Errors */
 "history_load_error" = "Failed to load history";
 "save_error" = "Save error";

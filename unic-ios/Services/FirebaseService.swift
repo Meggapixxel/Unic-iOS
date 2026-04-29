@@ -199,7 +199,8 @@ final class FirebaseService: ObservableObject {
         salonCategory: SalonCategory?,
         worksOn: [String],
         leadTemp: LeadTemp?,
-        notes: String?
+        notes: String?,
+        createdBy: String = "admin"
     ) async throws -> Salon {
         let ref = db.collection("salons").document()
         let salonId = ref.documentID
@@ -208,7 +209,8 @@ final class FirebaseService: ObservableObject {
             "salonId": salonId,
             "name": name,
             "status": SalonStatus.new.rawValue,
-            "language": language
+            "language": language,
+            "createdBy": createdBy
         ]
 
         if let leadTemp { data["leadTemp"] = leadTemp.rawValue }
@@ -348,11 +350,13 @@ final class FirebaseService: ObservableObject {
         }
     }
 
-    func addStatusHistoryEntry(salonId: String, status: SalonStatus, note: String?) async throws {
+    func addStatusHistoryEntry(salonId: String, status: SalonStatus, note: String?, createdBy: String) async throws {
+        let now = Timestamp(date: Date())
         let entry: [String: Any] = [
             "status": status.rawValue,
             "note": note as Any,
-            "timestamp": Timestamp(date: Date())
+            "timestamp": now,
+            "createdBy": createdBy
         ]
 
         // Add to history subcollection
@@ -361,8 +365,16 @@ final class FirebaseService: ObservableObject {
             .collection("statusHistory")
             .addDocument(data: entry)
 
-        // Update current status on salon
-        try await updateSalonStatus(salonId: salonId, status: status)
+        // Update salon: status + denormalized latest entry (single write)
+        try await db.collection("salons").document(salonId).updateData([
+            "status": status.rawValue,
+            "latestStatusEntry": [
+                "status": status.rawValue,
+                "note": note as Any,
+                "timestamp": now,
+                "createdBy": createdBy
+            ] as [String: Any]
+        ])
     }
 
     func deleteStatusHistoryEntry(salonId: String, entryId: String) async throws {

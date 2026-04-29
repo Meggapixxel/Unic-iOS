@@ -168,6 +168,24 @@
 "discard_changes" = "Відхилити зміни?";
 "discard" = "Відхилити";
 
+/* Test Drive */
+"test_drive" = "Тест-драйв";
+"test_drive_empty" = "Немає тест-драйвів";
+
+/* Notifications disabled banner */
+"notif_disabled_title" = "Сповіщення вимкнені";
+"notif_disabled_body" = "Нагадування про тест-драйви не надходитимуть.";
+"notif_disabled_action" = "Налаштування";
+
+/* Test Drive Notifications */
+"notif_testdrive_soon_title" = "Тест-драйв завтра завершується";
+"notif_testdrive_soon_body" = "Салон «%@» — останній день завтра. Зберіть фідбек.";
+"notif_testdrive_deadline_title" = "Тест-драйв сьогодні завершується";
+"notif_testdrive_deadline_body" = "Салон «%@» — сьогодні останній день тест-драйву.";
+
+/* Created by */
+"created_by_label" = "Хто:";
+
 /* Errors */
 "history_load_error" = "Не вдалося завантажити історію";
 "save_error" = "Помилка збереження";

@@ -22,6 +22,7 @@ struct SalonFormView: View {
     @State private var selectedLeadTemp: LeadTemp?
     @State private var selectedWorksOn: [String]
 
+    @State private var createdBy: String = AppSettings.shared.currentUser
     @State private var isSaving = false
     @State private var showAlert = false
     @State private var alertMessage = ""
@@ -83,6 +84,15 @@ struct SalonFormView: View {
             Form {
                 Section(String(localized: "section_main")) {
                     TextField(String(localized: "salon_name_placeholder"), text: $name)
+                    if existingSalon == nil {
+                        HStack {
+                            Text(String(localized: "created_by_label"))
+                                .foregroundColor(.secondary)
+                            TextField("admin", text: $createdBy)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
+                        }
+                    }
                 }
 
                 Section(
@@ -257,6 +267,8 @@ struct SalonFormView: View {
                         previousCity: existing.city
                     )
                 } else {
+                    let resolvedCreatedBy = createdBy.trimmedOrNil ?? "admin"
+                    AppSettings.shared.currentUser = resolvedCreatedBy
                     result = try await service.createSalon(
                         name: trimmedName,
                         city: city.trimmedOrNil,
@@ -269,7 +281,8 @@ struct SalonFormView: View {
                         salonCategory: selectedCategory,
                         worksOn: selectedWorksOn,
                         leadTemp: selectedLeadTemp,
-                        notes: notes.trimmedOrNil
+                        notes: notes.trimmedOrNil,
+                        createdBy: resolvedCreatedBy
                     )
                 }
                 onSaved(result)

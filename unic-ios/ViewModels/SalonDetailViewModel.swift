@@ -69,7 +69,7 @@ class SalonDetailViewModel: ObservableObject {
         }
     }
 
-    func addStatusEntry(status: SalonStatus, note: String?) {
+    func addStatusEntry(status: SalonStatus, note: String?, createdBy: String) {
         Task {
             isSaving = true
             defer { isSaving = false }
@@ -77,7 +77,8 @@ class SalonDetailViewModel: ObservableObject {
                 try await service.addStatusHistoryEntry(
                     salonId: salon.salonId,
                     status: status,
-                    note: note?.isEmpty == true ? nil : note
+                    note: note?.isEmpty == true ? nil : note,
+                    createdBy: createdBy.isEmpty ? "admin" : createdBy
                 )
                 let history = try await service.fetchStatusHistory(salonId: salon.salonId)
                 statusHistory = IdentifiedArrayOf(uniqueElements: history)

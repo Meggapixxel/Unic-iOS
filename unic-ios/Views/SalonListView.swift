@@ -67,15 +67,29 @@ struct SalonListView: View {
                 } else if viewModel.showMap {
                     SalonMapView(viewModel: viewModel)
                 } else {
-                    List(viewModel.displayedSalons) { salon in
-                        NavigationLink {
-                            SalonDetailView(
-                                salon: salon,
-                                onSalonUpdated: { viewModel.updateSalon($0) },
-                                onSalonDeleted: { viewModel.deleteSalon(salon) }
-                            )
-                        } label: {
-                            SalonRowView(salon: salon)
+                    List {
+                        Section {
+                            NavigationLink {
+                                TestDriveView(
+                                    salons: Array(viewModel.salons),
+                                    onSalonUpdated: { viewModel.updateSalon($0) },
+                                    onSalonDeleted: { viewModel.deleteSalon($0) }
+                                )
+                            } label: {
+                                TestDriveListRow(count: viewModel.testDriveCount)
+                            }
+                        }
+
+                        ForEach(viewModel.displayedSalons) { salon in
+                            NavigationLink {
+                                SalonDetailView(
+                                    salon: salon,
+                                    onSalonUpdated: { viewModel.updateSalon($0) },
+                                    onSalonDeleted: { viewModel.deleteSalon(salon) }
+                                )
+                            } label: {
+                                SalonRowView(salon: salon)
+                            }
                         }
                     }
                     .listStyle(.plain)
@@ -274,6 +288,34 @@ struct FilterChip: View {
                 .foregroundColor(isSelected ? .white : .primary)
                 .cornerRadius(16)
         }
+    }
+}
+
+// MARK: - Test Drive List Row
+
+struct TestDriveListRow: View {
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "flask.fill")
+                .font(.title2)
+                .foregroundStyle(.purple)
+                .frame(width: 36, height: 36)
+                .background(Color.purple.opacity(0.12))
+                .cornerRadius(8)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "test_drive"))
+                    .font(.headline)
+                Text("\(count) \(String(localized: "stat_total").lowercased())")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(.vertical, 4)
     }
 }
 

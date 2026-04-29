@@ -94,6 +94,8 @@ struct Salon: Codable, Identifiable, Hashable {
     let enrichmentStatus: String?
     let enrichmentBatch: String?
     let googlePlacesTypes: [String]?
+    let createdBy: String?
+    let latestStatusEntry: StatusHistoryEntry?
 
     // Computed properties
     var displayName: String {

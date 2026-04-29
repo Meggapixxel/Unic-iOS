@@ -7,11 +7,15 @@
 
 import SwiftUI
 import FirebaseCore
+import UserNotifications
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         FirebaseApp.configure()
+        Task {
+            _ = await NotificationService.shared.requestPermission()
+        }
         return true
     }
 }

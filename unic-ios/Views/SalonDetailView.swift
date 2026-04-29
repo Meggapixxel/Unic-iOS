@@ -544,6 +544,12 @@ struct StatusHistoryRow: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+
+                if let by = entry.createdBy {
+                    Text(by)
+                        .font(.caption2)
+                        .foregroundColor(.secondary.opacity(0.7))
+                }
             }
         }
         .padding(.vertical, 8)
@@ -558,9 +564,11 @@ struct StatusHistoryRow: View {
 struct AddStatusSheet: View {
     @ObservedObject var viewModel: SalonDetailViewModel
     @ObservedObject private var flexiBee = FlexiBeeService.shared
+    @ObservedObject private var appSettings = AppSettings.shared
     @State private var selectedStatus: SalonStatus
     @State private var note: String = ""
     @State private var selectedArticleCodes: [String] = []
+    @State private var createdBy: String = AppSettings.shared.currentUser
     @Environment(\.dismiss) private var dismiss
 
     init(viewModel: SalonDetailViewModel) {
@@ -615,6 +623,12 @@ struct AddStatusSheet: View {
                     TextField(String(localized: "add_comment"), text: $note, axis: .vertical)
                         .lineLimit(3...6)
                 }
+
+                Section(String(localized: "created_by_label")) {
+                    TextField("admin", text: $createdBy)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                }
             }
             .navigationTitle("add_status")
             .navigationBarTitleDisplayMode(.inline)
@@ -624,7 +638,11 @@ struct AddStatusSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        viewModel.addStatusEntry(status: selectedStatus, note: effectiveNote)
+                        let resolvedCreatedBy = createdBy.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !resolvedCreatedBy.isEmpty {
+                            appSettings.currentUser = resolvedCreatedBy
+                        }
+                        viewModel.addStatusEntry(status: selectedStatus, note: effectiveNote, createdBy: createdBy)
                     } label: {
                         Image(systemName: "checkmark")
                     }
@@ -963,7 +981,9 @@ extension SalonCategory {
                 source: nil,
                 enrichmentStatus: "enriched",
                 enrichmentBatch: "001",
-                googlePlacesTypes: ["hair_care", "beauty_salon", "establishment"]
+                googlePlacesTypes: ["hair_care", "beauty_salon", "establishment"],
+                createdBy: nil,
+                latestStatusEntry: nil
             ),
             onSalonUpdated: { _ in },
             onSalonDeleted: { }

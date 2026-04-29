@@ -165,6 +165,7 @@ final class SalonsViewModel: ObservableObject {
     var newCount: Int { salonsForStats.filter { $0.statusEnum == .new }.count }
     var contactedCount: Int { salonsForStats.filter { $0.statusEnum == .contacted }.count }
     var orderedCount: Int { salonsForStats.filter { $0.statusEnum == .ordered }.count }
+    var testDriveCount: Int { Array(salons).filter { $0.statusEnum == .testDrive }.count }
 
     // MARK: - Actions
 
