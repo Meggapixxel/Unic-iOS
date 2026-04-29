@@ -26,10 +26,15 @@ struct FlexiBeeView: View {
                 if viewModel.isLoading {
                     ProgressView().scaleEffect(0.8)
                 } else {
-                    HStack(spacing: 4) {
-                        Text(viewModel.lastSyncFormatted)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text(viewModel.lastSyncDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "Ніколи")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Text(viewModel.lastSyncDate.map { $0.formatted(date: .omitted, time: .shortened) } ?? "")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                         Image(systemName: "arrow.clockwise")
                             .font(.caption)
                     }

@@ -27,15 +27,6 @@ final class FlexiBeeViewModel: ObservableObject {
         return Date().timeIntervalSince(last) < Self.cacheTTL
     }
 
-    var lastSyncFormatted: String {
-        guard let date = lastSyncDate else { return "Ніколи" }
-        let df = DateFormatter()
-        df.dateStyle = .short
-        df.timeStyle = .short
-        df.locale = Locale(identifier: "uk_UA")
-        return df.string(from: date)
-    }
-
     // MARK: - Computed: Stock + Prices (joined)
 
     private var stockWithPrices: [FlexiBeeStockWithPrice] {
