@@ -18,6 +18,7 @@ class SalonDetailViewModel: ObservableObject {
 
     // Status History
     @Published var statusHistory: IdentifiedArrayOf<StatusHistoryEntry> = []
+    @Published var latestStatusEntry: StatusHistoryEntry? = nil
     @Published var isLoadingHistory = false
     @Published var showAddStatus = false
     @Published var showStatusHistory = false
@@ -48,6 +49,12 @@ class SalonDetailViewModel: ObservableObject {
 
     // MARK: - Status History
 
+    func loadLatestStatusEntry() {
+        Task {
+            latestStatusEntry = try? await service.fetchLatestStatusEntry(salonId: salon.salonId)
+        }
+    }
+
     func loadStatusHistory() {
         Task {
             isLoadingHistory = true
@@ -55,6 +62,7 @@ class SalonDetailViewModel: ObservableObject {
             do {
                 let history = try await service.fetchStatusHistory(salonId: salon.salonId)
                 statusHistory = IdentifiedArrayOf(uniqueElements: history)
+                latestStatusEntry = statusHistory.first
             } catch {
                 showError(String(localized: "error"), message: String(localized: "history_load_error"))
             }
@@ -73,6 +81,7 @@ class SalonDetailViewModel: ObservableObject {
                 )
                 let history = try await service.fetchStatusHistory(salonId: salon.salonId)
                 statusHistory = IdentifiedArrayOf(uniqueElements: history)
+                latestStatusEntry = statusHistory.first
                 if let updatedSalon = try await service.getSalon(id: salon.salonId) {
                     salon = updatedSalon
                     onSalonUpdated(updatedSalon)

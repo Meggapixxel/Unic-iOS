@@ -323,6 +323,16 @@ class FirebaseService: ObservableObject {
 
     // MARK: - Status History
 
+    func fetchLatestStatusEntry(salonId: String) async throws -> StatusHistoryEntry? {
+        let snapshot = try await db.collection("salons")
+            .document(salonId)
+            .collection("statusHistory")
+            .order(by: "timestamp", descending: true)
+            .limit(to: 1)
+            .getDocuments()
+        return snapshot.documents.first.flatMap { try? $0.data(as: StatusHistoryEntry.self) }
+    }
+
     func fetchStatusHistory(salonId: String) async throws -> [StatusHistoryEntry] {
         let snapshot = try await db.collection("salons")
             .document(salonId)

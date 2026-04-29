@@ -104,6 +104,9 @@ struct SalonDetailView: View {
         } message: {
             Text("delete_confirmation \(salon.displayName)")
         }
+        .task {
+            viewModel.loadLatestStatusEntry()
+        }
     }
 
     // MARK: - Info Section
@@ -307,7 +310,7 @@ struct SalonDetailView: View {
                         }
                     }
 
-                    if let note = viewModel.statusHistory.first?.note, !note.isEmpty {
+                    if let note = viewModel.latestStatusEntry?.note, !note.isEmpty {
                         Text(note)
                             .font(.footnote)
                             .foregroundColor(.secondary)
