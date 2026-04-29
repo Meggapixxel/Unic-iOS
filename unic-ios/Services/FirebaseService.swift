@@ -200,7 +200,7 @@ final class FirebaseService: ObservableObject {
         worksOn: [String],
         leadTemp: LeadTemp?,
         notes: String?,
-        createdBy: String = "admin"
+        createdBy: String? = nil
     ) async throws -> Salon {
         let ref = db.collection("salons").document()
         let salonId = ref.documentID
@@ -350,13 +350,13 @@ final class FirebaseService: ObservableObject {
         }
     }
 
-    func addStatusHistoryEntry(salonId: String, status: SalonStatus, note: String?, createdBy: String) async throws {
+    func addStatusHistoryEntry(salonId: String, status: SalonStatus, note: String?, createdBy: String?) async throws {
         let now = Timestamp(date: Date())
         let entry: [String: Any] = [
             "status": status.rawValue,
             "note": note as Any,
             "timestamp": now,
-            "createdBy": createdBy
+            "createdBy": createdBy as Any
         ]
 
         // Add to history subcollection
@@ -372,7 +372,7 @@ final class FirebaseService: ObservableObject {
                 "status": status.rawValue,
                 "note": note as Any,
                 "timestamp": now,
-                "createdBy": createdBy
+                "createdBy": createdBy as Any
             ] as [String: Any]
         ])
     }
