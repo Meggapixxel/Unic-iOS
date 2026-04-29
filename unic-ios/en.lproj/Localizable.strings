@@ -186,6 +186,16 @@
 /* Created by */
 "created_by_label" = "By:";
 
+/* Auth */
+"auth_no_access_title" = "Access Restricted";
+"auth_no_access_body" = "Contact the admin to receive an invitation.";
+"auth_login_title" = "Sign In";
+"auth_email_placeholder" = "Email";
+"auth_password_placeholder" = "Password";
+"auth_login_button" = "Sign In";
+"auth_error_user_not_found" = "User not found.";
+"auth_error_wrong_password" = "Wrong password.";
+
 /* Errors */
 "history_load_error" = "Failed to load history";
 "save_error" = "Save error";

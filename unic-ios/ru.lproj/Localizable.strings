@@ -186,6 +186,16 @@
 /* Created by */
 "created_by_label" = "Кто:";
 
+/* Auth */
+"auth_no_access_title" = "Доступ ограничен";
+"auth_no_access_body" = "Обратитесь к администратору для получения приглашения.";
+"auth_login_title" = "Вход";
+"auth_email_placeholder" = "Email";
+"auth_password_placeholder" = "Пароль";
+"auth_login_button" = "Войти";
+"auth_error_user_not_found" = "Пользователь не найден.";
+"auth_error_wrong_password" = "Неверный пароль.";
+
 /* Errors */
 "history_load_error" = "Не удалось загрузить историю";
 "save_error" = "Ошибка сохранения";

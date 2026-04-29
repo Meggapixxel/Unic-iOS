@@ -12,6 +12,7 @@ import IdentifiedCollections
 struct SalonDetailView: View {
     @StateObject private var viewModel: SalonDetailViewModel
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var auth = AuthService.shared
 
     init(salon: Salon, onSalonUpdated: @escaping (Salon) -> Void, onSalonDeleted: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: SalonDetailViewModel(
@@ -49,11 +50,13 @@ struct SalonDetailView: View {
         .navigationTitle(salon.displayName)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    viewModel.showEditSalon = true
-                } label: {
-                    Image(systemName: "pencil")
+            if auth.isAdmin {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        viewModel.showEditSalon = true
+                    } label: {
+                        Image(systemName: "pencil")
+                    }
                 }
             }
         }
@@ -466,18 +469,21 @@ struct SalonDetailView: View {
 
     // MARK: - Delete Section
 
+    @ViewBuilder
     private var deleteSection: some View {
-        Button(role: .destructive) {
-            viewModel.showDeleteConfirmation = true
-        } label: {
-            HStack {
-                Spacer()
-                Label("delete_salon", systemImage: "trash")
-                Spacer()
+        if auth.isAdmin {
+            Button(role: .destructive) {
+                viewModel.showDeleteConfirmation = true
+            } label: {
+                HStack {
+                    Spacer()
+                    Label("delete_salon", systemImage: "trash")
+                    Spacer()
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
             }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
         }
     }
 }
@@ -564,11 +570,9 @@ struct StatusHistoryRow: View {
 struct AddStatusSheet: View {
     @ObservedObject var viewModel: SalonDetailViewModel
     @ObservedObject private var flexiBee = FlexiBeeService.shared
-    @ObservedObject private var appSettings = AppSettings.shared
     @State private var selectedStatus: SalonStatus
     @State private var note: String = ""
     @State private var selectedArticleCodes: [String] = []
-    @State private var createdBy: String = AppSettings.shared.currentUser
     @Environment(\.dismiss) private var dismiss
 
     init(viewModel: SalonDetailViewModel) {
@@ -623,12 +627,6 @@ struct AddStatusSheet: View {
                     TextField(String(localized: "add_comment"), text: $note, axis: .vertical)
                         .lineLimit(3...6)
                 }
-
-                Section(String(localized: "created_by_label")) {
-                    TextField("admin", text: $createdBy)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                }
             }
             .navigationTitle("add_status")
             .navigationBarTitleDisplayMode(.inline)
@@ -638,10 +636,7 @@ struct AddStatusSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        let resolvedCreatedBy = createdBy.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !resolvedCreatedBy.isEmpty {
-                            appSettings.currentUser = resolvedCreatedBy
-                        }
+                        let createdBy = AuthService.shared.currentUser?.id
                         viewModel.addStatusEntry(status: selectedStatus, note: effectiveNote, createdBy: createdBy)
                     } label: {
                         Image(systemName: "checkmark")
@@ -668,6 +663,7 @@ struct AddStatusSheet: View {
 
 struct StatusHistorySheet: View {
     @ObservedObject var viewModel: SalonDetailViewModel
+    @ObservedObject private var auth = AuthService.shared
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -687,12 +683,12 @@ struct StatusHistorySheet: View {
                         ForEach(viewModel.statusHistory) { entry in
                             StatusHistoryRow(entry: entry)
                         }
-                        .onDelete { indexSet in
+                        .onDelete(perform: auth.isAdmin ? { indexSet in
                             for index in indexSet {
                                 let entry = viewModel.statusHistory[index]
                                 viewModel.deleteStatusEntry(entry)
                             }
-                        }
+                        } : nil)
                     }
                     .listStyle(.plain)
                 }

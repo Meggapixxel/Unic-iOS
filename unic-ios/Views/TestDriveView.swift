@@ -50,7 +50,6 @@ final class TestDriveViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var notificationsAllowed = true
 
-    private let settings = AppSettings.shared
     private let notifications = NotificationService.shared
 
     func load(from salons: [Salon]) async {
@@ -59,7 +58,7 @@ final class TestDriveViewModel: ObservableObject {
 
         notificationsAllowed = await notifications.isAuthorized()
 
-        let currentUser = settings.currentUser
+        let auth = AuthService.shared
         let all: [TestDriveEntry] = salons
             .filter { $0.statusEnum == .testDrive }
             .map { salon in
@@ -78,7 +77,8 @@ final class TestDriveViewModel: ObservableObject {
             await notifications.scheduleTestDriveReminders(for: all)
         }
 
-        entries = all.filter { settings.isAdmin || ($0.createdBy ?? "admin") == currentUser }
+        let currentUserId = auth.currentUser?.id
+        entries = all.filter { auth.isAdmin || $0.createdBy == currentUserId }
     }
 }
 
