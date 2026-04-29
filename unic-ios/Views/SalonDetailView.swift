@@ -557,13 +557,27 @@ struct StatusHistoryRow: View {
 
 struct AddStatusSheet: View {
     @ObservedObject var viewModel: SalonDetailViewModel
+    @ObservedObject private var flexiBee = FlexiBeeService.shared
     @State private var selectedStatus: SalonStatus
     @State private var note: String = ""
+    @State private var selectedArticleCodes: [String] = []
     @Environment(\.dismiss) private var dismiss
 
     init(viewModel: SalonDetailViewModel) {
         self.viewModel = viewModel
         _selectedStatus = State(initialValue: viewModel.currentStatus)
+    }
+
+    private var stockTagItems: [TagItem] {
+        flexiBee.stockWithPrices.map {
+            TagItem(id: $0.kod, name: $0.nazev.isEmpty ? $0.kod : "\($0.kod) — \($0.nazev)")
+        }
+    }
+
+    private var effectiveNote: String? {
+        let articleText = selectedArticleCodes.isEmpty ? "" : selectedArticleCodes.joined(separator: ", ")
+        let parts = [articleText, note].filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: "\n")
     }
 
     var body: some View {
@@ -585,6 +599,18 @@ struct AddStatusSheet: View {
                     .labelsHidden()
                 }
 
+                if selectedStatus == .testDrive {
+                    Section(String(localized: "articles_label")) {
+                        TagEditor(
+                            selectedIds: $selectedArticleCodes,
+                            availableTags: stockTagItems,
+                            placeholder: "articles_search",
+                            canAddNew: false,
+                            onAddNew: nil
+                        )
+                    }
+                }
+
                 Section("note_optional") {
                     TextField(String(localized: "add_comment"), text: $note, axis: .vertical)
                         .lineLimit(3...6)
@@ -598,7 +624,7 @@ struct AddStatusSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        viewModel.addStatusEntry(status: selectedStatus, note: note)
+                        viewModel.addStatusEntry(status: selectedStatus, note: effectiveNote)
                     } label: {
                         Image(systemName: "checkmark")
                     }
@@ -612,6 +638,9 @@ struct AddStatusSheet: View {
                         .background(.ultraThinMaterial)
                         .cornerRadius(8)
                 }
+            }
+            .task {
+                await flexiBee.loadIfNeeded()
             }
         }
     }

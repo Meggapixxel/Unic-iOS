@@ -124,10 +124,10 @@ final class SalonsViewModel: ObservableObject {
         switch status {
         case .new: return 0
         case .contacted: return 1
-        case .demoScheduled: return 2
-        case .testing: return 3
+        case .testDrive: return 2
+        case .demoScheduled: return 3
         case .ordered: return 4
-        case .lost: return 5
+        case .other: return 5
         }
     }
 

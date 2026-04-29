@@ -5,99 +5,18 @@
 
 import SwiftUI
 
-// MARK: - Tag Editor
-
+// Thin wrapper kept for backwards-compat call sites
 struct WorksOnTagEditor: View {
-    @Binding var selectedTags: [String]  // stores tag IDs
+    @Binding var selectedTags: [String]
     @ObservedObject private var service = FirebaseService.shared
 
-    @State private var inputText = ""
-
-    private var suggestions: [WorksOnTag] {
-        let query = inputText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !query.isEmpty else { return [] }
-        return service.worksOnTags.filter {
-            $0.name.lowercased().contains(query) && !selectedTags.contains($0.id)
-        }
-    }
-
-    private var isNewTag: Bool {
-        let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
-        return !service.worksOnTags.contains(where: { $0.name.lowercased() == trimmed.lowercased() })
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if !selectedTags.isEmpty {
-                FlowLayout(spacing: 6) {
-                    ForEach(selectedTags, id: \.self) { tagId in
-                        let name = service.worksOnTags.first(where: { $0.id == tagId })?.name ?? tagId
-                        TagChip(title: name) {
-                            selectedTags.removeAll { $0 == tagId }
-                        }
-                    }
-                }
-            }
-
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
-                    .font(.subheadline)
-
-                TextField(String(localized: "works_on_search"), text: $inputText)
-                    .autocorrectionDisabled()
-
-                if isNewTag {
-                    Button {
-                        addNewTag(inputText.trimmingCharacters(in: .whitespacesAndNewlines))
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .foregroundColor(.accentColor)
-                            .imageScale(.large)
-                    }
-                }
-            }
-
-            if !suggestions.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(suggestions) { tag in
-                            Button {
-                                addExistingTag(tag)
-                            } label: {
-                                Text(tag.name)
-                                    .font(.subheadline)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(Color.accentColor.opacity(0.12))
-                                    .foregroundColor(.accentColor)
-                                    .cornerRadius(12)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func addExistingTag(_ tag: WorksOnTag) {
-        guard !selectedTags.contains(tag.id) else { return }
-        selectedTags.append(tag.id)
-        inputText = ""
-    }
-
-    private func addNewTag(_ name: String) {
-        guard !name.isEmpty else { return }
-        inputText = ""
-        Task {
-            guard let id = try? await service.addWorksOnTag(name) else { return }
-            await MainActor.run {
-                if !selectedTags.contains(id) {
-                    selectedTags.append(id)
-                }
-            }
-        }
+        TagEditor(
+            selectedIds: $selectedTags,
+            availableTags: service.worksOnTags,
+            placeholder: "works_on_search",
+            onAddNew: { name in try await service.addWorksOnTag(name) }
+        )
     }
 }
 

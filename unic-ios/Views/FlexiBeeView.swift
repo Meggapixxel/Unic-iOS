@@ -65,13 +65,11 @@ private struct StockSectionView: View {
 
     var body: some View {
         List {
-            // Stats row
             Section {
                 statsRow
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             }
 
-            // Items
             Section {
                 ForEach(viewModel.filteredStock) { item in
                     StockWithPriceRow(item: item)
@@ -183,25 +181,6 @@ private struct MiniStatsCard: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
         .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-private struct FilterPill: View {
-    let label: String
-    let isActive: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(label)
-                .font(.subheadline)
-                .fontWeight(isActive ? .semibold : .regular)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background(isActive ? Color.accentColor : Color.secondary.opacity(0.12), in: Capsule())
-                .foregroundStyle(isActive ? .white : .primary)
-        }
-        .buttonStyle(.plain)
     }
 }
 

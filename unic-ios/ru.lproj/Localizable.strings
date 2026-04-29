@@ -27,34 +27,34 @@
 /* Status — short names */
 "status_new" = "Новый";
 "status_contacted" = "Контакт";
+"status_test_drive" = "Тест-драйв";
 "status_demo" = "Демо";
-"status_testing" = "Тест";
 "status_ordered" = "Клиент";
-"status_lost" = "Закрыто";
+"status_other" = "Другое";
 
 /* Status — full names */
 "status_new_full" = "Новый салон";
 "status_contacted_full" = "Был контакт";
+"status_test_drive_full" = "Тест-драйв продуктов";
 "status_demo_full" = "Запланировано демо / встреча";
-"status_testing_full" = "Тестируют продукты";
 "status_ordered_full" = "Клиент";
-"status_lost_full" = "Закрыто / не актуально";
+"status_other_full" = "Другое";
 
 /* Status — descriptions */
 "status_new_desc" = "Салон есть в базе, но с ним ещё не было ни одного контакта.";
 "status_contacted_desc" = "Первый контакт уже состоялся (Instagram, звонок или лично), но без договорённостей.";
+"status_test_drive_desc" = "Салон пробует продукты в работе, но решение ещё не принято.";
 "status_demo_desc" = "Есть конкретная договорённость: демо, встреча или показ продуктов.";
-"status_testing_desc" = "Салон уже пробует продукты в работе, но решение ещё не принято.";
 "status_ordered_desc" = "Салон сделал первый заказ и стал клиентом.";
-"status_lost_desc" = "Салон отказался или не отвечает после нескольких попыток.";
+"status_other_desc" = "Нестандартная ситуация или статус вне основного процесса.";
 
 /* Status — next actions */
 "status_new_action" = "→ Написать, позвонить или зайти в салон для первого знакомства.";
 "status_contacted_action" = "→ Дождаться ответа, сделать фолоу-ап или предложить демо.";
+"status_test_drive_action" = "→ Собрать фидбек, поддержать мастеров, закрыть первый заказ.";
 "status_demo_action" = "→ Подготовить продукты, материалы и провести демо.";
-"status_testing_action" = "→ Собрать фидбек, поддержать мастеров, закрыть первый заказ.";
 "status_ordered_action" = "→ Поддерживать сотрудничество, допродажи, повторные заказы.";
-"status_lost_action" = "→ Ничего. Можно вернуться позже или оставить как закрытый.";
+"status_other_action" = "→ Уточнить ситуацию и определить следующий шаг.";
 
 /* Sort options */
 "sort_by_name" = "По названию";
@@ -114,6 +114,8 @@
 "salon_category_b" = "B — Средний";
 "salon_category_c" = "C — Базовый";
 "works_on_label" = "Работают с:";
+"articles_label" = "Артикулы:";
+"articles_search" = "Поиск или новый артикул...";
 "works_on_search" = "Поиск или новый тег...";
 "works_on_placeholder" = "Окрашивание, наращивание...";
 

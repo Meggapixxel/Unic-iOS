@@ -27,34 +27,34 @@
 /* Status — short names */
 "status_new" = "New";
 "status_contacted" = "Contact";
+"status_test_drive" = "Test Drive";
 "status_demo" = "Demo";
-"status_testing" = "Test";
 "status_ordered" = "Client";
-"status_lost" = "Closed";
+"status_other" = "Other";
 
 /* Status — full names */
 "status_new_full" = "New salon";
 "status_contacted_full" = "Was contacted";
+"status_test_drive_full" = "Test drive";
 "status_demo_full" = "Demo / meeting scheduled";
-"status_testing_full" = "Testing products";
 "status_ordered_full" = "Client";
-"status_lost_full" = "Closed / not relevant";
+"status_other_full" = "Other";
 
 /* Status — descriptions */
 "status_new_desc" = "The salon is in the database, but no contact has been made yet.";
 "status_contacted_desc" = "First contact has been made (Instagram, call or in person), but no agreements yet.";
+"status_test_drive_desc" = "The salon is trying products, but no decision has been made yet.";
 "status_demo_desc" = "There is a specific agreement: demo, meeting or product showcase.";
-"status_testing_desc" = "The salon is already trying products, but no decision has been made yet.";
 "status_ordered_desc" = "The salon has placed its first order and became a client.";
-"status_lost_desc" = "The salon refused or does not respond after several attempts.";
+"status_other_desc" = "Non-standard situation or status outside the main process.";
 
 /* Status — next actions */
 "status_new_action" = "-> Write, call or visit the salon for introduction.";
 "status_contacted_action" = "-> Wait for a response, follow up or offer a demo.";
+"status_test_drive_action" = "-> Collect feedback, support stylists, close first order.";
 "status_demo_action" = "-> Prepare products, materials and conduct the demo.";
-"status_testing_action" = "-> Collect feedback, support stylists, close first order.";
 "status_ordered_action" = "-> Maintain cooperation, upsell, repeat orders.";
-"status_lost_action" = "-> Nothing. You can return later or leave as closed.";
+"status_other_action" = "-> Clarify the situation and determine the next step.";
 
 /* Sort options */
 "sort_by_name" = "By name";
@@ -114,6 +114,8 @@
 "salon_category_b" = "B — Mid";
 "salon_category_c" = "C — Basic";
 "works_on_label" = "Works on:";
+"articles_label" = "Articles:";
+"articles_search" = "Search or new article...";
 "works_on_search" = "Search or new tag...";
 "works_on_placeholder" = "Coloring, extensions...";
 

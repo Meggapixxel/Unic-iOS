@@ -11,12 +11,15 @@ import CoreLocation
 import FirebaseCore
 import FirebaseFirestore
 
-struct WorksOnTag: Identifiable, Hashable {
+struct TagItem: Identifiable, Hashable {
     let id: String
     let name: String
 }
 
-class FirebaseService: ObservableObject {
+typealias WorksOnTag = TagItem
+typealias ArticleTag = TagItem
+
+final class FirebaseService: ObservableObject {
     static let shared = FirebaseService()
 
     private let db = Firestore.firestore()
@@ -280,7 +283,7 @@ class FirebaseService: ObservableObject {
         data["language"] = language
         data["salonCategory"] = salonCategory?.rawValue as Any
         data["leadTemp"]      = leadTemp?.rawValue as Any
-        data["worksOn"]       = worksOn.isEmpty ? FieldValue.delete() : worksOn
+        data["worksOn"]    = worksOn.isEmpty ? FieldValue.delete() : worksOn
 
         let locationChanged = address != previousAddress || city != previousCity
         let query = [address, city].compactMap { $0 }.joined(separator: ", ")
@@ -427,13 +430,13 @@ class FirebaseService: ObservableObject {
             let ref = db.collection("salons").document(salon.salonId)
 
             switch salon.statusEnum {
-            case .ordered, .testing:
+            case .ordered, .testDrive:
                 batchA.updateData(["leadTemp": LeadTemp.A.rawValue], forDocument: ref)
                 countA += 1
             case .contacted, .demoScheduled:
                 batchB.updateData(["leadTemp": LeadTemp.B.rawValue], forDocument: ref)
                 countB += 1
-            case .new, .lost:
+            case .new, .other:
                 batchC.updateData(["leadTemp": LeadTemp.C.rawValue], forDocument: ref)
                 countC += 1
             }

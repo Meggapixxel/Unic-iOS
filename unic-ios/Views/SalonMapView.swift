@@ -107,9 +107,9 @@ struct SalonMapView: View {
         case .new: return "sparkles"
         case .contacted: return "phone.fill"
         case .demoScheduled: return "calendar"
-        case .testing: return "hourglass"
+        case .testDrive: return "hourglass"
         case .ordered: return "checkmark.seal.fill"
-        case .lost: return "xmark.circle"
+        case .other: return "questionmark.circle"
         }
     }
 }

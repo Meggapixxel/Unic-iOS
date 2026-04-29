@@ -598,9 +598,9 @@ extension SalonStatus {
         case .new: return "🆕"
         case .contacted: return "💬"
         case .demoScheduled: return "📅"
-        case .testing: return "🧪"
+        case .testDrive: return "🧪"
         case .ordered: return "📦"
-        case .lost: return "❌"
+        case .other: return "🔘"
         }
     }
 
@@ -609,9 +609,9 @@ extension SalonStatus {
         case .new: return String(localized: "status_new_full")
         case .contacted: return String(localized: "status_contacted_full")
         case .demoScheduled: return String(localized: "status_demo_full")
-        case .testing: return String(localized: "status_testing_full")
+        case .testDrive: return String(localized: "status_test_drive_full")
         case .ordered: return String(localized: "status_ordered_full")
-        case .lost: return String(localized: "status_lost_full")
+        case .other: return String(localized: "status_other_full")
         }
     }
 
@@ -620,9 +620,9 @@ extension SalonStatus {
         case .new: return String(localized: "status_new_desc")
         case .contacted: return String(localized: "status_contacted_desc")
         case .demoScheduled: return String(localized: "status_demo_desc")
-        case .testing: return String(localized: "status_testing_desc")
+        case .testDrive: return String(localized: "status_test_drive_desc")
         case .ordered: return String(localized: "status_ordered_desc")
-        case .lost: return String(localized: "status_lost_desc")
+        case .other: return String(localized: "status_other_desc")
         }
     }
 
@@ -631,9 +631,9 @@ extension SalonStatus {
         case .new: return String(localized: "status_new_action")
         case .contacted: return String(localized: "status_contacted_action")
         case .demoScheduled: return String(localized: "status_demo_action")
-        case .testing: return String(localized: "status_testing_action")
+        case .testDrive: return String(localized: "status_test_drive_action")
         case .ordered: return String(localized: "status_ordered_action")
-        case .lost: return String(localized: "status_lost_action")
+        case .other: return String(localized: "status_other_action")
         }
     }
 }
@@ -644,9 +644,9 @@ extension SalonStatus {
         case .new: return String(localized: "status_new")
         case .contacted: return String(localized: "status_contacted")
         case .demoScheduled: return String(localized: "status_demo")
-        case .testing: return String(localized: "status_testing")
+        case .testDrive: return String(localized: "status_test_drive")
         case .ordered: return String(localized: "status_ordered")
-        case .lost: return String(localized: "status_lost")
+        case .other: return String(localized: "status_other")
         }
     }
 
@@ -655,9 +655,9 @@ extension SalonStatus {
         case .new: return .green
         case .contacted: return .orange
         case .demoScheduled: return .blue
-        case .testing: return .purple
+        case .testDrive: return .purple
         case .ordered: return .mint
-        case .lost: return .red
+        case .other: return .gray
         }
     }
 }

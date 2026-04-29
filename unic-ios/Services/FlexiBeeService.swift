@@ -1,4 +1,6 @@
 import Foundation
+import SwiftUI
+import Combine
 
 enum FlexiBeeError: LocalizedError {
     case networkError(Error)
@@ -16,7 +18,8 @@ enum FlexiBeeError: LocalizedError {
     }
 }
 
-final class FlexiBeeService {
+@MainActor
+final class FlexiBeeService: ObservableObject {
     static let shared = FlexiBeeService()
 
     private let baseURL = "https://chariot-studio.flexibee.eu/c/chariot_studio_s_r_o_"
@@ -26,9 +29,93 @@ final class FlexiBeeService {
         return "Basic " + Data(creds.utf8).base64EncodedString()
     }()
 
-    private init() {}
+    @Published var stock: [FlexiBeeStockCard] = []
+    @Published var priceList: [FlexiBeeCenikItem] = []
+    @Published var isLoading = false
+    @Published var errorMessage: String?
 
-    // MARK: - Public API
+    @Published private(set) var lastSyncDate: Date? = UserDefaults.standard.object(forKey: "flexibee_lastSync") as? Date
+
+    private static let cacheTTL: TimeInterval = 24 * 60 * 60
+    private static let stockKey = "flexibee_cache_stock"
+    private static let pricesKey = "flexibee_cache_prices"
+
+    private init() {
+        restoreFromDisk()
+    }
+
+    // MARK: - Computed
+
+    var isCacheValid: Bool {
+        guard let last = lastSyncDate else { return false }
+        return Date().timeIntervalSince(last) < Self.cacheTTL
+    }
+
+    var stockWithPrices: [FlexiBeeStockWithPrice] {
+        let priceByKod = Dictionary(uniqueKeysWithValues: priceList.map { ($0.kod, $0) })
+        return stock.map { FlexiBeeStockWithPrice(card: $0, price: priceByKod[$0.kod]) }
+    }
+
+    // MARK: - Load
+
+    func loadIfNeeded() async {
+        guard !isCacheValid else { return }
+        await fetchAll()
+    }
+
+    func forceSync() async {
+        await fetchAll()
+    }
+
+    // MARK: - Disk cache
+
+    private func restoreFromDisk() {
+        let decoder = JSONDecoder()
+        if let data = UserDefaults.standard.data(forKey: Self.stockKey),
+           let saved = try? decoder.decode([FlexiBeeStockCard].self, from: data) {
+            stock = saved
+        }
+        if let data = UserDefaults.standard.data(forKey: Self.pricesKey),
+           let saved = try? decoder.decode([FlexiBeeCenikItem].self, from: data) {
+            priceList = saved
+        }
+    }
+
+    private func saveToDisk() {
+        let encoder = JSONEncoder()
+        if let data = try? encoder.encode(stock) {
+            UserDefaults.standard.set(data, forKey: Self.stockKey)
+        }
+        if let data = try? encoder.encode(priceList) {
+            UserDefaults.standard.set(data, forKey: Self.pricesKey)
+        }
+    }
+
+    // MARK: - Network
+
+    private func fetchAll() async {
+        isLoading = true
+        errorMessage = nil
+
+        async let stockTask = fetchStock()
+        async let pricesTask = fetchPriceList()
+
+        var errors: [String] = []
+
+        if let s = try? await stockTask { stock = s } else { errors.append("склад") }
+        if let p = try? await pricesTask { priceList = p } else { errors.append("ціни") }
+
+        if errors.isEmpty {
+            let now = Date()
+            lastSyncDate = now
+            UserDefaults.standard.set(now, forKey: "flexibee_lastSync")
+            saveToDisk()
+        } else {
+            errorMessage = "Не вдалося завантажити: \(errors.joined(separator: ", "))"
+        }
+
+        isLoading = false
+    }
 
     func fetchPriceList() async throws -> [FlexiBeeCenikItem] {
         let response = try await fetch(
@@ -50,7 +137,7 @@ final class FlexiBeeService {
         return response.winstrom.cards.map { $0.toCard() }
     }
 
-    // MARK: - Private
+    // MARK: - HTTP
 
     private func fetch<T: Decodable>(
         _ type: T.Type,

@@ -60,10 +60,10 @@ enum SalonCategory: String, Codable, CaseIterable {
 enum SalonStatus: String, Codable, CaseIterable, Identifiable {
     case new = "new"
     case contacted = "contacted"
+    case testDrive = "test_drive"
     case demoScheduled = "demo_scheduled"
-    case testing = "testing"
     case ordered = "ordered"
-    case lost = "lost"
+    case other = "other"
 
     var id: String { rawValue }
 }

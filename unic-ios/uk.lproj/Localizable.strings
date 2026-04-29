@@ -27,34 +27,34 @@
 /* Status — short names */
 "status_new" = "Новий";
 "status_contacted" = "Контакт";
+"status_test_drive" = "Тест-драйв";
 "status_demo" = "Демо";
-"status_testing" = "Тест";
 "status_ordered" = "Клієнт";
-"status_lost" = "Закрито";
+"status_other" = "Інше";
 
 /* Status — full names */
 "status_new_full" = "Новий салон";
 "status_contacted_full" = "Контакт був";
+"status_test_drive_full" = "Тест-драйв продуктів";
 "status_demo_full" = "Заплановано демо / зустріч";
-"status_testing_full" = "Тестують продукти";
 "status_ordered_full" = "Клієнт";
-"status_lost_full" = "Закрито / не актуально";
+"status_other_full" = "Інше";
 
 /* Status — descriptions */
 "status_new_desc" = "Салон є в базі, але з ним ще не було жодного контакту.";
 "status_contacted_desc" = "Перший контакт уже відбувся (Instagram, дзвінок або особисто), але без домовленостей.";
+"status_test_drive_desc" = "Салон пробує продукти в роботі, але рішення ще не прийняте.";
 "status_demo_desc" = "Є конкретна домовленість: демо, зустріч або показ продуктів.";
-"status_testing_desc" = "Салон уже пробує продукти в роботі, але рішення ще не прийняте.";
 "status_ordered_desc" = "Салон зробив перше замовлення та став клієнтом.";
-"status_lost_desc" = "Салон відмовився або не реагує після кількох спроб.";
+"status_other_desc" = "Нестандартна ситуація або статус поза основним процесом.";
 
 /* Status — next actions */
 "status_new_action" = "→ Написати, подзвонити або зайти в салон для першого знайомства.";
 "status_contacted_action" = "→ Дочекатись відповіді, зробити фолоу-ап або запропонувати демо.";
+"status_test_drive_action" = "→ Зібрати фідбек, підтримати майстрів, закрити перше замовлення.";
 "status_demo_action" = "→ Підготувати продукти, матеріали та провести демо.";
-"status_testing_action" = "→ Зібрати фідбек, підтримати майстрів, закрити перше замовлення.";
 "status_ordered_action" = "→ Підтримувати співпрацю, допродажі, повторні замовлення.";
-"status_lost_action" = "→ Нічого. Можна повернутись пізніше або залишити як закритий.";
+"status_other_action" = "→ Уточнити ситуацію та визначити наступний крок.";
 
 /* Sort options */
 "sort_by_name" = "За назвою";
@@ -114,6 +114,8 @@
 "salon_category_b" = "B — Середній";
 "salon_category_c" = "C — Базовий";
 "works_on_label" = "На чому:";
+"articles_label" = "Артикули:";
+"articles_search" = "Пошук або новий артикул...";
 "works_on_search" = "Пошук або новий тег...";
 "works_on_placeholder" = "Колорування, нарощування...";
 
