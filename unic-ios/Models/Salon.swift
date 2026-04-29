@@ -85,7 +85,7 @@ struct Salon: Codable, Identifiable, Hashable {
     let status: String?
     let ownerDriven: Bool?
     let notes: String?
-    let worksOn: String?
+    let worksOn: [String]?
     let language: String?
     let nextStep: String?
 

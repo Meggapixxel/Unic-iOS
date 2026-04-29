@@ -10,12 +10,18 @@ import Combine
 import FirebaseCore
 import FirebaseFirestore
 
+struct WorksOnTag: Identifiable, Hashable {
+    let id: String
+    let name: String
+}
+
 class FirebaseService: ObservableObject {
     static let shared = FirebaseService()
 
     private let db = Firestore.firestore()
 
     @Published var salons: [Salon] = []
+    @Published var worksOnTags: [WorksOnTag] = []
     @Published var isLoading = false
     @Published var error: Error?
 
@@ -133,16 +139,107 @@ class FirebaseService: ObservableObject {
         ])
     }
 
-    func updateSalonWorksOn(salonId: String, worksOn: String?) async throws {
+    func updateSalonWorksOn(salonId: String, worksOn: [String]) async throws {
         try await db.collection("salons").document(salonId).updateData([
-            "worksOn": worksOn as Any
+            "worksOn": worksOn
         ])
+    }
+
+    // MARK: - Works On Tags
+
+    func loadWorksOnTags() async {
+        guard let snapshot = try? await db.collection("worksOnTags")
+            .order(by: "name")
+            .getDocuments()
+        else { return }
+        let tags = snapshot.documents.compactMap { doc -> WorksOnTag? in
+            guard let name = doc.data()["name"] as? String else { return nil }
+            return WorksOnTag(id: doc.documentID, name: name)
+        }
+        await MainActor.run { worksOnTags = tags }
+    }
+
+    func addWorksOnTag(_ name: String) async throws -> String {
+        let existing = try await db.collection("worksOnTags")
+            .whereField("name", isEqualTo: name)
+            .getDocuments()
+        if let doc = existing.documents.first {
+            return doc.documentID
+        }
+        let ref = try await db.collection("worksOnTags").addDocument(data: ["name": name])
+        let newTag = WorksOnTag(id: ref.documentID, name: name)
+        await MainActor.run {
+            worksOnTags.append(newTag)
+            worksOnTags.sort { $0.name < $1.name }
+        }
+        return ref.documentID
     }
 
     func updateSalonNextStep(salonId: String, nextStep: String?) async throws {
         try await db.collection("salons").document(salonId).updateData([
             "nextStep": nextStep as Any
         ])
+    }
+
+    // MARK: - Create Salon
+
+    func createSalon(
+        name: String,
+        city: String?,
+        address: String?,
+        phone: String?,
+        instagram: String?,
+        website: String?,
+        facebook: String?,
+        language: String,
+        salonCategory: SalonCategory?,
+        worksOn: [String],
+        leadTemp: LeadTemp?,
+        notes: String?
+    ) async throws -> Salon {
+        let ref = db.collection("salons").document()
+        let salonId = ref.documentID
+
+        var data: [String: Any] = [
+            "salonId": salonId,
+            "name": name,
+            "status": SalonStatus.new.rawValue,
+            "language": language
+        ]
+
+        if let leadTemp { data["leadTemp"] = leadTemp.rawValue }
+
+        if let city { data["city"] = city }
+        if let address { data["address"] = address }
+        if let salonCategory { data["salonCategory"] = salonCategory.rawValue }
+        if !worksOn.isEmpty { data["worksOn"] = worksOn }
+        if let notes { data["notes"] = notes }
+
+        var contacts: [String: Any] = [:]
+        if let phone {
+            contacts["phone"] = ["value": phone, "isPrimary": true]
+        }
+        if let instagram {
+            let handle = instagram.trimmingCharacters(in: CharacterSet(charactersIn: "@"))
+            contacts["instagram"] = ["value": "https://www.instagram.com/\(handle)/", "isPrimary": true]
+        }
+        if let website {
+            let url = website.hasPrefix("http") ? website : "https://\(website)"
+            contacts["website"] = ["value": url, "isPrimary": true]
+        }
+        if let facebook {
+            contacts["facebook"] = ["value": facebook, "isPrimary": true]
+        }
+        if !contacts.isEmpty {
+            data["contacts"] = contacts
+        }
+
+        try await ref.setData(data)
+
+        guard let salon = try await getSalon(id: salonId) else {
+            throw NSError(domain: "AddSalon", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to fetch created salon"])
+        }
+        return salon
     }
 
     // MARK: - Status History

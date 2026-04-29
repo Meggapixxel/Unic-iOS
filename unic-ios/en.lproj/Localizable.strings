@@ -83,6 +83,17 @@
 "history_empty" = "Status history is empty";
 "status_history" = "Status history";
 
+/* Add Salon */
+"add_salon" = "New Salon";
+"section_main" = "Main";
+"section_contacts" = "Contacts";
+"section_notes" = "Notes";
+"salon_name_placeholder" = "Salon name *";
+"city" = "City";
+"address_label" = "Address";
+"phone_label" = "Phone";
+"notes_placeholder" = "Notes...";
+
 /* Salon Category */
 "salon_category_label" = "Category:";
 "language_label" = "Language:";
@@ -90,6 +101,7 @@
 "salon_category_b" = "B — Mid";
 "salon_category_c" = "C — Basic";
 "works_on_label" = "Works on:";
+"works_on_search" = "Search or new tag...";
 "works_on_placeholder" = "Coloring, extensions...";
 
 /* Lead Temp */

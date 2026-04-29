@@ -83,6 +83,17 @@
 "history_empty" = "История статусов пока пуста";
 "status_history" = "История статусов";
 
+/* Add Salon */
+"add_salon" = "Новый салон";
+"section_main" = "Основное";
+"section_contacts" = "Контакты";
+"section_notes" = "Заметки";
+"salon_name_placeholder" = "Название салона *";
+"city" = "Город";
+"address_label" = "Адрес";
+"phone_label" = "Телефон";
+"notes_placeholder" = "Заметки...";
+
 /* Salon Category */
 "salon_category_label" = "Категория:";
 "language_label" = "Язык:";
@@ -90,6 +101,7 @@
 "salon_category_b" = "B — Средний";
 "salon_category_c" = "C — Базовый";
 "works_on_label" = "Работают с:";
+"works_on_search" = "Поиск или новый тег...";
 "works_on_placeholder" = "Окрашивание, наращивание...";
 
 /* Lead Temp */

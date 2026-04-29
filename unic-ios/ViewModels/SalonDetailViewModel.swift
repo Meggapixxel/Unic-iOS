@@ -15,7 +15,7 @@ class SalonDetailViewModel: ObservableObject {
     @Published var selectedLeadTemp: LeadTemp?
     @Published var selectedSalonCategory: SalonCategory?
     @Published var selectedLanguage: String = ""
-    @Published var worksOn: String = ""
+    @Published var selectedWorksOn: [String] = []
     @Published var isSaving = false
     @Published var showLeadTempInfo = false
 
@@ -48,7 +48,7 @@ class SalonDetailViewModel: ObservableObject {
         self.selectedLeadTemp = salon.leadTempEnum
         self.selectedSalonCategory = salon.salonCategoryEnum
         self.selectedLanguage = salon.language ?? "cs"
-        self.worksOn = salon.worksOn ?? ""
+        self.selectedWorksOn = salon.worksOn ?? []
         self.onSalonUpdated = onSalonUpdated
         self.onSalonDeleted = onSalonDeleted
 
@@ -77,6 +77,14 @@ class SalonDetailViewModel: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] _ in
                 self?.handleLanguageChange()
+            }
+            .store(in: &cancellables)
+
+        $selectedWorksOn
+            .dropFirst()
+            .removeDuplicates()
+            .sink { [weak self] newTags in
+                self?.handleWorksOnChange(newTags)
             }
             .store(in: &cancellables)
     }
@@ -200,24 +208,18 @@ class SalonDetailViewModel: ObservableObject {
         }
     }
 
-    func saveWorksOn() {
-        let trimmed = worksOn.trimmingCharacters(in: .whitespacesAndNewlines)
-        let existing = salon.worksOn?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard trimmed != existing else { return }
+    private func handleWorksOnChange(_ tags: [String]) {
+        Task { await updateWorksOn(tags) }
+    }
 
-        Task {
-            isSaving = true
-            defer { isSaving = false }
-
-            do {
-                try await service.updateSalonWorksOn(
-                    salonId: salon.salonId,
-                    worksOn: trimmed.isEmpty ? nil : trimmed
-                )
-            } catch {
-                showError(String(localized: "save_error"), message: error.localizedDescription)
-                worksOn = salon.worksOn ?? ""
-            }
+    private func updateWorksOn(_ tags: [String]) async {
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            try await service.updateSalonWorksOn(salonId: salon.salonId, worksOn: tags)
+        } catch {
+            showError(String(localized: "save_error"), message: error.localizedDescription)
+            selectedWorksOn = salon.worksOn ?? []
         }
     }
 

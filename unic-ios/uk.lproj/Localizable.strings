@@ -83,6 +83,17 @@
 "history_empty" = "Історія статусів поки порожня";
 "status_history" = "Історія статусів";
 
+/* Add Salon */
+"add_salon" = "Новий салон";
+"section_main" = "Основне";
+"section_contacts" = "Контакти";
+"section_notes" = "Нотатки";
+"salon_name_placeholder" = "Назва салону *";
+"city" = "Місто";
+"address_label" = "Адреса";
+"phone_label" = "Телефон";
+"notes_placeholder" = "Нотатки...";
+
 /* Salon Category */
 "salon_category_label" = "Категорія:";
 "language_label" = "Мова:";
@@ -90,6 +101,7 @@
 "salon_category_b" = "B — Середній";
 "salon_category_c" = "C — Базовий";
 "works_on_label" = "На чому:";
+"works_on_search" = "Пошук або новий тег...";
 "works_on_placeholder" = "Колорування, нарощування...";
 
 /* Lead Temp */

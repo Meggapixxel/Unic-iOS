@@ -12,7 +12,6 @@ import IdentifiedCollections
 struct SalonDetailView: View {
     @StateObject private var viewModel: SalonDetailViewModel
     @Environment(\.dismiss) private var dismiss
-    @FocusState private var isWorksOnFocused: Bool
 
     init(salon: Salon, onSalonUpdated: @escaping (Salon) -> Void, onSalonDeleted: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: SalonDetailViewModel(
@@ -72,9 +71,6 @@ struct SalonDetailView: View {
         }
         .sheet(isPresented: $viewModel.showStatusHistory) {
             StatusHistorySheet(viewModel: viewModel)
-        }
-        .onChange(of: isWorksOnFocused) { _, focused in
-            if !focused { viewModel.saveWorksOn() }
         }
         .confirmationDialog(
             "delete_salon_question",
@@ -376,21 +372,10 @@ struct SalonDetailView: View {
                 }
 
                 // Works On
-                HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("works_on_label")
                         .foregroundColor(.secondary)
-
-                    Spacer()
-
-                    TextField(
-                        String(localized: "works_on_placeholder"),
-                        text: $viewModel.worksOn,
-                        axis: .vertical
-                    )
-                    .lineLimit(1...4)
-                    .multilineTextAlignment(.trailing)
-                    .focused($isWorksOnFocused)
-                    .frame(maxWidth: 220)
+                    WorksOnTagEditor(selectedTags: $viewModel.selectedWorksOn)
                 }
 
                 // Language
@@ -817,7 +802,7 @@ struct ScoringRow: View {
                 status: "new",
                 ownerDriven: nil,
                 notes: "Test notes",
-                worksOn: "Колорування, нарощування",
+                worksOn: ["Колорування", "Нарощування"],
                 language: "cs",
                 nextStep: nil,
                 salonCategory: "A",

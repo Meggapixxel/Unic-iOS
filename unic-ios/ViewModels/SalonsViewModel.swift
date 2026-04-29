@@ -178,8 +178,9 @@ final class SalonsViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let fetchedSalons = try await service.fetchAllSalons()
-            salons = IdentifiedArrayOf(uniqueElements: fetchedSalons)
+            async let fetchedSalons = service.fetchAllSalons()
+            async let _ = service.loadWorksOnTags()
+            salons = IdentifiedArrayOf(uniqueElements: try await fetchedSalons)
             buildCategoryOptions()
             buildTypeOptions()
         } catch {
@@ -209,6 +210,12 @@ final class SalonsViewModel: ObservableObject {
         Task {
             await loadSalons()
         }
+    }
+
+    func addSalon(_ salon: Salon) {
+        salons.append(salon)
+        buildCategoryOptions()
+        buildTypeOptions()
     }
 
     func updateSalon(_ updatedSalon: Salon) {
