@@ -289,20 +289,29 @@ struct SalonDetailView: View {
 
             VStack(spacing: 0) {
                 // Current Status
-                HStack {
-                    Text("current_status")
-                        .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("current_status")
+                            .foregroundColor(.secondary)
 
-                    Spacer()
+                        Spacer()
 
-                    StatusBadge(status: viewModel.currentStatus)
+                        StatusBadge(status: viewModel.currentStatus)
 
-                    Button {
-                        viewModel.showAddStatus = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
-                            .foregroundColor(.accentColor)
+                        Button {
+                            viewModel.showAddStatus = true
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
+                                .foregroundColor(.accentColor)
+                        }
+                    }
+
+                    if let note = viewModel.statusHistory.first?.note, !note.isEmpty {
+                        Text(note)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .padding()
