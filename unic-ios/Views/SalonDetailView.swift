@@ -48,6 +48,21 @@ struct SalonDetailView: View {
         }
         .navigationTitle(salon.displayName)
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    viewModel.showEditSalon = true
+                } label: {
+                    Image(systemName: "pencil")
+                }
+            }
+        }
+        .sheet(isPresented: $viewModel.showEditSalon) {
+            SalonFormView(salon: salon) { updated in
+                viewModel.salon = updated
+                viewModel.onSalonUpdated(updated)
+            }
+        }
         .overlay {
             if viewModel.isSaving {
                 ProgressView()
@@ -63,6 +78,10 @@ struct SalonDetailView: View {
         }
         .sheet(isPresented: $viewModel.showLeadTempInfo) {
             LeadTempInfoView()
+                .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $viewModel.showSalonCategoryInfo) {
+            SalonCategoryInfoView()
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $viewModel.showAddStatus) {
@@ -320,13 +339,12 @@ struct SalonDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "CRM")
 
-            VStack(spacing: 16) {
+            VStack(spacing: 0) {
                 // Lead Temp
                 HStack {
                     HStack(spacing: 4) {
                         Text("lead_temp_label")
                             .foregroundColor(.secondary)
-
                         Button {
                             viewModel.showLeadTempInfo = true
                         } label: {
@@ -335,65 +353,77 @@ struct SalonDetailView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-
                     Spacer()
-
-                    HStack(spacing: 8) {
-                        ForEach(LeadTemp.allCases, id: \.self) { temp in
-                            LeadTempBadge(
-                                temp: temp,
-                                isSelected: viewModel.selectedLeadTemp == temp
-                            )
-                            .onTapGesture {
-                                viewModel.selectedLeadTemp = viewModel.selectedLeadTemp == temp ? nil : temp
-                            }
-                        }
+                    if let temp = salon.leadTempEnum {
+                        LeadTempBadge(temp: temp, isSelected: true)
+                    } else {
+                        Text("—").foregroundColor(.secondary)
                     }
                 }
+                .padding()
+
+                Divider().padding(.horizontal)
 
                 // Salon Category
                 HStack {
-                    Text("salon_category_label")
-                        .foregroundColor(.secondary)
-
+                    HStack(spacing: 4) {
+                        Text("salon_category_label")
+                            .foregroundColor(.secondary)
+                        Button {
+                            viewModel.showSalonCategoryInfo = true
+                        } label: {
+                            Image(systemName: "questionmark.circle")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                    }
                     Spacer()
+                    if let cat = salon.salonCategoryEnum {
+                        SalonCategoryBadge(category: cat, isSelected: true)
+                    } else {
+                        Text("—").foregroundColor(.secondary)
+                    }
+                }
+                .padding()
 
-                    HStack(spacing: 8) {
-                        ForEach(SalonCategory.allCases, id: \.self) { cat in
-                            SalonCategoryBadge(
-                                category: cat,
-                                isSelected: viewModel.selectedSalonCategory == cat
-                            )
-                            .onTapGesture {
-                                viewModel.selectedSalonCategory = viewModel.selectedSalonCategory == cat ? nil : cat
+                Divider().padding(.horizontal)
+
+                // Language
+                HStack {
+                    Text("language_label")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text(languageLabel(salon.language ?? "cs"))
+                        .foregroundColor(.primary)
+                }
+                .padding()
+
+                // Works On
+                if let worksOn = salon.worksOn, !worksOn.isEmpty {
+                    Divider().padding(.horizontal)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("works_on_label")
+                            .foregroundColor(.secondary)
+                        FlowLayout(spacing: 6) {
+                            ForEach(worksOn, id: \.self) { tagId in
+                                let name = FirebaseService.shared.worksOnTags.first { $0.id == tagId }?.name ?? tagId
+                                Text(name)
+                                    .font(.caption)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(Color.accentColor.opacity(0.12))
+                                    .foregroundColor(.accentColor)
+                                    .cornerRadius(8)
                             }
                         }
                     }
+                    .padding()
                 }
 
-                // Works On
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("works_on_label")
-                        .foregroundColor(.secondary)
-                    WorksOnTagEditor(selectedTags: $viewModel.selectedWorksOn)
-                }
-
-                // Language
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("language_label")
-                        .foregroundColor(.secondary)
-
-                    Picker("language_label", selection: $viewModel.selectedLanguage) {
-                        Text("УКР").tag("uk")
-                        Text("РУС").tag("ru")
-                        Text("ЧЕХ").tag("cs")
-                        Text("АНГ").tag("en")
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                // Enrichment Status
+                // Enrichment
                 if let enrichmentStatus = salon.enrichmentStatus {
+                    Divider().padding(.horizontal)
                     HStack {
                         Text("enrichment")
                             .foregroundColor(.secondary)
@@ -402,14 +432,23 @@ struct SalonDetailView: View {
                             .font(.caption)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.blue.opacity(0.2))
+                            .background(Color.blue.opacity(0.15))
                             .cornerRadius(8)
                     }
+                    .padding()
                 }
             }
-            .padding()
             .background(Color(.systemGray6))
             .cornerRadius(12)
+        }
+    }
+
+    private func languageLabel(_ code: String) -> String {
+        switch code {
+        case "uk": return "🇺🇦"
+        case "ru": return "🇷🇺"
+        case "en": return "🇬🇧"
+        default:   return "🇨🇿"
         }
     }
 
@@ -546,8 +585,10 @@ struct AddStatusSheet: View {
                     CloseButton { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("save") {
+                    Button {
                         viewModel.addStatusEntry(status: selectedStatus, note: note)
+                    } label: {
+                        Image(systemName: "checkmark")
                     }
                     .disabled(viewModel.isSaving)
                 }
@@ -774,6 +815,78 @@ struct ScoringRow: View {
             Text(points)
                 .font(.subheadline.bold())
                 .foregroundColor(isNegative ? .red : .green)
+        }
+    }
+}
+
+// MARK: - Salon Category Info Sheet
+
+struct SalonCategoryInfoView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    Text("salon_category_intro")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    VStack(alignment: .leading, spacing: 16) {
+                        ForEach(SalonCategory.allCases, id: \.self) { cat in
+                            HStack(alignment: .top, spacing: 12) {
+                                Text(cat.rawValue)
+                                    .font(.title2.bold())
+                                    .frame(width: 40, height: 40)
+                                    .background(cat.color)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(cat.title)
+                                        .font(.headline)
+                                    Text(cat.categoryDescription)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("salon_category_criteria_header")
+                            .font(.headline)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            ScoringRow(title: String(localized: "salon_category_criteria_aesthetics"), points: "★★★")
+                            ScoringRow(title: String(localized: "salon_category_criteria_seats"), points: "★★★")
+                            ScoringRow(title: String(localized: "salon_category_criteria_equipment"), points: "★★")
+                            ScoringRow(title: String(localized: "salon_category_criteria_location"), points: "★★")
+                            ScoringRow(title: String(localized: "salon_category_criteria_services"), points: "★★")
+                        }
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("salon_category_info_title")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    CloseButton { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+extension SalonCategory {
+    var categoryDescription: String {
+        switch self {
+        case .A: return String(localized: "salon_category_a_desc")
+        case .B: return String(localized: "salon_category_b_desc")
+        case .C: return String(localized: "salon_category_c_desc")
         }
     }
 }

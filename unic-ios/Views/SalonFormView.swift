@@ -1,47 +1,70 @@
 //
-//  AddSalonView.swift
+//  SalonFormView.swift
 //  unic-ios
 //
 
 import SwiftUI
 
-struct AddSalonView: View {
+struct SalonFormView: View {
     @Environment(\.dismiss) private var dismiss
 
-    // Main
-    @State private var name = ""
-    @State private var city = ""
-    @State private var address = ""
+    @State private var name: String
+    @State private var city: String
+    @State private var address: String
+    @State private var phone: String
+    @State private var instagram: String
+    @State private var website: String
+    @State private var facebook: String
+    @State private var notes: String
 
-    // Contacts
-    @State private var phone = ""
-    @State private var instagram = ""
-    @State private var website = ""
-    @State private var facebook = ""
-
-    // CRM
-    @State private var selectedLanguage = "cs"
-    @State private var selectedCategory: SalonCategory? = nil
-    @State private var selectedLeadTemp: LeadTemp? = nil
-    @State private var selectedWorksOn: [String] = []
-
-    // Notes
-    @State private var notes = ""
+    @State private var selectedLanguage: String
+    @State private var selectedCategory: SalonCategory?
+    @State private var selectedLeadTemp: LeadTemp?
+    @State private var selectedWorksOn: [String]
 
     @State private var isSaving = false
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var showLeadTempInfo = false
+    @State private var showSalonCategoryInfo = false
 
-    let onSalonCreated: (Salon) -> Void
-
+    private let existingSalon: Salon?
     private let service = FirebaseService.shared
+    private let onSaved: (Salon) -> Void
+
+    init(salon: Salon? = nil, onSaved: @escaping (Salon) -> Void) {
+        self.existingSalon = salon
+        self.onSaved = onSaved
+        _name      = State(initialValue: salon?.name ?? "")
+        _city      = State(initialValue: salon?.city ?? "")
+        _address   = State(initialValue: salon?.address ?? "")
+        _phone     = State(initialValue: salon?.contacts?.phone?.value ?? "")
+        _instagram = State(initialValue: {
+            (salon?.contacts?.instagram?.value ?? "")
+                .replacingOccurrences(of: "https://www.instagram.com/", with: "")
+                .replacingOccurrences(of: "https://instagram.com/", with: "")
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/@"))
+        }())
+        _website          = State(initialValue: salon?.contacts?.website?.value ?? "")
+        _facebook         = State(initialValue: salon?.contacts?.facebook?.value ?? "")
+        _notes            = State(initialValue: salon?.notes ?? "")
+        _selectedLanguage = State(initialValue: salon?.language ?? "cs")
+        _selectedCategory = State(initialValue: salon?.salonCategoryEnum)
+        _selectedLeadTemp = State(initialValue: salon?.leadTempEnum)
+        _selectedWorksOn  = State(initialValue: salon?.worksOn ?? [])
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section(String(localized: "section_main")) {
                     TextField(String(localized: "salon_name_placeholder"), text: $name)
-                    TextField(String(localized: "city"), text: $city)
+                }
+
+                Section(
+                    header: Text(String(localized: "location")),
+                    footer: Text(String(localized: "address_hint"))
+                ) {
                     TextField(String(localized: "address_label"), text: $address)
                 }
 
@@ -50,8 +73,7 @@ struct AddSalonView: View {
                         .keyboardType(.phonePad)
 
                     HStack(spacing: 4) {
-                        Text("@")
-                            .foregroundColor(.secondary)
+                        Text("@").foregroundColor(.secondary)
                         TextField("instagram", text: $instagram)
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
@@ -74,10 +96,10 @@ struct AddSalonView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         Picker("", selection: $selectedLanguage) {
-                            Text("УКР").tag("uk")
-                            Text("РУС").tag("ru")
-                            Text("ЧЕХ").tag("cs")
-                            Text("АНГ").tag("en")
+                            Text("🇺🇦").tag("uk")
+                            Text("🇷🇺").tag("ru")
+                            Text("🇨🇿").tag("cs")
+                            Text("🇬🇧").tag("en")
                         }
                         .pickerStyle(.segmented)
                     }
@@ -86,6 +108,11 @@ struct AddSalonView: View {
                     HStack {
                         Text("salon_category_label")
                             .foregroundColor(.secondary)
+                        Button { showSalonCategoryInfo = true } label: {
+                            Image(systemName: "questionmark.circle")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
                         Spacer()
                         HStack(spacing: 8) {
                             ForEach(SalonCategory.allCases, id: \.self) { cat in
@@ -100,6 +127,11 @@ struct AddSalonView: View {
                     HStack {
                         Text("lead_temp_label")
                             .foregroundColor(.secondary)
+                        Button { showLeadTempInfo = true } label: {
+                            Image(systemName: "questionmark.circle")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
                         Spacer()
                         HStack(spacing: 8) {
                             ForEach(LeadTemp.allCases, id: \.self) { temp in
@@ -127,15 +159,15 @@ struct AddSalonView: View {
                     .lineLimit(3...6)
                 }
             }
-            .navigationTitle(String(localized: "add_salon"))
+            .navigationTitle(String(localized: existingSalon == nil ? "add_salon" : "edit_salon"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     CloseButton { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "save")) {
-                        save()
+                    Button { save() } label: {
+                        Image(systemName: "checkmark")
                     }
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
                 }
@@ -153,34 +185,59 @@ struct AddSalonView: View {
             } message: {
                 Text(alertMessage)
             }
+            .sheet(isPresented: $showLeadTempInfo) {
+                LeadTempInfoView()
+            }
+            .sheet(isPresented: $showSalonCategoryInfo) {
+                SalonCategoryInfoView()
+            }
         }
     }
 
     private func save() {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return }
-
         isSaving = true
 
         Task {
             defer { isSaving = false }
-
             do {
-                let salon = try await service.createSalon(
-                    name: trimmedName,
-                    city: city.trimmedOrNil,
-                    address: address.trimmedOrNil,
-                    phone: phone.trimmedOrNil,
-                    instagram: instagram.trimmedOrNil,
-                    website: website.trimmedOrNil,
-                    facebook: facebook.trimmedOrNil,
-                    language: selectedLanguage,
-                    salonCategory: selectedCategory,
-                    worksOn: selectedWorksOn,
-                    leadTemp: selectedLeadTemp,
-                    notes: notes.trimmedOrNil
-                )
-                onSalonCreated(salon)
+                let result: Salon
+                if let existing = existingSalon {
+                    result = try await service.updateSalonBasicInfo(
+                        salonId: existing.salonId,
+                        name: trimmedName,
+                        city: city.trimmedOrNil,
+                        address: address.trimmedOrNil,
+                        phone: phone.trimmedOrNil,
+                        instagram: instagram.trimmedOrNil,
+                        website: website.trimmedOrNil,
+                        facebook: facebook.trimmedOrNil,
+                        notes: notes.trimmedOrNil,
+                        language: selectedLanguage,
+                        salonCategory: selectedCategory,
+                        leadTemp: selectedLeadTemp,
+                        worksOn: selectedWorksOn,
+                        previousAddress: existing.address,
+                        previousCity: existing.city
+                    )
+                } else {
+                    result = try await service.createSalon(
+                        name: trimmedName,
+                        city: city.trimmedOrNil,
+                        address: address.trimmedOrNil,
+                        phone: phone.trimmedOrNil,
+                        instagram: instagram.trimmedOrNil,
+                        website: website.trimmedOrNil,
+                        facebook: facebook.trimmedOrNil,
+                        language: selectedLanguage,
+                        salonCategory: selectedCategory,
+                        worksOn: selectedWorksOn,
+                        leadTemp: selectedLeadTemp,
+                        notes: notes.trimmedOrNil
+                    )
+                }
+                onSaved(result)
                 dismiss()
             } catch {
                 alertMessage = error.localizedDescription

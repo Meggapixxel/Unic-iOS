@@ -175,7 +175,7 @@ struct SalonListView: View {
                     RoutePlannerView(salons: viewModel.displayedSalons, isPresented: $showRoutePlanner)
                 }
                 .sheet(isPresented: $showAddSalon) {
-                    AddSalonView { salon in
+                    SalonFormView { salon in
                         viewModel.addSalon(salon)
                     }
                 }

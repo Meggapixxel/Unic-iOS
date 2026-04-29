@@ -85,10 +85,12 @@
 
 /* Add Salon */
 "add_salon" = "New Salon";
+"edit_salon" = "Edit Salon";
 "section_main" = "Main";
 "section_contacts" = "Contacts";
 "section_notes" = "Notes";
 "salon_name_placeholder" = "Salon name *";
+"address_hint" = "📍 Copy the address from Google Maps for accurate geolocation.";
 "city" = "City";
 "address_label" = "Address";
 "phone_label" = "Phone";
@@ -96,6 +98,17 @@
 
 /* Salon Category */
 "salon_category_label" = "Category:";
+"salon_category_info_title" = "Salon Category";
+"salon_category_intro" = "Category is a manual assessment of the salon's level based on aesthetics, number of workstations, and overall impression.";
+"salon_category_a_desc" = "Premium. 5+ workstations, modern design, high aesthetics, branded interior, wide service range, quality equipment.";
+"salon_category_b_desc" = "Mid-level. 2–4 workstations, tidy interior, standard aesthetics, basic-to-standard service range.";
+"salon_category_c_desc" = "Basic or solo. 1–2 seats, minimal focus on aesthetics, narrow specialization or home-based stylist.";
+"salon_category_criteria_header" = "Assessment criteria";
+"salon_category_criteria_aesthetics" = "Aesthetics & design";
+"salon_category_criteria_seats" = "Number of workstations";
+"salon_category_criteria_equipment" = "Equipment quality";
+"salon_category_criteria_location" = "Location & premises";
+"salon_category_criteria_services" = "Service range";
 "language_label" = "Language:";
 "salon_category_a" = "A — Premium";
 "salon_category_b" = "B — Mid";

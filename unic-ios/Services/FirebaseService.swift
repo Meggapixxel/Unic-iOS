@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import CoreLocation
 import FirebaseCore
 import FirebaseFirestore
 
@@ -215,6 +216,16 @@ class FirebaseService: ObservableObject {
         if !worksOn.isEmpty { data["worksOn"] = worksOn }
         if let notes { data["notes"] = notes }
 
+        // Geocode address → store in maps.location
+        let query = [address, city].compactMap { $0 }.joined(separator: ", ")
+        if !query.isEmpty, let coords = await geocode(query) {
+            data["maps"] = [
+                "location": ["lat": coords.latitude, "lng": coords.longitude],
+                "source": "manual",
+                "provider": "apple"
+            ]
+        }
+
         var contacts: [String: Any] = [:]
         if let phone {
             contacts["phone"] = ["value": phone, "isPrimary": true]
@@ -238,6 +249,74 @@ class FirebaseService: ObservableObject {
 
         guard let salon = try await getSalon(id: salonId) else {
             throw NSError(domain: "AddSalon", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to fetch created salon"])
+        }
+        return salon
+    }
+
+    // MARK: - Update Basic Info
+
+    func updateSalonBasicInfo(
+        salonId: String,
+        name: String,
+        city: String?,
+        address: String?,
+        phone: String?,
+        instagram: String?,
+        website: String?,
+        facebook: String?,
+        notes: String?,
+        language: String,
+        salonCategory: SalonCategory?,
+        leadTemp: LeadTemp?,
+        worksOn: [String],
+        previousAddress: String?,
+        previousCity: String?
+    ) async throws -> Salon {
+        var data: [String: Any] = ["name": name]
+
+        data["city"]     = city as Any
+        data["address"]  = address as Any
+        data["notes"]    = notes as Any
+        data["language"] = language
+        data["salonCategory"] = salonCategory?.rawValue as Any
+        data["leadTemp"]      = leadTemp?.rawValue as Any
+        data["worksOn"]       = worksOn.isEmpty ? FieldValue.delete() : worksOn
+
+        let locationChanged = address != previousAddress || city != previousCity
+        let query = [address, city].compactMap { $0 }.joined(separator: ", ")
+        if locationChanged, !query.isEmpty, let coords = await geocode(query) {
+            data["maps.location"] = ["lat": coords.latitude, "lng": coords.longitude]
+            data["maps.source"]   = "manual"
+            data["maps.provider"] = "apple"
+        }
+
+        if let phone {
+            data["contacts.phone"] = ["value": phone, "isPrimary": true]
+        } else {
+            data["contacts.phone"] = FieldValue.delete()
+        }
+        if let instagram {
+            let handle = instagram.trimmingCharacters(in: CharacterSet(charactersIn: "@"))
+            data["contacts.instagram"] = ["value": "https://www.instagram.com/\(handle)/", "isPrimary": true]
+        } else {
+            data["contacts.instagram"] = FieldValue.delete()
+        }
+        if let website {
+            let url = website.hasPrefix("http") ? website : "https://\(website)"
+            data["contacts.website"] = ["value": url, "isPrimary": true]
+        } else {
+            data["contacts.website"] = FieldValue.delete()
+        }
+        if let facebook {
+            data["contacts.facebook"] = ["value": facebook, "isPrimary": true]
+        } else {
+            data["contacts.facebook"] = FieldValue.delete()
+        }
+
+        try await db.collection("salons").document(salonId).updateData(data)
+
+        guard let salon = try await getSalon(id: salonId) else {
+            throw NSError(domain: "EditSalon", code: -1)
         }
         return salon
     }
@@ -377,5 +456,15 @@ class FirebaseService: ObservableObject {
     func stopListening() {
         listener?.remove()
         listener = nil
+    }
+
+    // MARK: - Geocoding
+
+    private func geocode(_ query: String) async -> CLLocationCoordinate2D? {
+        await withCheckedContinuation { continuation in
+            CLGeocoder().geocodeAddressString(query) { placemarks, _ in
+                continuation.resume(returning: placemarks?.first?.location?.coordinate)
+            }
+        }
     }
 }

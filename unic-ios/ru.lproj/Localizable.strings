@@ -85,10 +85,12 @@
 
 /* Add Salon */
 "add_salon" = "Новый салон";
+"edit_salon" = "Редактировать салон";
 "section_main" = "Основное";
 "section_contacts" = "Контакты";
 "section_notes" = "Заметки";
 "salon_name_placeholder" = "Название салона *";
+"address_hint" = "📍 Адрес лучше копировать из Google Maps — так геолокация будет точной.";
 "city" = "Город";
 "address_label" = "Адрес";
 "phone_label" = "Телефон";
@@ -96,6 +98,17 @@
 
 /* Salon Category */
 "salon_category_label" = "Категория:";
+"salon_category_info_title" = "Категория салона";
+"salon_category_intro" = "Категория — ручная оценка уровня салона на основе эстетики, количества рабочих мест и общего впечатления.";
+"salon_category_a_desc" = "Премиум. 5+ рабочих мест, современный дизайн, высокая эстетика, брендированное пространство, широкий ассортимент услуг, качественное оборудование.";
+"salon_category_b_desc" = "Средний. 2–4 рабочих места, аккуратный интерьер, стандартная эстетика, базово-средний набор услуг.";
+"salon_category_c_desc" = "Базовый или соло. 1–2 места, минимальное внимание к эстетике, узкая специализация или домашний мастер.";
+"salon_category_criteria_header" = "Критерии оценки";
+"salon_category_criteria_aesthetics" = "Эстетика и дизайн";
+"salon_category_criteria_seats" = "Количество рабочих мест";
+"salon_category_criteria_equipment" = "Качество оборудования";
+"salon_category_criteria_location" = "Локация и помещение";
+"salon_category_criteria_services" = "Ассортимент услуг";
 "language_label" = "Язык:";
 "salon_category_a" = "A — Премиум";
 "salon_category_b" = "B — Средний";
