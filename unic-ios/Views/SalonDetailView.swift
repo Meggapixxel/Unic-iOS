@@ -14,7 +14,10 @@ struct SalonDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var auth = AuthService.shared
 
-    init(salon: Salon, onSalonUpdated: @escaping (Salon) -> Void, onSalonDeleted: @escaping () -> Void) {
+    private let showMap: Bool
+
+    init(salon: Salon, showMap: Bool = true, onSalonUpdated: @escaping (Salon) -> Void, onSalonDeleted: @escaping () -> Void) {
+        self.showMap = showMap
         _viewModel = StateObject(wrappedValue: SalonDetailViewModel(
             salon: salon,
             onSalonUpdated: onSalonUpdated,
@@ -34,7 +37,7 @@ struct SalonDetailView: View {
                 quickActionsSection
 
                 // Location
-                locationSection
+                if showMap { locationSection }
 
                 // Status Section
                 statusSection

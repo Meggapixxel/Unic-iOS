@@ -65,6 +65,7 @@ struct SalonMapView: View {
             NavigationStack {
                 SalonDetailView(
                     salon: salon,
+                    showMap: false,
                     onSalonUpdated: { viewModel.updateSalon($0) },
                     onSalonDeleted: {
                         viewModel.deleteSalon(salon)
