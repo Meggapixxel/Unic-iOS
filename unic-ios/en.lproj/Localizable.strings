@@ -162,6 +162,10 @@
 "route_no_salons" = "No salons for route";
 "route_no_salons_desc" = "No salons with coordinates in the current filter to plan a route.";
 
+/* Discard changes */
+"discard_changes" = "Discard changes?";
+"discard" = "Discard";
+
 /* Errors */
 "history_load_error" = "Failed to load history";
 "save_error" = "Save error";

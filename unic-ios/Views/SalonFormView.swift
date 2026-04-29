@@ -27,6 +27,7 @@ struct SalonFormView: View {
     @State private var alertMessage = ""
     @State private var showLeadTempInfo = false
     @State private var showSalonCategoryInfo = false
+    @State private var showDiscardAlert = false
 
     private let existingSalon: Salon?
     private let service = FirebaseService.shared
@@ -52,6 +53,29 @@ struct SalonFormView: View {
         _selectedCategory = State(initialValue: salon?.salonCategoryEnum)
         _selectedLeadTemp = State(initialValue: salon?.leadTempEnum)
         _selectedWorksOn  = State(initialValue: salon?.worksOn ?? [])
+    }
+
+    private var isDirty: Bool {
+        guard let s = existingSalon else {
+            let hasText = !name.isEmpty || !address.isEmpty || !phone.isEmpty
+                || !instagram.isEmpty || !website.isEmpty || !facebook.isEmpty || !notes.isEmpty
+            let hasCRM = !selectedWorksOn.isEmpty || selectedCategory != nil || selectedLeadTemp != nil
+            return hasText || hasCRM
+        }
+        let origInstagram = (s.contacts?.instagram?.value ?? "")
+            .replacingOccurrences(of: "https://www.instagram.com/", with: "")
+            .replacingOccurrences(of: "https://instagram.com/", with: "")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/@"))
+        let contactsChanged = phone != (s.contacts?.phone?.value ?? "")
+            || instagram != origInstagram
+            || website != (s.contacts?.website?.value ?? "")
+            || facebook != (s.contacts?.facebook?.value ?? "")
+        let basicChanged = name != s.name || address != (s.address ?? "") || notes != (s.notes ?? "")
+        let crmChanged = selectedLanguage != (s.language ?? "cs")
+            || selectedCategory != s.salonCategoryEnum
+            || selectedLeadTemp != s.leadTempEnum
+            || selectedWorksOn != (s.worksOn ?? [])
+        return basicChanged || contactsChanged || crmChanged
     }
 
     var body: some View {
@@ -163,7 +187,13 @@ struct SalonFormView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    CloseButton { dismiss() }
+                    CloseButton {
+                        if isDirty {
+                            showDiscardAlert = true
+                        } else {
+                            dismiss()
+                        }
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button { save() } label: {
@@ -172,6 +202,7 @@ struct SalonFormView: View {
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
                 }
             }
+            .interactiveDismissDisabled(isDirty)
             .overlay {
                 if isSaving {
                     ProgressView()
@@ -184,6 +215,10 @@ struct SalonFormView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(alertMessage)
+            }
+            .alert(String(localized: "discard_changes"), isPresented: $showDiscardAlert) {
+                Button(String(localized: "discard"), role: .destructive) { dismiss() }
+                Button(String(localized: "cancel"), role: .cancel) {}
             }
             .sheet(isPresented: $showLeadTempInfo) {
                 LeadTempInfoView()
