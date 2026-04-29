@@ -22,7 +22,17 @@ struct unic_iosApp: App {
 
     var body: some Scene {
         WindowGroup {
-            SalonListView()
+            TabView {
+                SalonListView()
+                    .tabItem {
+                        Label("CRM", systemImage: "person.2")
+                    }
+
+                FlexiBeeView()
+                    .tabItem {
+                        Label("FlexiBee", systemImage: "chart.bar.doc.horizontal")
+                    }
+            }
         }
     }
 }

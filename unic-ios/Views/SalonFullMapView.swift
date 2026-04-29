@@ -164,27 +164,27 @@ struct SalonFullMapView: View {
     }
 }
 
-#Preview {
-    NavigationStack {
-        SalonFullMapView(salon: Salon(
-            salonId: "test",
-            name: "Test Salon",
-            city: "Prague",
-            address: "Test Address 123",
-            categoryName: "Hair Salon",
-            category: ["hair"],
-            tags: [],
-            maps: Maps(provider: "google", mapsUrl: "https://maps.google.com", placeId: "test", location: Location(lat: 50.0755, lng: 14.4378), source: "excel", confidence: 1.0),
-            contacts: nil,
-            leadTemp: nil,
-            status: "new",
-            ownerDriven: nil,
-            notes: nil,
-            nextStep: nil,
-            source: nil,
-            enrichmentStatus: nil,
-            enrichmentBatch: nil,
-            googlePlacesTypes: nil
-        ))
-    }
-}
+//#Preview {
+//    NavigationStack {
+//        SalonFullMapView(salon: Salon(
+//            salonId: "test",
+//            name: "Test Salon",
+//            city: "Prague",
+//            address: "Test Address 123",
+//            categoryName: "Hair Salon",
+//            category: ["hair"],
+//            tags: [],
+//            maps: Maps(provider: "google", mapsUrl: "https://maps.google.com", placeId: "test", location: Location(lat: 50.0755, lng: 14.4378), source: "excel", confidence: 1.0),
+//            contacts: nil,
+//            leadTemp: nil,
+//            status: "new",
+//            ownerDriven: nil,
+//            notes: nil,
+//            nextStep: nil,
+//            source: nil,
+//            enrichmentStatus: nil,
+//            enrichmentBatch: nil,
+//            googlePlacesTypes: nil
+//        ))
+//    }
+//}
