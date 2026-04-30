@@ -7,6 +7,7 @@ import SwiftUI
 
 struct SalonFormView: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var firebaseService = FirebaseService.shared
 
     @State private var name: String
     @State private var city: String
@@ -167,11 +168,11 @@ struct SalonFormView: View {
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("works_on_label")
-                            .foregroundColor(.secondary)
-                        WorksOnTagEditor(selectedTags: $selectedWorksOn)
-                    }
+                }
+
+                Section(String(localized: "works_on_label")) {
+                    WorksOnTagEditor(selectedTags: $selectedWorksOn)
+                        .buttonStyle(.borderless)
                 }
 
                 Section(String(localized: "section_notes")) {
@@ -200,6 +201,11 @@ struct SalonFormView: View {
                         Image(systemName: "checkmark")
                     }
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
+                }
+            }
+            .task {
+                if firebaseService.worksOnTags.isEmpty {
+                    await firebaseService.loadWorksOnTags()
                 }
             }
             .interactiveDismissDisabled(isDirty)

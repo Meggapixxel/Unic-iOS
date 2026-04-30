@@ -96,7 +96,8 @@ struct SalonNativeMapView: UIViewRepresentable {
                     for: cluster
                 ) as! MKMarkerAnnotationView
                 view.markerTintColor = .systemGray
-                view.titleVisibility = .hidden
+                view.titleVisibility = .adaptive
+                view.canShowCallout = false
                 return view
             }
 
@@ -113,21 +114,54 @@ struct SalonNativeMapView: UIViewRepresentable {
             view.titleVisibility = .hidden
             view.clusteringIdentifier = SalonNativeMapView.clusterPrefix
             view.displayPriority = .required
+            view.canShowCallout = true
+
+            // Left: open details
+            let detailBtn = UIButton(type: .detailDisclosure)
+            view.leftCalloutAccessoryView = detailBtn
+
+            // Right: navigate in Google Maps
+            let navBtn = UIButton(type: .system)
+            navBtn.setImage(UIImage(systemName: "arrow.triangle.turn.up.right.circle.fill"), for: .normal)
+            navBtn.tintColor = UIColor(red: 0.2, green: 0.6, blue: 1.0, alpha: 1)
+            navBtn.sizeToFit()
+            view.rightCalloutAccessoryView = navBtn
+
             return view
         }
 
         func mapView(_ mapView: MKMapView, didSelect annotation: MKAnnotation) {
-            mapView.deselectAnnotation(annotation, animated: false)
-
-            if let salonAnnotation = annotation as? SalonAnnotation {
-                onSelect(salonAnnotation.salon)
-            } else if let cluster = annotation as? MKClusterAnnotation {
-                // Zoom into cluster
+            if let cluster = annotation as? MKClusterAnnotation {
+                mapView.deselectAnnotation(annotation, animated: false)
                 var region = mapView.region
                 region.span.latitudeDelta  /= 3
                 region.span.longitudeDelta /= 3
                 region.center = cluster.coordinate
                 mapView.setRegion(region, animated: true)
+            }
+            // salon pin — leave selected so callout shows
+        }
+
+        func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView,
+                     calloutAccessoryControlTapped control: UIControl) {
+            guard let salonAnnotation = view.annotation as? SalonAnnotation else { return }
+            let salon = salonAnnotation.salon
+
+            if control == view.leftCalloutAccessoryView {
+                // Open detail sheet
+                mapView.deselectAnnotation(salonAnnotation, animated: true)
+                onSelect(salon)
+            } else if control == view.rightCalloutAccessoryView {
+                // Navigate in Google Maps (fallback to Apple Maps)
+                let coord = salonAnnotation.coordinate
+                let name = salon.displayName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                let googleUrl = URL(string: "comgooglemaps://?daddr=\(coord.latitude),\(coord.longitude)&directionsmode=driving")
+                let appleUrl = URL(string: "maps://?daddr=\(coord.latitude),\(coord.longitude)&q=\(name)")
+                if let google = googleUrl, UIApplication.shared.canOpenURL(google) {
+                    UIApplication.shared.open(google)
+                } else if let apple = appleUrl {
+                    UIApplication.shared.open(apple)
+                }
             }
         }
     }

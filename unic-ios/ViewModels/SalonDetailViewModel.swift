@@ -82,13 +82,13 @@ class SalonDetailViewModel: ObservableObject {
                     note: note?.isEmpty == true ? nil : note,
                     createdBy: createdBy
                 )
-                let history = try await service.fetchStatusHistory(salonId: salon.salonId)
-                statusHistory = IdentifiedArrayOf(uniqueElements: history)
-                latestStatusEntry = statusHistory.first
                 if let updatedSalon = try await service.getSalon(id: salon.salonId) {
                     salon = updatedSalon
+                    latestStatusEntry = updatedSalon.latestStatusEntry
                     onSalonUpdated(updatedSalon)
                 }
+                let history = try await service.fetchStatusHistory(salonId: salon.salonId)
+                statusHistory = IdentifiedArrayOf(uniqueElements: history)
                 showAddStatus = false
             } catch {
                 showError(String(localized: "error"), message: error.localizedDescription)

@@ -23,7 +23,7 @@ struct TagEditor: View {
     }
 
     private var showAddButton: Bool {
-        guard canAddNew, let _ = onAddNew else { return false }
+        guard canAddNew, onAddNew != nil else { return false }
         let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
         return !availableTags.contains(where: { $0.name.lowercased() == trimmed.lowercased() })
@@ -36,8 +36,11 @@ struct TagEditor: View {
                     ForEach(selectedIds, id: \.self) { tagId in
                         let name = availableTags.first(where: { $0.id == tagId })?.name ?? tagId
                         TagChip(title: name) {
-                            selectedIds.removeAll { $0 == tagId }
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedIds.removeAll { $0 == tagId }
+                            }
                         }
+                        .transition(.scale(scale: 0.7).combined(with: .opacity))
                     }
                 }
             }
@@ -58,35 +61,41 @@ struct TagEditor: View {
                             .foregroundColor(.accentColor)
                             .imageScale(.large)
                     }
+                    .buttonStyle(.borderless)
                 }
             }
 
             if !suggestions.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(suggestions) { tag in
-                            Button {
-                                addExisting(tag)
-                            } label: {
-                                Text(tag.name)
-                                    .font(.subheadline)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(Color.accentColor.opacity(0.12))
-                                    .foregroundColor(.accentColor)
-                                    .cornerRadius(12)
+                FlowLayout(spacing: 6) {
+                    ForEach(suggestions) { tag in
+                        Text(tag.name)
+                            .font(.subheadline)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.accentColor.opacity(0.12))
+                            .foregroundColor(.accentColor)
+                            .cornerRadius(12)
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    addExisting(tag)
+                                }
                             }
-                        }
+                            .transition(.scale(scale: 0.8).combined(with: .opacity))
                     }
                 }
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedIds)
+        .animation(.easeInOut(duration: 0.2), value: suggestions.map(\.id))
     }
 
     private func addExisting(_ tag: TagItem) {
         guard !selectedIds.contains(tag.id) else { return }
-        selectedIds.append(tag.id)
-        inputText = ""
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            selectedIds.append(tag.id)
+            inputText = ""
+        }
     }
 
     private func addNewTag(_ name: String) {

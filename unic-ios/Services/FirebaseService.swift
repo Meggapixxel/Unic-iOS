@@ -209,9 +209,9 @@ final class FirebaseService: ObservableObject {
             "salonId": salonId,
             "name": name,
             "status": SalonStatus.new.rawValue,
-            "language": language,
-            "createdBy": createdBy
+            "language": language
         ]
+        if let createdBy { data["createdBy"] = createdBy }
 
         if let leadTemp { data["leadTemp"] = leadTemp.rawValue }
 
