@@ -5,6 +5,7 @@ import Combine
 @MainActor
 final class FlexiBeeViewModel: ObservableObject {
     @Published var searchText = ""
+    @Published var sortAscending = false
 
     private let service = FlexiBeeService.shared
     private var cancellables = Set<AnyCancellable>()
@@ -29,11 +30,11 @@ final class FlexiBeeViewModel: ObservableObject {
 
     var filteredStock: [FlexiBeeStockWithPrice] {
         let base = service.stockWithPrices
-        if searchText.isEmpty { return base.sorted { $0.quantity > $1.quantity } }
-        let q = searchText.lowercased()
-        return base
-            .filter { $0.kod.lowercased().contains(q) || $0.nazev.lowercased().contains(q) }
-            .sorted { $0.quantity > $1.quantity }
+        let items = searchText.isEmpty ? base : {
+            let q = searchText.lowercased()
+            return base.filter { $0.kod.lowercased().contains(q) || $0.nazev.lowercased().contains(q) }
+        }()
+        return items.sorted { sortAscending ? $0.quantity < $1.quantity : $0.quantity > $1.quantity }
     }
 
     // MARK: - Actions

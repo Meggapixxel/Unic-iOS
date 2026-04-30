@@ -14,7 +14,6 @@ class SalonDetailViewModel: ObservableObject {
     @Published var salon: Salon
     @Published var isSaving = false
     @Published var showLeadTempInfo = false
-    @Published var showSalonCategoryInfo = false
     @Published var showStatusInfo = false
 
     // Status History

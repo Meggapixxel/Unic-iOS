@@ -111,7 +111,7 @@ struct SalonListView: View {
                         }
                         .padding(.vertical)
                         .glassBackgroundRectangle(cornerRadius: 20)
-                        .padding(.horizontal)
+                        .padding()
                     }
                     .sheet(isPresented: $viewModel.showStatusInfo) {
                         StatusInfoView()
@@ -462,7 +462,7 @@ struct TypeFilterPopoverView: View {
     @ObservedObject var viewModel: SalonsViewModel
 
     private var hasAnySelection: Bool {
-        viewModel.categoryOptions.hasSelection || viewModel.typeOptions.hasSelection
+        viewModel.typeOptions.hasSelection
     }
 
     var body: some View {
@@ -476,40 +476,10 @@ struct TypeFilterPopoverView: View {
                     Spacer()
                     if hasAnySelection {
                         Button(String(localized: "reset")) {
-                            viewModel.categoryOptions.clear()
                             viewModel.typeOptions.clear()
                         }
                         .font(.caption)
                     }
-                }
-
-                // Categories
-                if !viewModel.categoryOptions.all.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        ForEach(viewModel.categoryOptions.all) { category in
-                            Button {
-                                viewModel.categoryOptions.toggle(category)
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: viewModel.categoryOptions.isSelected(category) ? "checkmark.circle.fill" : "circle")
-                                        .foregroundColor(viewModel.categoryOptions.isSelected(category) ? .accentColor : .secondary)
-                                        .font(.subheadline)
-                                    Text(category.displayName)
-                                        .font(.subheadline)
-                                    Spacer()
-                                }
-                                .padding(.vertical, 4)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-
-                // Separator
-                if !viewModel.categoryOptions.all.isEmpty && !viewModel.typeOptions.all.isEmpty {
-                    Divider()
-                        .padding(.vertical, 4)
                 }
 
                 // Business Types
@@ -536,7 +506,7 @@ struct TypeFilterPopoverView: View {
                 }
 
                 // Empty state
-                if viewModel.categoryOptions.all.isEmpty && viewModel.typeOptions.all.isEmpty {
+                if viewModel.typeOptions.all.isEmpty {
                     Text("no_data")
                         .font(.subheadline)
                         .foregroundColor(.secondary)

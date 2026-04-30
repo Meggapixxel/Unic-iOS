@@ -131,12 +131,6 @@ final class FirebaseService: ObservableObject {
         ])
     }
 
-    func updateSalonCategory(salonId: String, category: SalonCategory?) async throws {
-        try await db.collection("salons").document(salonId).updateData([
-            "salonCategory": category?.rawValue as Any
-        ])
-    }
-
     func updateSalonLanguage(salonId: String, language: String) async throws {
         try await db.collection("salons").document(salonId).updateData([
             "language": language
@@ -196,7 +190,6 @@ final class FirebaseService: ObservableObject {
         website: String?,
         facebook: String?,
         language: String,
-        salonCategory: SalonCategory?,
         worksOn: [String],
         leadTemp: LeadTemp?,
         notes: String?,
@@ -217,7 +210,6 @@ final class FirebaseService: ObservableObject {
 
         if let city { data["city"] = city }
         if let address { data["address"] = address }
-        if let salonCategory { data["salonCategory"] = salonCategory.rawValue }
         if !worksOn.isEmpty { data["worksOn"] = worksOn }
         if let notes { data["notes"] = notes }
 
@@ -271,7 +263,6 @@ final class FirebaseService: ObservableObject {
         facebook: String?,
         notes: String?,
         language: String,
-        salonCategory: SalonCategory?,
         leadTemp: LeadTemp?,
         worksOn: [String],
         previousAddress: String?,
@@ -283,7 +274,6 @@ final class FirebaseService: ObservableObject {
         data["address"]  = address as Any
         data["notes"]    = notes as Any
         data["language"] = language
-        data["salonCategory"] = salonCategory?.rawValue as Any
         data["leadTemp"]      = leadTemp?.rawValue as Any
         data["worksOn"]    = worksOn.isEmpty ? FieldValue.delete() : worksOn
 

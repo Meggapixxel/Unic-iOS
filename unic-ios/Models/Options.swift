@@ -15,11 +15,6 @@ struct BusinessType: Identifiable, Hashable {
     }
 }
 
-struct Category: Identifiable, Hashable {
-    let id: String
-    var displayName: String { id }
-}
-
 struct Options<T: Identifiable & Hashable> {
     private(set) var all: IdentifiedArrayOf<T> = []
     private(set) var selected: Set<T.ID> = []

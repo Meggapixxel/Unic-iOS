@@ -19,6 +19,14 @@ struct FlexiBeeView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarLeading) {
+            Button {
+                viewModel.sortAscending.toggle()
+            } label: {
+                Image(systemName: viewModel.sortAscending ? "arrow.up.circle" : "arrow.down.circle")
+                    .imageScale(.large)
+            }
+        }
         ToolbarItem(placement: .navigationBarTrailing) {
             Button {
                 Task { await viewModel.forceSync() }

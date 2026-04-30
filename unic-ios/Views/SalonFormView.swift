@@ -19,7 +19,6 @@ struct SalonFormView: View {
     @State private var notes: String
 
     @State private var selectedLanguage: String
-    @State private var selectedCategory: SalonCategory?
     @State private var selectedLeadTemp: LeadTemp?
     @State private var selectedWorksOn: [String]
 
@@ -27,7 +26,6 @@ struct SalonFormView: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var showLeadTempInfo = false
-    @State private var showSalonCategoryInfo = false
     @State private var showDiscardAlert = false
 
     private let existingSalon: Salon?
@@ -51,7 +49,6 @@ struct SalonFormView: View {
         _facebook         = State(initialValue: salon?.contacts?.facebook?.value ?? "")
         _notes            = State(initialValue: salon?.notes ?? "")
         _selectedLanguage = State(initialValue: salon?.language ?? "cs")
-        _selectedCategory = State(initialValue: salon?.salonCategoryEnum)
         _selectedLeadTemp = State(initialValue: salon?.leadTempEnum)
         _selectedWorksOn  = State(initialValue: salon?.worksOn ?? [])
     }
@@ -60,7 +57,7 @@ struct SalonFormView: View {
         guard let s = existingSalon else {
             let hasText = !name.isEmpty || !address.isEmpty || !phone.isEmpty
                 || !instagram.isEmpty || !website.isEmpty || !facebook.isEmpty || !notes.isEmpty
-            let hasCRM = !selectedWorksOn.isEmpty || selectedCategory != nil || selectedLeadTemp != nil
+            let hasCRM = !selectedWorksOn.isEmpty || selectedLeadTemp != nil
             return hasText || hasCRM
         }
         let origInstagram = (s.contacts?.instagram?.value ?? "")
@@ -73,7 +70,6 @@ struct SalonFormView: View {
             || facebook != (s.contacts?.facebook?.value ?? "")
         let basicChanged = name != s.name || address != (s.address ?? "") || notes != (s.notes ?? "")
         let crmChanged = selectedLanguage != (s.language ?? "cs")
-            || selectedCategory != s.salonCategoryEnum
             || selectedLeadTemp != s.leadTempEnum
             || selectedWorksOn != (s.worksOn ?? [])
         return basicChanged || contactsChanged || crmChanged
@@ -129,25 +125,6 @@ struct SalonFormView: View {
                         .pickerStyle(.segmented)
                     }
                     .padding(.vertical, 4)
-
-                    HStack {
-                        Text("salon_category_label")
-                            .foregroundColor(.secondary)
-                        Button { showSalonCategoryInfo = true } label: {
-                            Image(systemName: "questionmark.circle")
-                                .foregroundColor(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                        Spacer()
-                        HStack(spacing: 8) {
-                            ForEach(SalonCategory.allCases, id: \.self) { cat in
-                                SalonCategoryBadge(category: cat, isSelected: selectedCategory == cat)
-                                    .onTapGesture {
-                                        selectedCategory = selectedCategory == cat ? nil : cat
-                                    }
-                            }
-                        }
-                    }
 
                     HStack {
                         Text("lead_temp_label")
@@ -229,9 +206,6 @@ struct SalonFormView: View {
             .sheet(isPresented: $showLeadTempInfo) {
                 LeadTempInfoView()
             }
-            .sheet(isPresented: $showSalonCategoryInfo) {
-                SalonCategoryInfoView()
-            }
         }
     }
 
@@ -256,7 +230,6 @@ struct SalonFormView: View {
                         facebook: facebook.trimmedOrNil,
                         notes: notes.trimmedOrNil,
                         language: selectedLanguage,
-                        salonCategory: selectedCategory,
                         leadTemp: selectedLeadTemp,
                         worksOn: selectedWorksOn,
                         previousAddress: existing.address,
@@ -273,7 +246,6 @@ struct SalonFormView: View {
                         website: website.trimmedOrNil,
                         facebook: facebook.trimmedOrNil,
                         language: selectedLanguage,
-                        salonCategory: selectedCategory,
                         worksOn: selectedWorksOn,
                         leadTemp: selectedLeadTemp,
                         notes: notes.trimmedOrNil,

@@ -82,10 +82,6 @@ struct SalonDetailView: View {
             LeadTempInfoView()
                 .presentationDetents([.medium, .large])
         }
-        .sheet(isPresented: $viewModel.showSalonCategoryInfo) {
-            SalonCategoryInfoView()
-                .presentationDetents([.medium, .large])
-        }
         .sheet(isPresented: $viewModel.showAddStatus) {
             AddStatusSheet(viewModel: viewModel)
                 .presentationDetents([.medium, .large])
@@ -385,30 +381,6 @@ struct SalonDetailView: View {
                     Spacer()
                     if let temp = salon.leadTempEnum {
                         LeadTempBadge(temp: temp, isSelected: true)
-                    } else {
-                        Text("—").foregroundColor(.secondary)
-                    }
-                }
-                .padding()
-
-                Divider().padding(.horizontal)
-
-                // Salon Category
-                HStack {
-                    HStack(spacing: 4) {
-                        Text("salon_category_label")
-                            .foregroundColor(.secondary)
-                        Button {
-                            viewModel.showSalonCategoryInfo = true
-                        } label: {
-                            Image(systemName: "questionmark.circle")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    Spacer()
-                    if let cat = salon.salonCategoryEnum {
-                        SalonCategoryBadge(category: cat, isSelected: true)
                     } else {
                         Text("—").foregroundColor(.secondary)
                     }
@@ -727,40 +699,6 @@ struct StatusHistorySheet: View {
     }
 }
 
-// MARK: - Salon Category Badge
-
-struct SalonCategoryBadge: View {
-    let category: SalonCategory
-    let isSelected: Bool
-
-    var body: some View {
-        Text(category.rawValue)
-            .font(.subheadline.bold())
-            .frame(width: 32, height: 32)
-            .background(isSelected ? category.color : Color(.systemGray5))
-            .foregroundColor(isSelected ? .white : .secondary)
-            .cornerRadius(8)
-    }
-}
-
-extension SalonCategory {
-    var color: Color {
-        switch self {
-        case .A: return .green
-        case .B: return .teal
-        case .C: return Color(.systemGray2)
-        }
-    }
-
-    var title: String {
-        switch self {
-        case .A: return String(localized: "salon_category_a")
-        case .B: return String(localized: "salon_category_b")
-        case .C: return String(localized: "salon_category_c")
-        }
-    }
-}
-
 // MARK: - Lead Temp Badge
 
 struct LeadTempBadge: View {
@@ -894,78 +832,6 @@ struct ScoringRow: View {
     }
 }
 
-// MARK: - Salon Category Info Sheet
-
-struct SalonCategoryInfoView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    Text("salon_category_intro")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-
-                    VStack(alignment: .leading, spacing: 16) {
-                        ForEach(SalonCategory.allCases, id: \.self) { cat in
-                            HStack(alignment: .top, spacing: 12) {
-                                Text(cat.rawValue)
-                                    .font(.title2.bold())
-                                    .frame(width: 40, height: 40)
-                                    .background(cat.color)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(8)
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(cat.title)
-                                        .font(.headline)
-                                    Text(cat.categoryDescription)
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                        }
-                    }
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("salon_category_criteria_header")
-                            .font(.headline)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            ScoringRow(title: String(localized: "salon_category_criteria_aesthetics"), points: "★★★")
-                            ScoringRow(title: String(localized: "salon_category_criteria_seats"), points: "★★★")
-                            ScoringRow(title: String(localized: "salon_category_criteria_equipment"), points: "★★")
-                            ScoringRow(title: String(localized: "salon_category_criteria_location"), points: "★★")
-                            ScoringRow(title: String(localized: "salon_category_criteria_services"), points: "★★")
-                        }
-                    }
-                }
-                .padding()
-            }
-            .navigationTitle("salon_category_info_title")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    CloseButton { dismiss() }
-                }
-            }
-        }
-    }
-}
-
-extension SalonCategory {
-    var categoryDescription: String {
-        switch self {
-        case .A: return String(localized: "salon_category_a_desc")
-        case .B: return String(localized: "salon_category_b_desc")
-        case .C: return String(localized: "salon_category_c_desc")
-        }
-    }
-}
-
 #Preview {
     NavigationStack {
         SalonDetailView(
@@ -993,7 +859,6 @@ extension SalonCategory {
                 worksOn: ["Колорування", "Нарощування"],
                 language: "cs",
                 nextStep: nil,
-                salonCategory: "A",
                 source: nil,
                 enrichmentStatus: "enriched",
                 enrichmentBatch: "001",
