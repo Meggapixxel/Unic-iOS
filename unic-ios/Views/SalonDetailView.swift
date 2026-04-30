@@ -69,18 +69,14 @@ struct SalonDetailView: View {
                 viewModel.onSalonUpdated(updated)
             }
         }
-        .overlay {
-            if viewModel.isSaving {
-                ProgressView()
-                    .padding(8)
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(8)
-            }
-        }
         .alert(viewModel.alertTitle, isPresented: $viewModel.showAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.alertMessage)
+        }
+        .sheet(isPresented: $viewModel.showStatusInfo) {
+            StatusInfoView()
+                .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $viewModel.showLeadTempInfo) {
             LeadTempInfoView()
@@ -104,11 +100,13 @@ struct SalonDetailView: View {
         ) {
             Button("delete", role: .destructive) {
                 viewModel.deleteSalon()
-                dismiss()
             }
             Button("cancel", role: .cancel) {}
         } message: {
             Text("delete_confirmation \(salon.displayName)")
+        }
+        .onChange(of: viewModel.shouldDismiss) { _, should in
+            if should { dismiss() }
         }
         .task {
             viewModel.loadLatestStatusEntry()
@@ -300,8 +298,17 @@ struct SalonDetailView: View {
                 // Current Status
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Text("current_status")
-                            .foregroundColor(.secondary)
+                        HStack(spacing: 4) {
+                            Text("current_status")
+                                .foregroundColor(.secondary)
+                            Button {
+                                viewModel.showStatusInfo = true
+                            } label: {
+                                Image(systemName: "questionmark.circle")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
 
                         Spacer()
 
@@ -322,6 +329,10 @@ struct SalonDetailView: View {
                             .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+
+                    Text("status_update_hint")
+                        .font(.caption2)
+                        .foregroundColor(.secondary.opacity(0.6))
                 }
                 .padding()
 
@@ -480,13 +491,19 @@ struct SalonDetailView: View {
             } label: {
                 HStack {
                     Spacer()
-                    Label("delete_salon", systemImage: "trash")
+                    if viewModel.isSaving {
+                        ProgressView()
+                            .tint(.red)
+                    } else {
+                        Label("delete_salon", systemImage: "trash")
+                    }
                     Spacer()
                 }
                 .padding()
                 .background(Color(.systemGray6))
                 .cornerRadius(12)
             }
+            .disabled(viewModel.isSaving)
         }
     }
 }

@@ -15,6 +15,7 @@ class SalonDetailViewModel: ObservableObject {
     @Published var isSaving = false
     @Published var showLeadTempInfo = false
     @Published var showSalonCategoryInfo = false
+    @Published var showStatusInfo = false
 
     // Status History
     @Published var statusHistory: IdentifiedArrayOf<StatusHistoryEntry> = []
@@ -30,6 +31,7 @@ class SalonDetailViewModel: ObservableObject {
 
     // Delete
     @Published var showDeleteConfirmation = false
+    @Published var shouldDismiss = false
 
     // Edit
     @Published var showEditSalon = false
@@ -117,6 +119,7 @@ class SalonDetailViewModel: ObservableObject {
             do {
                 try await service.deleteSalon(salonId: salon.salonId)
                 onSalonDeleted()
+                shouldDismiss = true
             } catch {
                 showError(String(localized: "error"), message: error.localizedDescription)
             }
