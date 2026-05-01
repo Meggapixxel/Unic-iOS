@@ -10,10 +10,10 @@ enum FlexiBeeError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .networkError(let e): return "Помилка мережі: \(e.localizedDescription)"
-        case .decodingError(let e): return "Помилка парсингу: \(e.localizedDescription)"
-        case .apiError(let msg): return "Помилка API: \(msg)"
-        case .httpError(let code): return "HTTP помилка \(code)"
+        case .networkError(let e): return String.error_network(e.localizedDescription)
+        case .decodingError(let e): return String.error_parsing(e.localizedDescription)
+        case .apiError(let msg):   return String.error_api(msg)
+        case .httpError(let code): return String.error_http(code)
         }
     }
 }
@@ -37,7 +37,7 @@ final class FlexiBeeService: ObservableObject {
     @Published private(set) var lastSyncDate: Date? = UserDefaults.standard.object(forKey: "flexibee_lastSync") as? Date
 
     private static let cacheTTL: TimeInterval = 24 * 60 * 60
-    private static let stockKey = "flexibee_cache_stock"
+    private static let stockKey  = "flexibee_cache_stock"
     private static let pricesKey = "flexibee_cache_prices"
 
     private init() {
@@ -117,6 +117,28 @@ final class FlexiBeeService: ObservableObject {
         isLoading = false
     }
 
+    func fetchInvoiceItems() async throws -> [FlexiBeeInvoiceItem] {
+        let response = try await fetch(
+            FlexiBeeResponse<FlexiBeeInvoiceItemsWrapper>.self,
+            path: "/faktura-vydana-polozka.json",
+            fields: "id,kod,nazev,datVyst,mnozMj,sumCelkem",
+            limit: 5000,
+            order: "datVyst@D"
+        )
+        return response.winstrom.items.filter { $0.isValid }
+    }
+
+    func fetchInvoices() async throws -> [FlexiBeeInvoice] {
+        let response = try await fetch(
+            FlexiBeeResponse<FlexiBeeInvoicesWrapper>.self,
+            path: "/faktura-vydana.json",
+            fields: "id,kod,popis,datVyst,datSplat,sumCelkem,stavUhrK,firma@showAs",
+            limit: 1000,
+            order: "datVyst@D"
+        )
+        return response.winstrom.invoices
+    }
+
     func fetchPriceList() async throws -> [FlexiBeeCenikItem] {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeCenikWrapper>.self,
@@ -143,15 +165,23 @@ final class FlexiBeeService: ObservableObject {
         _ type: T.Type,
         path: String,
         fields: String,
-        limit: Int
+        limit: Int,
+        order: String? = nil
     ) async throws -> T {
-        var components = URLComponents(string: baseURL + path)!
-        components.queryItems = [
+        guard var components = URLComponents(string: baseURL + path) else {
+            throw FlexiBeeError.apiError("Invalid URL path: \(path)")
+        }
+        var queryItems = [
             URLQueryItem(name: "fields", value: fields),
-            URLQueryItem(name: "limit", value: String(limit))
+            URLQueryItem(name: "limit",  value: String(limit))
         ]
+        if let order { queryItems.append(URLQueryItem(name: "order", value: order)) }
+        components.queryItems = queryItems
 
-        var request = URLRequest(url: components.url!)
+        guard let url = components.url else {
+            throw FlexiBeeError.apiError("Failed to build URL for path: \(path)")
+        }
+        var request = URLRequest(url: url)
         request.setValue(authHeader, forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.timeoutInterval = 30

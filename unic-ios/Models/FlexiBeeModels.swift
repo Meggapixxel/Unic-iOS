@@ -83,10 +83,13 @@ struct FlexiBeeCenikWrapper: Decodable {
 
 // MARK: - Joined Stock + Price
 
-struct FlexiBeeStockWithPrice: Identifiable {
+struct FlexiBeeStockWithPrice: Identifiable, Hashable {
     let id = UUID()
     let card: FlexiBeeStockCard
     let price: FlexiBeeCenikItem?
+
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 
     var kod: String { card.kod }
     var nazev: String { card.nazev }
@@ -102,4 +105,110 @@ struct FlexiBeeErrorResponse: Decodable {
         let success: String?
         let message: String?
     }
+}
+
+// MARK: - Payment Status
+
+enum PaymentStatus: String, CaseIterable {
+    case paid    = "uhrazeno"
+    case partial = "castecneUhrazeno"
+    case unpaid  = "neuhrazeno"
+    case overdue
+
+    var label: String {
+        switch self {
+        case .paid:    return String.payment_paid
+        case .partial: return String.payment_partial
+        case .unpaid:  return String.payment_unpaid
+        case .overdue: return String.payment_overdue
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .paid:    return .green
+        case .partial: return .orange
+        case .unpaid:  return .secondary
+        case .overdue: return .red
+        }
+    }
+}
+
+// MARK: - Invoice
+
+struct FlexiBeeInvoice: Identifiable, Codable {
+    let id: String
+    let kod: String?
+    let popis: String?
+    let datVyst: String?
+    let datSplat: String?
+    let sumCelkem: String?
+    let stavUhrK: String?
+    let firmaShowAs: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, kod, popis, datVyst, datSplat, sumCelkem, stavUhrK
+        case firmaShowAs = "firma@showAs"
+    }
+
+    var total: Double         { Double(sumCelkem ?? "") ?? 0 }
+    var issueDate: Date?      { Self.parseDate(datVyst) }
+    var dueDate: Date?        { Self.parseDate(datSplat) }
+    var invoiceNumber: String { kod ?? id }
+
+    var clientName: String {
+        guard let raw = firmaShowAs, let range = raw.range(of: ": ") else { return firmaShowAs ?? "—" }
+        return String(raw[range.upperBound...])
+    }
+
+    private static func parseDate(_ string: String?) -> Date? {
+        guard let s = string else { return nil }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f.date(from: String(s.prefix(10)))
+    }
+
+    var paymentStatus: PaymentStatus {
+        let s = stavUhrK ?? ""
+        if s.contains("castecne") { return .partial }
+        if s.contains("uhrazeno") { return .paid }
+        if let due = dueDate, due < Date() { return .overdue }
+        return .unpaid
+    }
+}
+
+struct FlexiBeeInvoicesWrapper: Decodable {
+    let invoices: [FlexiBeeInvoice]
+    enum CodingKeys: String, CodingKey { case invoices = "faktura-vydana" }
+}
+
+// MARK: - Invoice Line Item
+
+struct FlexiBeeInvoiceItem: Identifiable, Codable {
+    let id: String
+    let kod: String?
+    let nazev: String?
+    let datVyst: String?
+    let mnozMj: String?
+    let sumCelkem: String?
+
+    var quantity: Double    { Double(mnozMj    ?? "") ?? 0 }
+    var total: Double       { Double(sumCelkem ?? "") ?? 0 }
+    var productCode: String { kod ?? "" }
+    var productName: String { nazev ?? kod ?? "—" }
+    var isValid: Bool       { !productCode.isEmpty && quantity > 0 }
+
+    var date: Date? {
+        guard let s = datVyst else { return nil }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f.date(from: String(s.prefix(10)))
+    }
+}
+
+struct FlexiBeeInvoiceItemsWrapper: Decodable {
+    let items: [FlexiBeeInvoiceItem]
+    enum CodingKeys: String, CodingKey { case items = "faktura-vydana-polozka" }
 }
