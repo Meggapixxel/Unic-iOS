@@ -11,15 +11,35 @@ struct FlexiBeeView: View {
                 .navigationTitle("FlexiBee")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar { toolbar }
-                .searchable(text: $viewModel.searchText, prompt: "Пошук по назві або коду")
-                .overlay { if viewModel.isLoading { loadingOverlay } }
+                .searchable(text: $viewModel.searchText, prompt: String(localized: "search_stock"))
+                .overlay { if viewModel.isLoading { loadingOverlay(text: String.loading) } }
+                .overlay { if viewModel.isSearchingBarcode { loadingOverlay(text: String.barcode_searching) } }
                 .task { await viewModel.loadIfNeeded() }
+                .navigationDestination(item: $viewModel.foundProduct) { product in
+                    FlexiBeeProductDetailView(item: product)
+                }
+                .fullScreenCover(isPresented: $viewModel.showBarcodeScanner) {
+                    BarcodeScannerScreen(
+                        onScan: { barcode in
+                            Task { await viewModel.handleScannedBarcode(barcode) }
+                        },
+                        onDismiss: { viewModel.showBarcodeScanner = false }
+                    )
+                }
+                .alert(String.barcode_title, isPresented: .init(
+                    get: { viewModel.barcodeError != nil },
+                    set: { if !$0 { viewModel.barcodeError = nil } }
+                )) {
+                    Button("OK") { viewModel.barcodeError = nil }
+                } message: {
+                    Text(viewModel.barcodeError ?? "")
+                }
         }
     }
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarLeading) {
+        ToolbarItem(placement: .topBarLeading) {
             Button {
                 viewModel.sortAscending.toggle()
             } label: {
@@ -27,7 +47,18 @@ struct FlexiBeeView: View {
                     .imageScale(.large)
             }
         }
-        ToolbarItem(placement: .navigationBarTrailing) {
+        if #available(iOS 26.0, *) {
+            ToolbarSpacer(.fixed, placement: .topBarLeading)
+        }
+        ToolbarItem(placement: .topBarLeading) {
+            Button {
+                viewModel.showBarcodeScanner = true
+            } label: {
+                Image(systemName: "barcode.viewfinder")
+                    .imageScale(.large)
+            }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
             Button {
                 Task { await viewModel.forceSync() }
             } label: {
@@ -36,7 +67,7 @@ struct FlexiBeeView: View {
                 } else {
                     HStack(spacing: 6) {
                         VStack(alignment: .trailing, spacing: 1) {
-                            Text(viewModel.lastSyncDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "Ніколи")
+                            Text(viewModel.lastSyncDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? String.never)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                             Text(viewModel.lastSyncDate.map { $0.formatted(date: .omitted, time: .shortened) } ?? "")
@@ -52,10 +83,10 @@ struct FlexiBeeView: View {
         }
     }
 
-    private var loadingOverlay: some View {
+    private func loadingOverlay(text: String) -> some View {
         VStack(spacing: 12) {
             ProgressView()
-            Text("Завантаження...")
+            Text(text)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -80,14 +111,16 @@ private struct StockSectionView: View {
 
             Section {
                 ForEach(viewModel.filteredStock) { item in
-                    StockWithPriceRow(item: item)
+                    NavigationLink(value: item) {
+                        StockWithPriceRow(item: item)
+                    }
                 }
             }
         }
         .listStyle(.plain)
         .overlay {
             if viewModel.stock.isEmpty && !viewModel.isLoading {
-                emptyView("Немає даних по складу")
+                emptyView(String.stock_no_data)
             }
         }
     }
@@ -102,13 +135,13 @@ private struct StockSectionView: View {
             )
             MiniStatsCard(
                 value: "\(Int(viewModel.totalStockUnits))",
-                label: "Одиниць",
+                label: String.stock_units,
                 icon: "number.circle",
                 color: .green
             )
             MiniStatsCard(
                 value: "\(viewModel.lowStockCount)",
-                label: "Мало",
+                label: String.stock_low,
                 icon: "exclamationmark.triangle",
                 color: viewModel.lowStockCount > 0 ? .orange : .secondary
             )

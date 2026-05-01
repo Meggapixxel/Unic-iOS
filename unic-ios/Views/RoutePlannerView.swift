@@ -164,7 +164,7 @@ struct RoutePlannerView: View {
 
                 Spacer()
 
-                Button(String(localized: "route_deselect_all")) {
+                Button(String.route_deselect_all) {
                     viewModel.deselectAll()
                 }
                 .font(.caption)
@@ -247,17 +247,17 @@ struct RoutePlannerView: View {
             if viewModel.stops.count >= 2 {
                 HStack(spacing: 16) {
                     RouteStatBadge(
-                        title: String(localized: "route_distance"),
+                        title: String.route_distance,
                         value: viewModel.formattedDistance,
                         icon: "arrow.triangle.swap"
                     )
                     RouteStatBadge(
-                        title: String(localized: "route_time"),
+                        title: String.route_time,
                         value: viewModel.formattedTime,
                         icon: "clock"
                     )
                     RouteStatBadge(
-                        title: String(localized: "route_stops"),
+                        title: String.route_stops,
                         value: "\(viewModel.stops.count)",
                         icon: "mappin.and.ellipse"
                     )

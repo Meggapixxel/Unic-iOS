@@ -10,8 +10,8 @@ enum AuthError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .userNotFound:      return String(localized: "auth_error_user_not_found")
-        case .wrongPassword:     return String(localized: "auth_error_wrong_password")
+        case .userNotFound:      return String.auth_error_user_not_found
+        case .wrongPassword:     return String.auth_error_wrong_password
         case .unknown(let e):    return e.localizedDescription
         }
     }
@@ -23,8 +23,10 @@ final class AuthService: ObservableObject {
 
     @Published private(set) var currentUser: AppUser?
 
-    var isLoggedIn: Bool { currentUser != nil }
-    var isAdmin: Bool { currentUser?.isAdmin ?? false }
+    var isLoggedIn: Bool  { currentUser != nil }
+    var isAdmin: Bool     { currentUser?.isAdmin ?? false }
+    var isManager: Bool   { currentUser?.isManager ?? false }
+    var isSales: Bool     { currentUser?.isSales ?? false }
 
     private let db = Firestore.firestore()
     private static let storageKey = "auth_current_user"
@@ -66,7 +68,8 @@ final class AuthService: ObservableObject {
         let data = doc.data() ?? [:]
         let firstName = data["first_name"] as? String ?? ""
         let lastName  = data["last_name"]  as? String ?? ""
-        let role      = data["role"]       as? String ?? "user"
+        let roleString = data["role"] as? String ?? ""
+        let role = UserRole(rawValue: roleString) ?? .sales
         let user = AppUser(id: uid, firstName: firstName, lastName: lastName, role: role)
 
         if let encoded = try? JSONEncoder().encode(user) {

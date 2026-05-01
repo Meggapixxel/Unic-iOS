@@ -10,9 +10,9 @@ struct NotLoggedInView: View {
                 .font(.system(size: 64))
                 .foregroundStyle(.secondary)
             VStack(spacing: 8) {
-                Text(String(localized: "auth_no_access_title"))
+                Text(String.auth_no_access_title)
                     .font(.title2.bold())
-                Text(String(localized: "auth_no_access_body"))
+                Text(String.auth_no_access_body)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -44,12 +44,12 @@ struct LoginView: View {
                 .foregroundStyle(Color.accentColor)
                 .padding(.bottom, 32)
 
-            Text(String(localized: "auth_login_title"))
+            Text(String.auth_login_title)
                 .font(.title2.bold())
                 .padding(.bottom, 28)
 
             VStack(spacing: 12) {
-                TextField(String(localized: "auth_email_placeholder"), text: $email)
+                TextField(String.auth_email_placeholder, text: $email)
                     .textFieldStyle(.roundedBorder)
                     .keyboardType(.emailAddress)
                     .autocorrectionDisabled()
@@ -58,7 +58,7 @@ struct LoginView: View {
                     .submitLabel(.next)
                     .onSubmit { focused = .password }
 
-                SecureField(String(localized: "auth_password_placeholder"), text: $password)
+                SecureField(String.auth_password_placeholder, text: $password)
                     .textFieldStyle(.roundedBorder)
                     .focused($focused, equals: .password)
                     .submitLabel(.go)
@@ -80,7 +80,7 @@ struct LoginView: View {
                     if isLoading {
                         ProgressView()
                     } else {
-                        Text(String(localized: "auth_login_button"))
+                        Text(String.auth_login_button)
                             .fontWeight(.semibold)
                     }
                 }

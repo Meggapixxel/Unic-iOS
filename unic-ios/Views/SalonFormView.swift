@@ -78,19 +78,19 @@ struct SalonFormView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(String(localized: "section_main")) {
-                    TextField(String(localized: "salon_name_placeholder"), text: $name)
+                Section(String.section_main) {
+                    TextField(String.salon_name_placeholder, text: $name)
                 }
 
                 Section(
-                    header: Text(String(localized: "location")),
-                    footer: Text(String(localized: "address_hint"))
+                    header: Text(String.location),
+                    footer: Text(String.address_hint)
                 ) {
-                    TextField(String(localized: "address_label"), text: $address)
+                    TextField(String.address_label, text: $address)
                 }
 
-                Section(String(localized: "section_contacts")) {
-                    TextField(String(localized: "phone_label"), text: $phone)
+                Section(String.section_contacts) {
+                    TextField(String.phone_label, text: $phone)
                         .keyboardType(.phonePad)
 
                     HStack(spacing: 4) {
@@ -100,7 +100,7 @@ struct SalonFormView: View {
                             .textInputAutocapitalization(.never)
                     }
 
-                    TextField(String(localized: "website"), text: $website)
+                    TextField(String.website, text: $website)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
@@ -147,14 +147,14 @@ struct SalonFormView: View {
 
                 }
 
-                Section(String(localized: "works_on_label")) {
+                Section(String.works_on_label) {
                     WorksOnTagEditor(selectedTags: $selectedWorksOn)
                         .buttonStyle(.borderless)
                 }
 
-                Section(String(localized: "section_notes")) {
+                Section(String.section_notes) {
                     TextField(
-                        String(localized: "notes_placeholder"),
+                        String.notes_placeholder,
                         text: $notes,
                         axis: .vertical
                     )
@@ -194,14 +194,14 @@ struct SalonFormView: View {
                         .cornerRadius(8)
                 }
             }
-            .alert(String(localized: "error"), isPresented: $showAlert) {
+            .alert(String.error, isPresented: $showAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(alertMessage)
             }
-            .alert(String(localized: "discard_changes"), isPresented: $showDiscardAlert) {
-                Button(String(localized: "discard"), role: .destructive) { dismiss() }
-                Button(String(localized: "cancel"), role: .cancel) {}
+            .alert(String.discard_changes, isPresented: $showDiscardAlert) {
+                Button(String.discard, role: .destructive) { dismiss() }
+                Button(String.cancel, role: .cancel) {}
             }
             .sheet(isPresented: $showLeadTempInfo) {
                 LeadTempInfoView()

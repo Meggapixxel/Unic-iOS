@@ -204,10 +204,10 @@ struct StatsHeaderView: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            StatBadge(title: String(localized: "stat_total"), value: viewModel.totalCount, color: .blue)
-            StatBadge(title: String(localized: "stat_new"), value: viewModel.newCount, color: .green)
-            StatBadge(title: String(localized: "stat_contacted"), value: viewModel.contactedCount, color: .orange)
-            StatBadge(title: String(localized: "stat_clients"), value: viewModel.orderedCount, color: .mint)
+            StatBadge(title: String.stat_total, value: viewModel.totalCount, color: .blue)
+            StatBadge(title: String.stat_new, value: viewModel.newCount, color: .green)
+            StatBadge(title: String.stat_contacted, value: viewModel.contactedCount, color: .orange)
+            StatBadge(title: String.stat_clients, value: viewModel.orderedCount, color: .mint)
         }
     }
 }
@@ -254,7 +254,7 @@ struct FilterChipsView: View {
                 }
 
                 // Status "All" chip
-                FilterChip(title: String(localized: "filter_all"), isSelected: !statusOptions.hasSelection) {
+                FilterChip(title: String.filter_all, isSelected: !statusOptions.hasSelection) {
                     statusOptions.clear()
                 }
 
@@ -306,9 +306,9 @@ struct TestDriveListRow: View {
                 .cornerRadius(8)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(String(localized: "test_drive"))
+                Text(String.test_drive)
                     .font(.headline)
-                Text("\(count) \(String(localized: "stat_total").lowercased())")
+                Text("\(count) \(String.stat_total.lowercased())")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -475,7 +475,7 @@ struct TypeFilterPopoverView: View {
                         .foregroundColor(.secondary)
                     Spacer()
                     if hasAnySelection {
-                        Button(String(localized: "reset")) {
+                        Button(String.reset) {
                             viewModel.typeOptions.clear()
                         }
                         .font(.caption)
@@ -618,34 +618,34 @@ extension SalonStatus {
 
     var fullDisplayName: String {
         switch self {
-        case .new: return String(localized: "status_new_full")
-        case .contacted: return String(localized: "status_contacted_full")
-        case .demoScheduled: return String(localized: "status_demo_full")
-        case .testDrive: return String(localized: "status_test_drive_full")
-        case .ordered: return String(localized: "status_ordered_full")
-        case .other: return String(localized: "status_other_full")
+        case .new: return String.status_new_full
+        case .contacted: return String.status_contacted_full
+        case .demoScheduled: return String.status_demo_full
+        case .testDrive: return String.status_test_drive_full
+        case .ordered: return String.status_ordered_full
+        case .other: return String.status_other_full
         }
     }
 
     var infoDescription: String {
         switch self {
-        case .new: return String(localized: "status_new_desc")
-        case .contacted: return String(localized: "status_contacted_desc")
-        case .demoScheduled: return String(localized: "status_demo_desc")
-        case .testDrive: return String(localized: "status_test_drive_desc")
-        case .ordered: return String(localized: "status_ordered_desc")
-        case .other: return String(localized: "status_other_desc")
+        case .new: return String.status_new_desc
+        case .contacted: return String.status_contacted_desc
+        case .demoScheduled: return String.status_demo_desc
+        case .testDrive: return String.status_test_drive_desc
+        case .ordered: return String.status_ordered_desc
+        case .other: return String.status_other_desc
         }
     }
 
     var nextAction: String {
         switch self {
-        case .new: return String(localized: "status_new_action")
-        case .contacted: return String(localized: "status_contacted_action")
-        case .demoScheduled: return String(localized: "status_demo_action")
-        case .testDrive: return String(localized: "status_test_drive_action")
-        case .ordered: return String(localized: "status_ordered_action")
-        case .other: return String(localized: "status_other_action")
+        case .new: return String.status_new_action
+        case .contacted: return String.status_contacted_action
+        case .demoScheduled: return String.status_demo_action
+        case .testDrive: return String.status_test_drive_action
+        case .ordered: return String.status_ordered_action
+        case .other: return String.status_other_action
         }
     }
 }
@@ -653,12 +653,12 @@ extension SalonStatus {
 extension SalonStatus {
     var displayName: String {
         switch self {
-        case .new: return String(localized: "status_new")
-        case .contacted: return String(localized: "status_contacted")
-        case .demoScheduled: return String(localized: "status_demo")
-        case .testDrive: return String(localized: "status_test_drive")
-        case .ordered: return String(localized: "status_ordered")
-        case .other: return String(localized: "status_other")
+        case .new: return String.status_new
+        case .contacted: return String.status_contacted
+        case .demoScheduled: return String.status_demo
+        case .testDrive: return String.status_test_drive
+        case .ordered: return String.status_ordered
+        case .other: return String.status_other
         }
     }
 

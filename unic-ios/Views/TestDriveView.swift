@@ -107,7 +107,7 @@ struct TestDriveView: View {
                     .listRowBackground(Color.clear)
             } else if viewModel.entries.isEmpty {
                 ContentUnavailableView(
-                    String(localized: "test_drive_empty"),
+                    String.test_drive_empty,
                     systemImage: "flask"
                 )
                 .listRowBackground(Color.clear)
@@ -132,7 +132,7 @@ struct TestDriveView: View {
             }
         }
         .listStyle(.plain)
-        .navigationTitle(String(localized: "test_drive"))
+        .navigationTitle(String.test_drive)
         .navigationBarTitleDisplayMode(.large)
         .task { await viewModel.load(from: salons) }
     }
@@ -148,16 +148,16 @@ private struct NotificationsDisabledBanner: View {
                 .foregroundStyle(.orange)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(String(localized: "notif_disabled_title"))
+                Text(String.notif_disabled_title)
                     .font(.subheadline.weight(.semibold))
-                Text(String(localized: "notif_disabled_body"))
+                Text(String.notif_disabled_body)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
 
-            Button(String(localized: "notif_disabled_action")) {
+            Button(String.notif_disabled_action) {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)
                 }

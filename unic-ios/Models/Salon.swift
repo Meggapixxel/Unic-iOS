@@ -92,7 +92,7 @@ struct Salon: Codable, Identifiable, Hashable {
 
     // Computed properties
     var displayName: String {
-        name.isEmpty ? String(localized: "unnamed_salon") : name
+        name.isEmpty ? String.unnamed_salon : name
     }
 
     var phoneNumber: String? {

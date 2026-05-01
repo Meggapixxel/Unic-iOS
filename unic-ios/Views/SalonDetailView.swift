@@ -127,7 +127,7 @@ struct SalonDetailView: View {
         HStack(spacing: 12) {
             if let phone = salon.phoneNumber {
                 ActionButton(
-                    title: String(localized: "call"),
+                    title: String.call,
                     icon: "phone.fill",
                     color: .green
                 ) {
@@ -179,7 +179,7 @@ struct SalonDetailView: View {
 
             if let url = salon.websiteURL {
                 ActionButton(
-                    title: String(localized: "website"),
+                    title: String.website,
                     icon: "globe",
                     color: .orange
                 ) {
@@ -197,7 +197,7 @@ struct SalonDetailView: View {
 
         if hasLocation {
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: String(localized: "location"))
+                SectionHeader(title: String.location)
 
                 VStack(spacing: 0) {
                     // Map
@@ -288,7 +288,7 @@ struct SalonDetailView: View {
 
     private var statusSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: String(localized: "status"))
+            SectionHeader(title: String.status)
 
             VStack(spacing: 0) {
                 // Current Status
@@ -604,7 +604,7 @@ struct AddStatusSheet: View {
                 }
 
                 if selectedStatus == .testDrive {
-                    Section(String(localized: "articles_label")) {
+                    Section(String.articles_label) {
                         TagEditor(
                             selectedIds: $selectedArticleCodes,
                             availableTags: stockTagItems,
@@ -616,7 +616,7 @@ struct AddStatusSheet: View {
                 }
 
                 Section("note_optional") {
-                    TextField(String(localized: "add_comment"), text: $note, axis: .vertical)
+                    TextField(String.add_comment, text: $note, axis: .vertical)
                         .lineLimit(3...6)
                 }
             }
@@ -748,7 +748,7 @@ struct EditNoteSheet: View {
                 }
 
                 Section("note_optional") {
-                    TextField(String(localized: "add_comment"), text: $noteText, axis: .vertical)
+                    TextField(String.add_comment, text: $noteText, axis: .vertical)
                         .lineLimit(3...8)
                 }
             }
@@ -799,17 +799,17 @@ extension LeadTemp {
 
     var title: String {
         switch self {
-        case .A: return String(localized: "lead_temp_a")
-        case .B: return String(localized: "lead_temp_b")
-        case .C: return String(localized: "lead_temp_c")
+        case .A: return String.lead_temp_a
+        case .B: return String.lead_temp_b
+        case .C: return String.lead_temp_c
         }
     }
 
     var description: String {
         switch self {
-        case .A: return String(localized: "lead_temp_a_desc")
-        case .B: return String(localized: "lead_temp_b_desc")
-        case .C: return String(localized: "lead_temp_c_desc")
+        case .A: return String.lead_temp_a_desc
+        case .B: return String.lead_temp_b_desc
+        case .C: return String.lead_temp_c_desc
         }
     }
 }
@@ -859,14 +859,14 @@ struct LeadTempInfoView: View {
 
                         VStack(alignment: .leading, spacing: 8) {
                             ScoringRow(title: "Instagram", points: "+3")
-                            ScoringRow(title: String(localized: "scoring_website"), points: "+2")
-                            ScoringRow(title: String(localized: "scoring_phone"), points: "+1")
+                            ScoringRow(title: String.scoring_website, points: "+2")
+                            ScoringRow(title: String.scoring_phone, points: "+1")
                             ScoringRow(title: "Email", points: "+1")
-                            ScoringRow(title: String(localized: "scoring_google_maps"), points: "+1")
-                            ScoringRow(title: String(localized: "scoring_coloring"), points: "+2-4")
-                            ScoringRow(title: String(localized: "scoring_extensions"), points: "+2")
-                            ScoringRow(title: String(localized: "scoring_barbershop"), points: "-2", isNegative: true)
-                            ScoringRow(title: String(localized: "scoring_kids"), points: "-1", isNegative: true)
+                            ScoringRow(title: String.scoring_google_maps, points: "+1")
+                            ScoringRow(title: String.scoring_coloring, points: "+2-4")
+                            ScoringRow(title: String.scoring_extensions, points: "+2")
+                            ScoringRow(title: String.scoring_barbershop, points: "-2", isNegative: true)
+                            ScoringRow(title: String.scoring_kids, points: "-1", isNegative: true)
                         }
 
                         Text("scoring_thresholds")

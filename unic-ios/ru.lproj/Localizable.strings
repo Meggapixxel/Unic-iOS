@@ -201,9 +201,86 @@
 /* Errors */
 "history_load_error" = "Не удалось загрузить историю";
 "save_error" = "Ошибка сохранения";
+"error_network %@" = "Ошибка сети: %@";
+"error_parsing %@" = "Ошибка парсинга: %@";
+"error_api %@" = "Ошибка API: %@";
+"error_http %lld" = "HTTP ошибка %lld";
 
 /* Salon model */
 "unnamed_salon" = "Безымянный салон";
 
+/* FlexiBee / Barcode Scanner */
+"barcode_title" = "Штрихкод";
+"barcode_hint" = "Наведите на штрихкод продукта";
+"barcode_no_camera" = "Нет доступа к камере.\nРазрешите доступ в Настройках.";
+"barcode_not_found %@" = "Продукт для штрихкода %@ не найден";
+"barcode_search_error %@" = "Ошибка поиска: %@";
+"barcode_searching" = "Поиск продукта...";
+"stock_no_data" = "Нет данных по складу";
+"search_stock" = "Поиск по названию или коду";
+
+/* FlexiBee / Product Detail */
+"product_code" = "Код";
+"product_in_stock" = "На складе";
+"product_sell_price" = "Цена продажи";
+"product_purchase_price" = "Цена закупки";
+"product_margin" = "Маржа";
+
 /* Info.plist */
+"NSCameraUsageDescription" = "Для сканирования штрихкодов продуктов";
 "NSLocationWhenInUseUsageDescription" = "Для отображения вашей локации на карте";
+
+/* Greeting */
+"greeting %@" = "Привет, %@!";
+
+/* FlexiBee */
+"never" = "Никогда";
+"stock_units" = "Единиц";
+"stock_low" = "Мало";
+
+/* Sales */
+"sales_nav_title" = "Sales";
+"sales_analytics" = "Аналитика";
+"sales_invoices" = "Фактуры";
+"sales_kpi_revenue" = "Доход";
+"sales_kpi_paid" = "Оплачено";
+"sales_kpi_unpaid" = "Не оплачено";
+"sales_kpi_overdue" = "Просрочено";
+"sales_chart_monthly_revenue" = "Доход по месяцам";
+"sales_chart_month" = "Месяц";
+"sales_chart_revenue" = "Доход";
+"sales_top_clients" = "Топ клиенты";
+"sales_top_products" = "Топ продукты";
+"sales_quantity %lld" = "%lld шт";
+"sales_search_prompt" = "Клиент или номер фактуры";
+"sales_invoices_empty" = "Нет фактур";
+
+/* Sales Period */
+"period_week" = "Неделя";
+"period_month" = "Месяц";
+"period_year" = "Год";
+"period_all_time" = "Всё время";
+
+/* Payment Status */
+"payment_paid" = "Оплачено";
+"payment_partial" = "Частично";
+"payment_unpaid" = "Не оплачено";
+"payment_overdue" = "Просрочено";
+
+/* User Activity */
+"activity_statistics" = "Статистика";
+"activity_actions %lld" = "%lld действий";
+"activity_today" = "Сегодня";
+"activity_yesterday" = "Вчера";
+"activity_empty" = "Активность отсутствует";
+"activity_group_day" = "По дням";
+"activity_group_week" = "По неделям";
+"activity_this_week" = "На этой неделе";
+"activity_last_week" = "На прошлой неделе";
+
+/* Users */
+"users_nav_title" = "Пользователи";
+"users_empty" = "Нет пользователей";
+"role_admin" = "Админ";
+"role_manager" = "Менеджер";
+"role_sales" = "Продажи";

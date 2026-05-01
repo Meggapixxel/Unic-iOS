@@ -1,13 +1,19 @@
 import Foundation
 import SwiftUI
 import Combine
+import FirebaseFirestore
 
 @MainActor
 final class FlexiBeeViewModel: ObservableObject {
     @Published var searchText = ""
     @Published var sortAscending = false
+    @Published var showBarcodeScanner = false
+    @Published var isSearchingBarcode = false
+    @Published var foundProduct: FlexiBeeStockWithPrice?
+    @Published var barcodeError: String?
 
     private let service = FlexiBeeService.shared
+    private let db = Firestore.firestore()
     private var cancellables = Set<AnyCancellable>()
 
     init() {
@@ -42,4 +48,33 @@ final class FlexiBeeViewModel: ObservableObject {
     func loadIfNeeded() async { await service.loadIfNeeded() }
     func forceSync() async { await service.forceSync() }
     func resetFilters() { searchText = "" }
+
+    private func normalizeKod(_ s: String) -> String {
+        s.replacingOccurrences(of: #"[^A-Za-z0-9]+"#, with: "", options: .regularExpression)
+         .uppercased()
+    }
+
+    func handleScannedBarcode(_ barcode: String) async {
+        showBarcodeScanner = false
+        barcodeError = nil
+        isSearchingBarcode = true
+        defer { isSearchingBarcode = false }
+
+        do {
+            let doc = try await db.collection("barcodes").document(barcode).getDocument()
+            guard doc.exists, let article = doc.data()?["article"] as? String else {
+                barcodeError = String.barcode_not_found(barcode)
+                return
+            }
+            guard let product = service.stockWithPrices.first(where: {
+                normalizeKod($0.kod) == normalizeKod(article)
+            }) else {
+                barcodeError = String.barcode_not_found(article)
+                return
+            }
+            foundProduct = product
+        } catch {
+            barcodeError = String.barcode_search_error(error.localizedDescription)
+        }
+    }
 }

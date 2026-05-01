@@ -65,7 +65,7 @@ class SalonDetailViewModel: ObservableObject {
                 statusHistory = IdentifiedArrayOf(uniqueElements: history)
                 latestStatusEntry = statusHistory.first
             } catch {
-                showError(String(localized: "error"), message: String(localized: "history_load_error"))
+                showError(String.error, message: String.history_load_error)
             }
         }
     }
@@ -90,7 +90,7 @@ class SalonDetailViewModel: ObservableObject {
                 statusHistory = IdentifiedArrayOf(uniqueElements: history)
                 showAddStatus = false
             } catch {
-                showError(String(localized: "error"), message: error.localizedDescription)
+                showError(String.error, message: error.localizedDescription)
             }
         }
     }
@@ -110,7 +110,7 @@ class SalonDetailViewModel: ObservableObject {
                 statusHistory = IdentifiedArrayOf(uniqueElements: history)
                 latestStatusEntry = statusHistory.first
             } catch {
-                showError(String(localized: "error"), message: error.localizedDescription)
+                showError(String.error, message: error.localizedDescription)
             }
         }
     }
@@ -124,7 +124,7 @@ class SalonDetailViewModel: ObservableObject {
                 try await service.deleteStatusHistoryEntry(salonId: salon.salonId, entryId: entryId)
                 statusHistory.remove(id: entryId)
             } catch {
-                showError(String(localized: "error"), message: error.localizedDescription)
+                showError(String.error, message: error.localizedDescription)
             }
         }
     }
@@ -140,7 +140,7 @@ class SalonDetailViewModel: ObservableObject {
                 onSalonDeleted()
                 shouldDismiss = true
             } catch {
-                showError(String(localized: "error"), message: error.localizedDescription)
+                showError(String.error, message: error.localizedDescription)
             }
         }
     }

@@ -201,9 +201,86 @@
 /* Errors */
 "history_load_error" = "Failed to load history";
 "save_error" = "Save error";
+"error_network %@" = "Network error: %@";
+"error_parsing %@" = "Parsing error: %@";
+"error_api %@" = "API error: %@";
+"error_http %lld" = "HTTP error %lld";
 
 /* Salon model */
 "unnamed_salon" = "Unnamed Salon";
 
+/* FlexiBee / Barcode Scanner */
+"barcode_title" = "Barcode";
+"barcode_hint" = "Point at product barcode";
+"barcode_no_camera" = "No camera access.\nAllow access in Settings.";
+"barcode_not_found %@" = "Product for barcode %@ not found";
+"barcode_search_error %@" = "Search error: %@";
+"barcode_searching" = "Searching product...";
+"stock_no_data" = "No warehouse data";
+"search_stock" = "Search by name or code";
+
+/* FlexiBee / Product Detail */
+"product_code" = "Code";
+"product_in_stock" = "In stock";
+"product_sell_price" = "Sell price";
+"product_purchase_price" = "Purchase price";
+"product_margin" = "Margin";
+
 /* Info.plist */
+"NSCameraUsageDescription" = "For scanning product barcodes";
 "NSLocationWhenInUseUsageDescription" = "To display your location on the map";
+
+/* Greeting */
+"greeting %@" = "Hello, %@!";
+
+/* FlexiBee */
+"never" = "Never";
+"stock_units" = "Units";
+"stock_low" = "Low";
+
+/* Sales */
+"sales_nav_title" = "Sales";
+"sales_analytics" = "Analytics";
+"sales_invoices" = "Invoices";
+"sales_kpi_revenue" = "Revenue";
+"sales_kpi_paid" = "Paid";
+"sales_kpi_unpaid" = "Unpaid";
+"sales_kpi_overdue" = "Overdue";
+"sales_chart_monthly_revenue" = "Monthly Revenue";
+"sales_chart_month" = "Month";
+"sales_chart_revenue" = "Revenue";
+"sales_top_clients" = "Top Clients";
+"sales_top_products" = "Top Products";
+"sales_quantity %lld" = "%lld pcs";
+"sales_search_prompt" = "Client or invoice number";
+"sales_invoices_empty" = "No Invoices";
+
+/* Sales Period */
+"period_week" = "Week";
+"period_month" = "Month";
+"period_year" = "Year";
+"period_all_time" = "All Time";
+
+/* Payment Status */
+"payment_paid" = "Paid";
+"payment_partial" = "Partial";
+"payment_unpaid" = "Unpaid";
+"payment_overdue" = "Overdue";
+
+/* User Activity */
+"activity_statistics" = "Statistics";
+"activity_actions %lld" = "%lld actions";
+"activity_today" = "Today";
+"activity_yesterday" = "Yesterday";
+"activity_empty" = "No Activity";
+"activity_group_day" = "By Days";
+"activity_group_week" = "By Weeks";
+"activity_this_week" = "This Week";
+"activity_last_week" = "Last Week";
+
+/* Users */
+"users_nav_title" = "Users";
+"users_empty" = "No Users";
+"role_admin" = "Admin";
+"role_manager" = "Manager";
+"role_sales" = "Sales";

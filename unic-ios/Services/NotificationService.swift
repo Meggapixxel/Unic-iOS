@@ -45,8 +45,8 @@ final class NotificationService {
             if dayBefore > now {
                 schedule(
                     id: "td_\(entry.id)_before",
-                    title: String(localized: "notif_testdrive_soon_title"),
-                    body: String(format: String(localized: "notif_testdrive_soon_body"), entry.salon.displayName),
+                    title: String.notif_testdrive_soon_title,
+                    body: String.notif_testdrive_soon_body(entry.salon.displayName),
                     at: dayBefore,
                     center: center
                 )
@@ -56,8 +56,8 @@ final class NotificationService {
             if deadline > now {
                 schedule(
                     id: "td_\(entry.id)_deadline",
-                    title: String(localized: "notif_testdrive_deadline_title"),
-                    body: String(format: String(localized: "notif_testdrive_deadline_body"), entry.salon.displayName),
+                    title: String.notif_testdrive_deadline_title,
+                    body: String.notif_testdrive_deadline_body(entry.salon.displayName),
                     at: deadline,
                     center: center
                 )

@@ -19,9 +19,9 @@ enum SalonSortOption: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .name: return String(localized: "sort_by_name")
-        case .leadTemp: return String(localized: "sort_by_lead_temp")
-        case .status: return String(localized: "sort_by_status")
+        case .name: return String.sort_by_name
+        case .leadTemp: return String.sort_by_lead_temp
+        case .status: return String.sort_by_status
         }
     }
 }
