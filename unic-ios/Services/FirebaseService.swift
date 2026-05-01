@@ -481,6 +481,59 @@ final class FirebaseService: ObservableObject {
         listener = nil
     }
 
+    // MARK: - Users
+
+    func fetchAllUsers() async throws -> [AppUser] {
+        let snapshot = try await db.collection("users").getDocuments()
+        return snapshot.documents.compactMap { doc in
+            let d = doc.data()
+            guard let role = UserRole(rawValue: d["role"] as? String ?? "") else { return nil }
+            return AppUser(
+                id: doc.documentID,
+                firstName: d["first_name"] as? String ?? "",
+                lastName: d["last_name"] as? String ?? "",
+                role: role
+            )
+        }
+    }
+
+    func fetchUserActivity(userId: String) async throws -> [UserActivityEntry] {
+        let snapshot = try await db.collectionGroup("statusHistory")
+            .whereField("createdBy", isEqualTo: userId)
+            .order(by: "timestamp", descending: true)
+            .getDocuments()
+
+        var salonNames: [String: String] = [:]
+        let salonIds = Set(snapshot.documents.compactMap { salonId(from: $0.reference.path) })
+        await withTaskGroup(of: (String, String).self) { group in
+            for id in salonIds {
+                group.addTask {
+                    let doc = try? await self.db.collection("salons").document(id).getDocument()
+                    return (id, doc?.data()?["name"] as? String ?? id)
+                }
+            }
+            for await (id, name) in group { salonNames[id] = name }
+        }
+
+        return snapshot.documents.compactMap { doc -> UserActivityEntry? in
+            guard let sid = salonId(from: doc.reference.path) else { return nil }
+            let d = doc.data()
+            let status = SalonStatus(rawValue: d["status"] as? String ?? "") ?? .new
+            let ts = (d["timestamp"] as? Timestamp)?.dateValue() ?? Date()
+            let raw = d["note"] as? String
+            return UserActivityEntry(
+                id: doc.documentID, salonId: sid, salonName: salonNames[sid] ?? sid,
+                status: status, note: raw?.isEmpty == false ? raw : nil, timestamp: ts
+            )
+        }
+    }
+
+    private func salonId(from path: String) -> String? {
+        let parts = path.components(separatedBy: "/")
+        guard let idx = parts.firstIndex(of: "salons"), idx + 1 < parts.count else { return nil }
+        return parts[idx + 1]
+    }
+
     // MARK: - Geocoding
 
     private func geocode(_ query: String) async -> CLLocationCoordinate2D? {

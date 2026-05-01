@@ -33,6 +33,8 @@
 	<array>
 		<string>comgooglemaps</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>For scanning product barcodes</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>To display your location on the map</string>
 	<key>UIApplicationSceneManifest</key>

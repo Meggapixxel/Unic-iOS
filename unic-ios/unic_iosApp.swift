@@ -45,6 +45,12 @@ struct RootView: View {
                         .tabItem { Label("CRM", systemImage: "person.2") }
                     FlexiBeeView()
                         .tabItem { Label("FlexiBee", systemImage: "chart.bar.doc.horizontal") }
+                    if auth.isAdmin || auth.isManager {
+                        SalesView()
+                            .tabItem { Label("Sales", systemImage: "chart.line.uptrend.xyaxis") }
+                        UsersView()
+                            .tabItem { Label("Users", systemImage: "person.2.fill") }
+                    }
                 }
                 .onAppear {
                     withAnimation(.easeIn(duration: 0.3)) { showGreeting = true }
@@ -58,7 +64,7 @@ struct RootView: View {
             }
 
             if showGreeting, let user = auth.currentUser {
-                Text("Привіт, \(user.firstName)!")
+                Text("greeting \(user.firstName)")
                     .font(.subheadline.bold())
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
