@@ -95,6 +95,26 @@ class SalonDetailViewModel: ObservableObject {
         }
     }
 
+    func updateStatusEntryNote(_ entry: StatusHistoryEntry, note: String?) {
+        guard let entryId = entry.id else { return }
+        Task {
+            isSaving = true
+            defer { isSaving = false }
+            do {
+                try await service.updateStatusEntryNote(
+                    salonId: salon.salonId,
+                    entryId: entryId,
+                    note: note?.isEmpty == true ? nil : note
+                )
+                let history = try await service.fetchStatusHistory(salonId: salon.salonId)
+                statusHistory = IdentifiedArrayOf(uniqueElements: history)
+                latestStatusEntry = statusHistory.first
+            } catch {
+                showError(String(localized: "error"), message: error.localizedDescription)
+            }
+        }
+    }
+
     func deleteStatusEntry(_ entry: StatusHistoryEntry) {
         guard let entryId = entry.id else { return }
         Task {

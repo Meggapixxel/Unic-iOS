@@ -375,6 +375,14 @@ final class FirebaseService: ObservableObject {
             .delete()
     }
 
+    func updateStatusEntryNote(salonId: String, entryId: String, note: String?) async throws {
+        try await db.collection("salons")
+            .document(salonId)
+            .collection("statusHistory")
+            .document(entryId)
+            .updateData(["note": note as Any])
+    }
+
     // MARK: - Delete Salon
 
     func deleteSalon(salonId: String) async throws {

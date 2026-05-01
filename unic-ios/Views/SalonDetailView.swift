@@ -657,6 +657,7 @@ struct StatusHistorySheet: View {
     @ObservedObject var viewModel: SalonDetailViewModel
     @ObservedObject private var auth = AuthService.shared
     @Environment(\.dismiss) private var dismiss
+    @State private var editingEntry: StatusHistoryEntry?
 
     var body: some View {
         NavigationStack {
@@ -674,6 +675,16 @@ struct StatusHistorySheet: View {
                     List {
                         ForEach(viewModel.statusHistory) { entry in
                             StatusHistoryRow(entry: entry)
+                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                    if auth.isAdmin {
+                                        Button {
+                                            editingEntry = entry
+                                        } label: {
+                                            Label("edit_note", systemImage: "pencil")
+                                        }
+                                        .tint(.blue)
+                                    }
+                                }
                         }
                         .onDelete(perform: auth.isAdmin ? { indexSet in
                             for index in indexSet {
@@ -693,9 +704,71 @@ struct StatusHistorySheet: View {
                 }
             }
         }
+        .sheet(item: $editingEntry) { entry in
+            EditNoteSheet(entry: entry) { newNote in
+                viewModel.updateStatusEntryNote(entry, note: newNote)
+            }
+        }
         .task {
             viewModel.loadStatusHistory()
         }
+    }
+}
+
+// MARK: - Edit Note Sheet
+
+struct EditNoteSheet: View {
+    let entry: StatusHistoryEntry
+    let onSave: (String?) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var noteText: String
+
+    init(entry: StatusHistoryEntry, onSave: @escaping (String?) -> Void) {
+        self.entry = entry
+        self.onSave = onSave
+        _noteText = State(initialValue: entry.note ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(entry.statusEnum.color)
+                            .frame(width: 10, height: 10)
+                        Text(entry.statusEnum.displayName)
+                            .font(.subheadline.bold())
+                        Spacer()
+                        Text(entry.formattedDate)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Section("note_optional") {
+                    TextField(String(localized: "add_comment"), text: $noteText, axis: .vertical)
+                        .lineLimit(3...8)
+                }
+            }
+            .navigationTitle("edit_note")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    CloseButton { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        onSave(noteText.trimmingCharacters(in: .whitespacesAndNewlines))
+                        dismiss()
+                    } label: {
+                        Image(systemName: "checkmark")
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 }
 

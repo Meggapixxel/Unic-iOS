@@ -62,6 +62,7 @@
 "sort_by_status" = "By status";
 
 /* Salon Detail */
+"edit_note" = "Edit Note";
 "status_update_hint" = "Update the status every time you visit the salon.";
 "call" = "Call";
 "copy_number" = "Copy number";
