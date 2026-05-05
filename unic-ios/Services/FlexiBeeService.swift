@@ -52,8 +52,8 @@ final class FlexiBeeService: ObservableObject {
     }
 
     var stockWithPrices: [FlexiBeeStockWithPrice] {
-        let priceByKod = Dictionary(uniqueKeysWithValues: priceList.map { ($0.kod, $0) })
-        return stock.map { FlexiBeeStockWithPrice(card: $0, price: priceByKod[$0.kod]) }
+        let priceByCode = Dictionary(uniqueKeysWithValues: priceList.map { ($0.code, $0) })
+        return stock.map { FlexiBeeStockWithPrice(card: $0, price: priceByCode[$0.code]) }
     }
 
     // MARK: - Load
@@ -121,7 +121,7 @@ final class FlexiBeeService: ObservableObject {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeInvoiceItemsWrapper>.self,
             path: "/faktura-vydana-polozka.json",
-            fields: "id,kod,nazev,datVyst,mnozMj,sumCelkem",
+            fields: FlexiBeeInvoiceItem.apiFields,
             limit: 5000,
             order: "datVyst@D"
         )
@@ -132,18 +132,116 @@ final class FlexiBeeService: ObservableObject {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeInvoicesWrapper>.self,
             path: "/faktura-vydana.json",
-            fields: "id,kod,popis,datVyst,datSplat,sumCelkem,stavUhrK,firma@showAs",
+            fields: FlexiBeeInvoice.apiFields,
             limit: 1000,
             order: "datVyst@D"
         )
         return response.winstrom.invoices
     }
 
+    func fetchFirms() async throws -> [FlexiBeeFirm] {
+        let response = try await fetch(
+            FlexiBeeResponse<FlexiBeeFirmWrapper>.self,
+            path: "/adresar.json",
+            fields: FlexiBeeFirm.apiFields,
+            limit: 500
+        )
+        return response.winstrom.firms
+            .filter { !$0.code.trimmingCharacters(in: .whitespaces).isEmpty }
+            .sorted { $0.displayName.localizedCompare($1.displayName) == .orderedAscending }
+    }
+
+    func fetchLineItemsForInvoice(_ invoiceId: String) async throws -> [FlexiBeeInvoiceItem] {
+        let response = try await fetch(
+            FlexiBeeResponse<FlexiBeeInvoiceItemsWrapper>.self,
+            path: "/faktura-vydana/\(invoiceId)/faktura-vydana-polozka.json",
+            fields: FlexiBeeInvoiceItem.apiFields,
+            limit: 100
+        )
+        return response.winstrom.items
+    }
+
+    func createInvoice(_ invoice: NewInvoice) async throws {
+        try await postInvoice(to: baseURL + "/faktura-vydana.json", invoice: invoice, method: "POST")
+    }
+
+    func updateInvoice(id: String, invoice: NewInvoice) async throws {
+        try await postInvoice(to: baseURL + "/faktura-vydana/\(id).json", invoice: invoice, method: "PUT")
+    }
+
+    func updateInvoicePaymentStatus(id: String, status: PaymentStatus) async throws {
+        guard status != .overdue else { return }
+        let code: String
+        switch status {
+        case .paid:    code = "code:uhrazeno"
+        case .partial: code = "code:castecneUhrazeno"
+        case .unpaid:  code = "code:neuhrazeno"
+        case .overdue: return
+        }
+        let envelope = PaymentStatusEnvelope(winstrom: .init(fakturaVydana: [.init(id: id, stavUhrK: code)]))
+        let data = try JSONEncoder().encode(envelope)
+        guard let url = URL(string: baseURL + "/faktura-vydana/\(id).json") else {
+            throw FlexiBeeError.apiError("Invalid URL")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpBody = data
+        request.timeoutInterval = 30
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
+        guard (200...201).contains(http.statusCode) else {
+            if let err = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
+                throw FlexiBeeError.apiError(err.winstrom.message ?? "HTTP \(http.statusCode)")
+            }
+            throw FlexiBeeError.httpError(http.statusCode)
+        }
+    }
+
+    func fetchSingleInvoice(id: String) async throws -> FlexiBeeInvoice? {
+        let response = try await fetch(
+            FlexiBeeResponse<FlexiBeeInvoicesWrapper>.self,
+            path: "/faktura-vydana/\(id).json",
+            fields: FlexiBeeInvoice.apiFields,
+            limit: 1
+        )
+        return response.winstrom.invoices.first
+    }
+
+    private func postInvoice(to urlString: String, invoice: NewInvoice, method: String) async throws {
+        let envelope = CreateInvoiceEnvelope(winstrom: .init(fakturaVydana: [invoice]))
+        let data = try JSONEncoder().encode(envelope)
+
+        guard let url = URL(string: urlString) else {
+            throw FlexiBeeError.apiError("Invalid URL")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpBody = data
+        request.timeoutInterval = 30
+
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw FlexiBeeError.httpError(0)
+        }
+        guard (200...201).contains(http.statusCode) else {
+            if let errResp = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
+                throw FlexiBeeError.apiError(errResp.winstrom.message ?? "HTTP \(http.statusCode)")
+            }
+            throw FlexiBeeError.httpError(http.statusCode)
+        }
+    }
+
     func fetchPriceList() async throws -> [FlexiBeeCenikItem] {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeCenikWrapper>.self,
             path: "/cenik.json",
-            fields: "id,kod,nazev,cenaZaklVcDph,nakupCena",
+            fields: FlexiBeeCenikItem.apiFields,
             limit: 300
         )
         return response.winstrom.cenik
@@ -153,7 +251,7 @@ final class FlexiBeeService: ObservableObject {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeStockWrapper>.self,
             path: "/skladova-karta.json",
-            fields: "cenik,stavMjSPozadavky",
+            fields: FlexiBeeStockRaw.requestFields,
             limit: 300
         )
         return response.winstrom.cards.map { $0.toCard() }
@@ -166,7 +264,8 @@ final class FlexiBeeService: ObservableObject {
         path: String,
         fields: String,
         limit: Int,
-        order: String? = nil
+        order: String? = nil,
+        filterBy: String? = nil
     ) async throws -> T {
         guard var components = URLComponents(string: baseURL + path) else {
             throw FlexiBeeError.apiError("Invalid URL path: \(path)")
@@ -176,6 +275,7 @@ final class FlexiBeeService: ObservableObject {
             URLQueryItem(name: "limit",  value: String(limit))
         ]
         if let order { queryItems.append(URLQueryItem(name: "order", value: order)) }
+        if let filter = filterBy { queryItems.append(URLQueryItem(name: "where", value: filter)) }
         components.queryItems = queryItems
 
         guard let url = components.url else {
@@ -203,5 +303,20 @@ final class FlexiBeeService: ObservableObject {
         } catch {
             throw FlexiBeeError.decodingError(error)
         }
+    }
+}
+
+// MARK: - Private types for payment status update
+
+private struct PaymentStatusItem: Encodable {
+    let id: String
+    let stavUhrK: String
+}
+
+private struct PaymentStatusEnvelope: Encodable {
+    let winstrom: Winstrom
+    struct Winstrom: Encodable {
+        let fakturaVydana: [PaymentStatusItem]
+        enum CodingKeys: String, CodingKey { case fakturaVydana = "faktura-vydana" }
     }
 }

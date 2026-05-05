@@ -19,17 +19,17 @@ struct FlexiBeeProductDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(item.kod)
+        .navigationTitle(item.code)
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private var headerCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(item.kod)
+            Text(item.code)
                 .font(.caption)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
-            Text(item.nazev)
+            Text(item.name)
                 .font(.title3.weight(.semibold))
                 .fixedSize(horizontal: false, vertical: true)
         }

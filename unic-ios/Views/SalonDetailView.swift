@@ -574,7 +574,7 @@ struct AddStatusSheet: View {
 
     private var stockTagItems: [TagItem] {
         flexiBee.stockWithPrices.map {
-            TagItem(id: $0.kod, name: $0.nazev.isEmpty ? $0.kod : "\($0.kod) — \($0.nazev)")
+            TagItem(id: $0.code, name: $0.name.isEmpty ? $0.code : "\($0.code) — \($0.name)")
         }
     }
 

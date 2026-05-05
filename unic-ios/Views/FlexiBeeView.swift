@@ -155,11 +155,11 @@ private struct StockWithPriceRow: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.kod)
+                Text(item.code)
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
-                Text(item.nazev)
+                Text(item.name)
                     .font(.callout)
                     .lineLimit(2)
             }

@@ -38,7 +38,7 @@ final class FlexiBeeViewModel: ObservableObject {
         let base = service.stockWithPrices
         let items = searchText.isEmpty ? base : {
             let q = searchText.lowercased()
-            return base.filter { $0.kod.lowercased().contains(q) || $0.nazev.lowercased().contains(q) }
+            return base.filter { $0.code.lowercased().contains(q) || $0.name.lowercased().contains(q) }
         }()
         return items.sorted { sortAscending ? $0.quantity < $1.quantity : $0.quantity > $1.quantity }
     }
@@ -67,7 +67,7 @@ final class FlexiBeeViewModel: ObservableObject {
                 return
             }
             guard let product = service.stockWithPrices.first(where: {
-                normalizeKod($0.kod) == normalizeKod(article)
+                normalizeKod($0.code) == normalizeKod(article)
             }) else {
                 barcodeError = String.barcode_not_found(article)
                 return

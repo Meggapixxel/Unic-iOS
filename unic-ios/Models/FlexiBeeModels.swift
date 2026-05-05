@@ -1,18 +1,28 @@
 import Foundation
 import SwiftUI
 
-// MARK: - Price List (Ceník)
+// MARK: - Price List
 
 struct FlexiBeeCenikItem: Identifiable, Codable {
     let id: String
-    let kod: String
-    let nazev: String?
-    let cenaZaklVcDph: String?
-    let nakupCena: String?
+    let code: String
+    let name: String?
+    private let priceWithVATRaw: String?
+    private let purchasePriceRaw: String?
 
-    var sellPriceVAT: Double { Double(cenaZaklVcDph ?? "") ?? 0 }
-    var purchasePrice: Double { Double(nakupCena ?? "") ?? 0 }
-    var displayName: String { nazev ?? kod }
+    enum CodingKeys: String, CodingKey, CaseIterable {
+        case id
+        case code             = "kod"
+        case name             = "nazev"
+        case priceWithVATRaw  = "cenaZaklVcDph"
+        case purchasePriceRaw = "nakupCena"
+    }
+
+    static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
+
+    var sellPriceVAT: Double  { Double(priceWithVATRaw  ?? "") ?? 0 }
+    var purchasePrice: Double { Double(purchasePriceRaw ?? "") ?? 0 }
+    var displayName: String   { name ?? code }
 
     var marginPercent: Double? {
         guard purchasePrice > 0, sellPriceVAT > 0 else { return nil }
@@ -21,52 +31,52 @@ struct FlexiBeeCenikItem: Identifiable, Codable {
     }
 }
 
-// MARK: - Stock (Skladová karta)
+// MARK: - Stock
 
 struct FlexiBeeStockCard: Identifiable, Codable {
     let id: UUID
-    let kod: String
-    let nazev: String
+    let code: String
+    let name: String
     let quantity: Double
 
-    init(kod: String, nazev: String, quantity: Double) {
-        self.id = UUID()
-        self.kod = kod
-        self.nazev = nazev
+    init(code: String, name: String, quantity: Double) {
+        self.id       = UUID()
+        self.code     = code
+        self.name     = name
         self.quantity = quantity
     }
 }
 
 struct FlexiBeeStockWrapper: Decodable {
     let cards: [FlexiBeeStockRaw]
-
-    enum CodingKeys: String, CodingKey {
-        case cards = "skladova-karta"
-    }
+    enum CodingKeys: String, CodingKey { case cards = "skladova-karta" }
 }
 
 struct FlexiBeeStockRaw: Decodable {
-    let cenikShowAs: String?
-    let stavMjSPozadavky: String?
+    private let priceListRef:        String?
+    private let quantityWithDemand:  String?
 
     enum CodingKeys: String, CodingKey {
-        case cenikShowAs = "cenik@showAs"
-        case stavMjSPozadavky
+        case priceListRef       = "cenik@showAs"
+        case quantityWithDemand = "stavMjSPozadavky"
     }
 
+    // "cenik" is FlexiBee shorthand that expands to "cenik@showAs" in response — cannot derive from CodingKeys
+    static let requestFields = "cenik,stavMjSPozadavky"
+
     func toCard() -> FlexiBeeStockCard {
-        var kod = ""
-        var nazev = ""
-        if let showAs = cenikShowAs, let range = showAs.range(of: ": ") {
-            kod = String(showAs[showAs.startIndex..<range.lowerBound])
-            nazev = String(showAs[range.upperBound...])
+        var code = ""
+        var name = ""
+        if let ref = priceListRef, let range = ref.range(of: ": ") {
+            code = String(ref[ref.startIndex..<range.lowerBound])
+            name = String(ref[range.upperBound...])
         } else {
-            nazev = cenikShowAs ?? ""
+            name = priceListRef ?? ""
         }
         return FlexiBeeStockCard(
-            kod: kod,
-            nazev: nazev,
-            quantity: Double(stavMjSPozadavky ?? "") ?? 0
+            code:     code,
+            name:     name,
+            quantity: Double(quantityWithDemand ?? "") ?? 0
         )
     }
 }
@@ -85,17 +95,17 @@ struct FlexiBeeCenikWrapper: Decodable {
 
 struct FlexiBeeStockWithPrice: Identifiable, Hashable {
     let id = UUID()
-    let card: FlexiBeeStockCard
+    let card:  FlexiBeeStockCard
     let price: FlexiBeeCenikItem?
 
     static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 
-    var kod: String { card.kod }
-    var nazev: String { card.nazev }
-    var quantity: Double { card.quantity }
-    var sellPriceVAT: Double { price?.sellPriceVAT ?? 0 }
-    var purchasePrice: Double { price?.purchasePrice ?? 0 }
+    var code:          String  { card.code }
+    var name:          String  { card.name }
+    var quantity:      Double  { card.quantity }
+    var sellPriceVAT:  Double  { price?.sellPriceVAT  ?? 0 }
+    var purchasePrice: Double  { price?.purchasePrice ?? 0 }
     var marginPercent: Double? { price?.marginPercent }
 }
 
@@ -136,29 +146,42 @@ enum PaymentStatus: String, CaseIterable {
 
 // MARK: - Invoice
 
-struct FlexiBeeInvoice: Identifiable, Codable {
-    let id: String
-    let kod: String?
-    let popis: String?
-    let datVyst: String?
-    let datSplat: String?
-    let sumCelkem: String?
-    let stavUhrK: String?
-    let firmaShowAs: String?
+struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
+    let id:                String
+    let code:              String?
+    let notes:             String?
+    private let issueDateRaw:      String?
+    private let dueDateRaw:        String?
+    private let totalRaw:          String?
+    private let paymentStatusCode: String?
+    private let clientRef:         String?
 
-    enum CodingKeys: String, CodingKey {
-        case id, kod, popis, datVyst, datSplat, sumCelkem, stavUhrK
-        case firmaShowAs = "firma@showAs"
+    enum CodingKeys: String, CodingKey, CaseIterable {
+        case id
+        case code              = "kod"
+        case notes             = "popis"
+        case issueDateRaw      = "datVyst"
+        case dueDateRaw        = "datSplat"
+        case totalRaw          = "sumCelkem"
+        case paymentStatusCode = "stavUhrK"
+        case clientRef         = "firma@showAs"
     }
 
-    var total: Double         { Double(sumCelkem ?? "") ?? 0 }
-    var issueDate: Date?      { Self.parseDate(datVyst) }
-    var dueDate: Date?        { Self.parseDate(datSplat) }
-    var invoiceNumber: String { kod ?? id }
+    static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
+
+    var total:         Double  { Double(totalRaw ?? "") ?? 0 }
+    var issueDate:     Date?   { Self.parseDate(issueDateRaw) }
+    var dueDate:       Date?   { Self.parseDate(dueDateRaw) }
+    var invoiceNumber: String  { code ?? id }
 
     var clientName: String {
-        guard let raw = firmaShowAs, let range = raw.range(of: ": ") else { return firmaShowAs ?? "—" }
+        guard let raw = clientRef, let range = raw.range(of: ": ") else { return clientRef ?? "—" }
         return String(raw[range.upperBound...])
+    }
+
+    var clientCode: String? {
+        guard let raw = clientRef, let range = raw.range(of: ": ") else { return nil }
+        return String(raw[raw.startIndex..<range.lowerBound])
     }
 
     private static func parseDate(_ string: String?) -> Date? {
@@ -170,7 +193,7 @@ struct FlexiBeeInvoice: Identifiable, Codable {
     }
 
     var paymentStatus: PaymentStatus {
-        let s = stavUhrK ?? ""
+        let s = paymentStatusCode ?? ""
         if s.contains("castecne") { return .partial }
         if s.contains("uhrazeno") { return .paid }
         if let due = dueDate, due < Date() { return .overdue }
@@ -187,20 +210,31 @@ struct FlexiBeeInvoicesWrapper: Decodable {
 
 struct FlexiBeeInvoiceItem: Identifiable, Codable {
     let id: String
-    let kod: String?
-    let nazev: String?
-    let datVyst: String?
-    let mnozMj: String?
-    let sumCelkem: String?
+    private let codeRaw:       String?
+    private let nameRaw:       String?
+    private let issueDateRaw:  String?
+    private let quantityRaw:   String?
+    private let totalRaw:      String?
 
-    var quantity: Double    { Double(mnozMj    ?? "") ?? 0 }
-    var total: Double       { Double(sumCelkem ?? "") ?? 0 }
-    var productCode: String { kod ?? "" }
-    var productName: String { nazev ?? kod ?? "—" }
-    var isValid: Bool       { !productCode.isEmpty && quantity > 0 }
+    enum CodingKeys: String, CodingKey, CaseIterable {
+        case id
+        case codeRaw      = "kod"
+        case nameRaw      = "nazev"
+        case issueDateRaw = "datVyst"
+        case quantityRaw  = "mnozMj"
+        case totalRaw     = "sumCelkem"
+    }
+
+    static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
+
+    var quantity:    Double  { Double(quantityRaw ?? "") ?? 0 }
+    var total:       Double  { Double(totalRaw    ?? "") ?? 0 }
+    var productCode: String  { codeRaw ?? "" }
+    var productName: String  { nameRaw ?? codeRaw ?? "—" }
+    var isValid:     Bool    { !productCode.isEmpty && quantity > 0 }
 
     var date: Date? {
-        guard let s = datVyst else { return nil }
+        guard let s = issueDateRaw else { return nil }
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd"
@@ -211,4 +245,92 @@ struct FlexiBeeInvoiceItem: Identifiable, Codable {
 struct FlexiBeeInvoiceItemsWrapper: Decodable {
     let items: [FlexiBeeInvoiceItem]
     enum CodingKeys: String, CodingKey { case items = "faktura-vydana-polozka" }
+}
+
+// MARK: - Firm (Client / Address Book)
+
+struct FlexiBeeFirm: Identifiable, Decodable {
+    let id:   String
+    let code: String
+    let name: String?
+
+    enum CodingKeys: String, CodingKey, CaseIterable {
+        case id
+        case code = "kod"
+        case name = "nazev"
+    }
+
+    static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
+
+    var displayName: String {
+        let n = name ?? ""
+        return n.isEmpty ? code : n
+    }
+}
+
+struct FlexiBeeFirmWrapper: Decodable {
+    let firms: [FlexiBeeFirm]
+    enum CodingKeys: String, CodingKey { case firms = "adresar" }
+}
+
+// MARK: - Create Invoice Request
+
+struct NewInvoiceLine: Encodable {
+    let name:      String
+    let quantity:  Double
+    let unitPrice: Double
+    let vatRate:   Double
+    let priceType: String
+
+    enum CodingKeys: String, CodingKey {
+        case name      = "nazev"
+        case quantity  = "mnozMj"
+        case unitPrice = "cenaMj"
+        case vatRate   = "sazDph"
+        case priceType = "typCenyDphK"
+    }
+
+    init(name: String, quantity: Double, unitPrice: Double, vatRate: Double = 21.0) {
+        self.name      = name
+        self.quantity  = quantity
+        self.unitPrice = unitPrice
+        self.vatRate   = vatRate
+        self.priceType = "typCeny.sDph"
+    }
+}
+
+struct NewInvoice: Encodable {
+    let documentType: String
+    let clientCode:   String
+    let issueDate:    String
+    let dueDate:      String
+    let notes:        String?
+    let lineItems:    [NewInvoiceLine]
+
+    enum CodingKeys: String, CodingKey {
+        case documentType = "typDokl"
+        case clientCode   = "firma"
+        case issueDate    = "datVyst"
+        case dueDate      = "datSplat"
+        case notes        = "popis"
+        case lineItems    = "polozkyFaktury"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(documentType,       forKey: .documentType)
+        try c.encode(clientCode,         forKey: .clientCode)
+        try c.encode(issueDate,          forKey: .issueDate)
+        try c.encode(dueDate,            forKey: .dueDate)
+        try c.encodeIfPresent(notes,     forKey: .notes)
+        try c.encode(lineItems,          forKey: .lineItems)
+    }
+}
+
+struct CreateInvoiceEnvelope: Encodable {
+    let winstrom: Winstrom
+    struct Winstrom: Encodable {
+        let fakturaVydana: [NewInvoice]
+        enum CodingKeys: String, CodingKey { case fakturaVydana = "faktura-vydana" }
+    }
 }
