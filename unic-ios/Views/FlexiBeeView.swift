@@ -18,6 +18,9 @@ struct FlexiBeeView: View {
                 .navigationDestination(item: $viewModel.foundProduct) { product in
                     FlexiBeeProductDetailView(item: product)
                 }
+                .navigationDestination(for: FlexiBeeStockWithPrice.self) { product in
+                    FlexiBeeProductDetailView(item: product)
+                }
                 .fullScreenCover(isPresented: $viewModel.showBarcodeScanner) {
                     BarcodeScannerScreen(
                         onScan: { barcode in

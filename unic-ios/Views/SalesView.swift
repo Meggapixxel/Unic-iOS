@@ -79,6 +79,9 @@ struct InvoicesTabView: View {
                         isAdmin: AuthService.shared.isAdmin
                     )
                 }
+                .navigationDestination(for: FlexiBeeStockWithPrice.self) { product in
+                    FlexiBeeProductDetailView(item: product)
+                }
         }
     }
 
@@ -185,7 +188,8 @@ private struct AnalyticsSectionView: View {
                 if !viewModel.productAnalytics.isEmpty {
                     RankingSection(title: String.sales_top_products) {
                         ForEach(Array(viewModel.productAnalytics.prefix(10).enumerated()), id: \.offset) { idx, p in
-                            RankingRow(
+                            let stockItem = FlexiBeeService.shared.stockWithPrices.first { $0.code == p.code }
+                            let row = RankingRow(
                                 rank: idx + 1,
                                 title: p.name,
                                 subtitle: p.code,
@@ -193,6 +197,11 @@ private struct AnalyticsSectionView: View {
                                 subvalue: String.sales_quantity(Int(p.quantity)),
                                 isLast: idx == min(viewModel.productAnalytics.count, 10) - 1
                             )
+                            if let stockItem {
+                                NavigationLink { FlexiBeeProductDetailView(item: stockItem) } label: { row }
+                            } else {
+                                row
+                            }
                         }
                     }
                     .padding(.horizontal, 16)

@@ -89,9 +89,6 @@ struct InvoiceDetailView: View {
                 }
             }
         }
-        .navigationDestination(for: FlexiBeeStockWithPrice.self) { product in
-            FlexiBeeProductDetailView(item: product)
-        }
         .sheet(isPresented: $showEdit) {
             InvoiceFormSheetView(salesViewModel: salesViewModel, editingInvoice: viewModel.invoice)
         }
