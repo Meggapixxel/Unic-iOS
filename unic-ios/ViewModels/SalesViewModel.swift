@@ -52,6 +52,7 @@ struct ProductSales: Identifiable {
 final class SalesViewModel: ObservableObject {
     @Published private(set) var invoices: [FlexiBeeInvoice] = []
     @Published private(set) var invoiceItems: [FlexiBeeInvoiceItem] = []
+    @Published private(set) var stockMovementItems: [FlexiBeeStockMovementItem] = []
     @Published private(set) var firms: [FlexiBeeFirm] = []
     @Published private(set) var isLoading = false
     @Published private(set) var isFirmsLoading = false
@@ -69,8 +70,9 @@ final class SalesViewModel: ObservableObject {
         fmt.dateFormat = "MMM"
         return fmt
     }()
-    private static let invoicesKey    = "sales_cache_invoices"
-    private static let invoiceItemsKey = "sales_cache_invoice_items"
+    private static let invoicesKey         = "sales_cache_invoices"
+    private static let invoiceItemsKey     = "sales_cache_invoice_items"
+    private static let stockMovementsKey   = "sales_cache_stock_movements"
 
     init() {
         restoreFromDisk()
@@ -93,6 +95,10 @@ final class SalesViewModel: ObservableObject {
            let saved = try? decoder.decode([FlexiBeeInvoiceItem].self, from: data) {
             invoiceItems = saved
         }
+        if let data = UserDefaults.standard.data(forKey: Self.stockMovementsKey),
+           let saved = try? decoder.decode([FlexiBeeStockMovementItem].self, from: data) {
+            stockMovementItems = saved
+        }
     }
 
     private func saveToDisk() {
@@ -103,12 +109,15 @@ final class SalesViewModel: ObservableObject {
         if let data = try? encoder.encode(invoiceItems) {
             UserDefaults.standard.set(data, forKey: Self.invoiceItemsKey)
         }
+        if let data = try? encoder.encode(stockMovementItems) {
+            UserDefaults.standard.set(data, forKey: Self.stockMovementsKey)
+        }
     }
 
     // MARK: - Load
 
     func loadIfNeeded() async {
-        guard !isCacheValid else { return }
+        guard !isCacheValid || stockMovementItems.isEmpty else { return }
         await fetchData()
     }
 
@@ -140,10 +149,12 @@ final class SalesViewModel: ObservableObject {
         isLoading = true
         error = nil
         do {
-            async let inv   = service.fetchInvoices()
-            async let items = service.fetchInvoiceItems()
-            invoices     = try await inv
-            invoiceItems = try await items
+            async let inv       = service.fetchInvoices()
+            async let items     = service.fetchInvoiceItems()
+            async let movements = service.fetchStockMovementItems()
+            invoices           = try await inv
+            invoiceItems       = try await items
+            stockMovementItems = await movements
             let now = Date()
             lastSyncDate = now
             UserDefaults.standard.set(now, forKey: "sales_lastSync")
@@ -167,6 +178,14 @@ final class SalesViewModel: ObservableObject {
     var periodItems: [FlexiBeeInvoiceItem] {
         let (from, to) = period.dateRange
         return invoiceItems.filter {
+            guard let d = $0.date else { return false }
+            return d >= from && d <= to
+        }
+    }
+
+    var periodMovements: [FlexiBeeStockMovementItem] {
+        let (from, to) = period.dateRange
+        return stockMovementItems.filter {
             guard let d = $0.date else { return false }
             return d >= from && d <= to
         }
@@ -223,16 +242,16 @@ final class SalesViewModel: ObservableObject {
     // MARK: - Product analytics
 
     var productAnalytics: [ProductSales] {
-        let grouped = Dictionary(grouping: periodItems) { $0.productCode }
+        let grouped = Dictionary(grouping: periodMovements) { $0.productCode }
         return grouped
             .map { code, items in
                 ProductSales(
                     code: code,
                     name: items.first?.productName ?? code,
-                    quantity: items.reduce(0) { $0 + $1.quantity },
+                    quantity: items.reduce(0) { $0 + $1.quantityIssued },
                     revenue: items.reduce(0) { $0 + $1.total }
                 )
             }
-            .sorted { $0.revenue > $1.revenue }
+            .sorted { $0.quantity > $1.quantity }
     }
 }

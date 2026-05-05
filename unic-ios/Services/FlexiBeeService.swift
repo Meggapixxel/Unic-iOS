@@ -237,6 +237,39 @@ final class FlexiBeeService: ObservableObject {
         }
     }
 
+    func fetchStockMovementItems() async -> [FlexiBeeStockMovementItem] {
+        // Step 1: fetch all movement headers, keep only outflows (S- prefix)
+        guard let headers = try? await fetch(
+            FlexiBeeResponse<FlexiBeeStockMovementWrapper>.self,
+            path: "/skladovy-pohyb.json",
+            fields: "id,kod",
+            limit: 1000
+        ) else { return [] }
+        let outflowIds = headers.winstrom.movements
+            .filter { $0.code.hasPrefix("S-") }
+            .map { $0.id }
+
+        guard !outflowIds.isEmpty else { return [] }
+
+        // Step 2: fetch line items for each outflow document concurrently
+        return await withTaskGroup(of: [FlexiBeeStockMovementItem].self) { group in
+            for id in outflowIds {
+                group.addTask {
+                    guard let response = try? await self.fetch(
+                        FlexiBeeResponse<FlexiBeeStockMovementItemsWrapper>.self,
+                        path: "/skladovy-pohyb/\(id)/skladovy-pohyb-polozka.json",
+                        fields: FlexiBeeStockMovementItem.apiFields,
+                        limit: 500
+                    ) else { return [] }
+                    return response.winstrom.items.filter { $0.isValid }
+                }
+            }
+            var all: [FlexiBeeStockMovementItem] = []
+            for await items in group { all.append(contentsOf: items) }
+            return all
+        }
+    }
+
     func fetchPriceList() async throws -> [FlexiBeeCenikItem] {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeCenikWrapper>.self,

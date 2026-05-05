@@ -247,6 +247,63 @@ struct FlexiBeeInvoiceItemsWrapper: Decodable {
     enum CodingKeys: String, CodingKey { case items = "faktura-vydana-polozka" }
 }
 
+// MARK: - Stock Movement (Warehouse outflow header)
+
+struct FlexiBeeStockMovement: Decodable {
+    let id:   String
+    let code: String
+    enum CodingKeys: String, CodingKey { case id; case code = "kod" }
+}
+
+struct FlexiBeeStockMovementWrapper: Decodable {
+    let movements: [FlexiBeeStockMovement]
+    enum CodingKeys: String, CodingKey { case movements = "skladovy-pohyb" }
+}
+
+// MARK: - Stock Movement Item (Warehouse outflow line)
+
+struct FlexiBeeStockMovementItem: Identifiable, Codable {
+    let id:              String
+    private let codeRaw: String?
+    private let nameRaw: String?
+    private let dateRaw: String?
+    private let quantityRaw: String?
+    private let totalRaw:    String?
+
+    enum CodingKeys: String, CodingKey, CaseIterable {
+        case id
+        case codeRaw     = "kod"
+        case nameRaw     = "nazev"
+        case dateRaw     = "datVyst"
+        case quantityRaw = "mnozMj"
+        case totalRaw    = "sumCelkem"
+    }
+
+    static var apiFields: String {
+        CodingKeys.allCases.map(\.rawValue).joined(separator: ",")
+    }
+
+    var productCode:    String { codeRaw ?? "" }
+    var productName:    String { nameRaw ?? codeRaw ?? "—" }
+    var quantityIssued: Double { Double(quantityRaw ?? "") ?? 0 }
+    var total:          Double { Double(totalRaw ?? "") ?? 0 }
+
+    var date: Date? {
+        guard let s = dateRaw else { return nil }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f.date(from: String(s.prefix(10)))
+    }
+
+    var isValid: Bool { !productCode.isEmpty && quantityIssued > 0 }
+}
+
+struct FlexiBeeStockMovementItemsWrapper: Decodable {
+    let items: [FlexiBeeStockMovementItem]
+    enum CodingKeys: String, CodingKey { case items = "skladovy-pohyb-polozka" }
+}
+
 // MARK: - Firm (Client / Address Book)
 
 struct FlexiBeeFirm: Identifiable, Decodable {
