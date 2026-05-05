@@ -35,6 +35,7 @@ struct unic_iosApp: App {
 
 struct RootView: View {
     @ObservedObject private var auth = AuthService.shared
+    @StateObject private var salesViewModel = SalesViewModel()
     @State private var showGreeting = false
 
     var body: some View {
@@ -46,8 +47,10 @@ struct RootView: View {
                     FlexiBeeView()
                         .tabItem { Label("FlexiBee", systemImage: "chart.bar.doc.horizontal") }
                     if auth.isAdmin || auth.isManager {
-                        SalesView()
-                            .tabItem { Label("Sales", systemImage: "chart.line.uptrend.xyaxis") }
+                        AnalyticsTabView(viewModel: salesViewModel)
+                            .tabItem { Label(String.sales_analytics, systemImage: "chart.line.uptrend.xyaxis") }
+                        InvoicesTabView(viewModel: salesViewModel)
+                            .tabItem { Label(String.sales_invoices, systemImage: "doc.text") }
                         UsersView()
                             .tabItem { Label("Users", systemImage: "person.2.fill") }
                     }

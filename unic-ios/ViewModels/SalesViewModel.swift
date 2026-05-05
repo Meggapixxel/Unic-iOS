@@ -52,7 +52,9 @@ struct ProductSales: Identifiable {
 final class SalesViewModel: ObservableObject {
     @Published private(set) var invoices: [FlexiBeeInvoice] = []
     @Published private(set) var invoiceItems: [FlexiBeeInvoiceItem] = []
+    @Published private(set) var firms: [FlexiBeeFirm] = []
     @Published private(set) var isLoading = false
+    @Published private(set) var isFirmsLoading = false
     @Published private(set) var error: String?
     @Published private(set) var lastSyncDate: Date? = UserDefaults.standard.object(forKey: "sales_lastSync") as? Date
     @Published var period: SalesPeriod = .year
@@ -111,6 +113,25 @@ final class SalesViewModel: ObservableObject {
     }
 
     func forceSync() async {
+        await fetchData()
+    }
+
+    func loadFirms() async {
+        guard firms.isEmpty else { return }
+        isFirmsLoading = true
+        if let f = try? await service.fetchFirms() {
+            firms = f
+        }
+        isFirmsLoading = false
+    }
+
+    func createInvoice(_ invoice: NewInvoice) async throws {
+        try await service.createInvoice(invoice)
+        await fetchData()
+    }
+
+    func updateInvoice(id: String, invoice: NewInvoice) async throws {
+        try await service.updateInvoice(id: id, invoice: invoice)
         await fetchData()
     }
 

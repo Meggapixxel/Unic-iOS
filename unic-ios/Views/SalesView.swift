@@ -1,72 +1,51 @@
 import SwiftUI
 import Charts
 
-struct SalesView: View {
-    @StateObject private var viewModel = SalesViewModel()
-    @State private var selectedTab = 0
+// MARK: - Analytics Tab
+
+struct AnalyticsTabView: View {
+    @ObservedObject var viewModel: SalesViewModel
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                Picker("", selection: $selectedTab) {
-                    Text("sales_analytics").tag(0)
-                    Text("sales_invoices").tag(1)
+            AnalyticsSectionView(viewModel: viewModel)
+                .navigationTitle(String.sales_analytics)
+                .toolbar { syncToolbar }
+                .overlay {
+                    if viewModel.isLoading && viewModel.invoices.isEmpty { loadingOverlay }
                 }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 16)
-                .padding(.top, 4)
-                .padding(.bottom, 8)
-
-                if selectedTab == 0 {
-                    AnalyticsSectionView(viewModel: viewModel)
-                } else {
-                    InvoicesSectionView(viewModel: viewModel)
-                }
-            }
-            .navigationTitle(String.sales_nav_title)
-            .toolbar { syncToolbar }
-            .overlay {
-                if viewModel.isLoading && viewModel.invoices.isEmpty {
-                    loadingOverlay
-                }
-            }
-            .task { await viewModel.loadIfNeeded() }
+                .task { await viewModel.loadIfNeeded() }
         }
     }
 
     @ToolbarContentBuilder
     private var syncToolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                Task { await viewModel.forceSync() }
-            } label: {
-                if viewModel.isLoading {
-                    ProgressView().scaleEffect(0.8)
-                } else {
-                    HStack(spacing: 6) {
-                        VStack(alignment: .trailing, spacing: 1) {
-                            Text(viewModel.lastSyncDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? String.never)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            Text(viewModel.lastSyncDate.map { $0.formatted(date: .omitted, time: .shortened) } ?? "")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        Image(systemName: "arrow.clockwise")
-                            .font(.caption)
+        ToolbarItem(placement: .topBarTrailing) { syncButton }
+    }
+
+    private var syncButton: some View {
+        Button { Task { await viewModel.forceSync() } } label: {
+            if viewModel.isLoading {
+                ProgressView().scaleEffect(0.8)
+            } else {
+                HStack(spacing: 6) {
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text(viewModel.lastSyncDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? String.never)
+                            .font(.caption2).foregroundStyle(.secondary)
+                        Text(viewModel.lastSyncDate.map { $0.formatted(date: .omitted, time: .shortened) } ?? "")
+                            .font(.caption2).foregroundStyle(.secondary)
                     }
+                    Image(systemName: "arrow.clockwise").font(.caption)
                 }
             }
-            .disabled(viewModel.isLoading)
         }
+        .disabled(viewModel.isLoading)
     }
 
     private var loadingOverlay: some View {
         VStack(spacing: 12) {
             ProgressView()
-            Text("loading")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            Text("loading").font(.subheadline).foregroundStyle(.secondary)
         }
         .padding(24)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
@@ -75,7 +54,76 @@ struct SalesView: View {
     }
 }
 
-// MARK: - Analytics
+// MARK: - Invoices Tab
+
+struct InvoicesTabView: View {
+    @ObservedObject var viewModel: SalesViewModel
+    @State private var showCreateInvoice = false
+
+    var body: some View {
+        NavigationStack {
+            InvoicesSectionView(viewModel: viewModel)
+                .navigationTitle(String.sales_invoices)
+                .toolbar { invoicesToolbar }
+                .overlay {
+                    if viewModel.isLoading && viewModel.invoices.isEmpty { loadingOverlay }
+                }
+                .task { await viewModel.loadIfNeeded() }
+                .sheet(isPresented: $showCreateInvoice) {
+                    InvoiceFormSheetView(salesViewModel: viewModel)
+                }
+                .navigationDestination(for: FlexiBeeInvoice.self) { invoice in
+                    InvoiceDetailView(
+                        invoice: invoice,
+                        salesViewModel: viewModel,
+                        isAdmin: AuthService.shared.isAdmin
+                    )
+                }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var invoicesToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button { showCreateInvoice = true } label: {
+                Image(systemName: "square.and.pencil").fontWeight(.semibold)
+            }
+        }
+        ToolbarItem(placement: .topBarTrailing) { syncButton }
+    }
+
+    private var syncButton: some View {
+        Button { Task { await viewModel.forceSync() } } label: {
+            if viewModel.isLoading {
+                ProgressView().scaleEffect(0.8)
+            } else {
+                HStack(spacing: 6) {
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text(viewModel.lastSyncDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? String.never)
+                            .font(.caption2).foregroundStyle(.secondary)
+                        Text(viewModel.lastSyncDate.map { $0.formatted(date: .omitted, time: .shortened) } ?? "")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Image(systemName: "arrow.clockwise").font(.caption)
+                }
+            }
+        }
+        .disabled(viewModel.isLoading)
+    }
+
+    private var loadingOverlay: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+            Text("loading").font(.subheadline).foregroundStyle(.secondary)
+        }
+        .padding(24)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.black.opacity(0.15))
+    }
+}
+
+// MARK: - Analytics Content
 
 private struct AnalyticsSectionView: View {
     @ObservedObject var viewModel: SalesViewModel
@@ -156,7 +204,7 @@ private struct AnalyticsSectionView: View {
     }
 }
 
-// MARK: - Invoices
+// MARK: - Invoices Content
 
 private struct InvoicesSectionView: View {
     @ObservedObject var viewModel: SalesViewModel
@@ -200,29 +248,31 @@ private struct InvoiceRow: View {
     let invoice: FlexiBeeInvoice
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(invoice.invoiceNumber)
-                    .font(.callout.bold())
-                Spacer()
-                InvoiceStatusBadge(status: invoice.paymentStatus)
-            }
-            Text(invoice.clientName)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-            HStack {
-                if let date = invoice.issueDate {
-                    Text(date.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        NavigationLink(value: invoice) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(invoice.invoiceNumber)
+                        .font(.callout.bold())
+                    Spacer()
+                    InvoiceStatusBadge(status: invoice.paymentStatus)
                 }
-                Spacer()
-                Text(czk(invoice.total))
-                    .font(.subheadline.bold())
+                Text(invoice.clientName)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                HStack {
+                    if let date = invoice.issueDate {
+                        Text(date.formatted(date: .abbreviated, time: .omitted))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text(czk(invoice.total))
+                        .font(.subheadline.bold())
+                }
             }
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
     }
 }
 
@@ -234,8 +284,7 @@ private struct RankingSection<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
+            Text(title).font(.subheadline.weight(.semibold))
             content
         }
         .padding(16)
@@ -259,23 +308,16 @@ private struct RankingRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 20, alignment: .leading)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(title)
-                        .font(.callout)
-                        .lineLimit(2)
+                    Text(title).font(.callout).lineLimit(2)
                     if let sub = subtitle {
-                        Text(sub)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                        Text(sub).font(.caption2).foregroundStyle(.secondary)
                     }
                 }
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 1) {
-                    Text(value)
-                        .font(.callout.bold())
+                    Text(value).font(.callout.bold())
                     if let sub = subvalue {
-                        Text(sub)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                        Text(sub).font(.caption2).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -294,16 +336,9 @@ private struct KPICard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(color)
-            Text(value)
-                .font(.title3.bold())
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Image(systemName: icon).font(.title3).foregroundStyle(color)
+            Text(value).font(.title3.bold()).lineLimit(1).minimumScaleFactor(0.7)
+            Text(label).font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
@@ -313,7 +348,7 @@ private struct KPICard: View {
 
 // MARK: - Status Badge
 
-private struct InvoiceStatusBadge: View {
+struct InvoiceStatusBadge: View {
     let status: PaymentStatus
 
     var body: some View {
