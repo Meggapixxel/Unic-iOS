@@ -267,6 +267,32 @@
 "payment_unpaid" = "Не оплачено";
 "payment_overdue" = "Просрочено";
 
+/* Create / Edit Invoice */
+"create_invoice_title" = "Новый счёт";
+"edit_invoice_title" = "Редактировать счёт";
+"create_invoice_submit" = "Выставить";
+"edit_invoice_action" = "Редактировать";
+"create_invoice_client" = "Клиент";
+"create_invoice_client_placeholder" = "Выберите клиента";
+"create_invoice_client_search" = "Поиск клиента...";
+"create_invoice_dates" = "Даты";
+"create_invoice_issue_date" = "Дата выставления";
+"create_invoice_due_date" = "Срок оплаты";
+"create_invoice_items" = "Позиции";
+"create_invoice_add_item" = "Добавить позицию";
+"create_invoice_add_item_manual" = "Добавить вручную";
+"create_invoice_add_item_scan" = "Сканировать штрихкод";
+"create_invoice_item_name" = "Название товара или услуги";
+"create_invoice_item_qty" = "Кол-во";
+"create_invoice_item_price" = "Цена";
+"create_invoice_notes" = "Заметки";
+"create_invoice_notes_placeholder" = "Необязательно";
+"create_invoice_pick_product" = "Выберите продукт";
+"invoice_detail_items" = "Позиции";
+"invoice_detail_no_items" = "Позиции отсутствуют";
+"invoice_status_change_title" = "Изменить статус оплаты";
+"invoice_status_change_to %@" = "Установить «%@»?";
+
 /* User Activity */
 "activity_statistics" = "Статистика";
 "activity_actions %lld" = "%lld действий";

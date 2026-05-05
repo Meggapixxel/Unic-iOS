@@ -267,6 +267,32 @@
 "payment_unpaid" = "Unpaid";
 "payment_overdue" = "Overdue";
 
+/* Create / Edit Invoice */
+"create_invoice_title" = "New Invoice";
+"edit_invoice_title" = "Edit Invoice";
+"create_invoice_submit" = "Issue";
+"edit_invoice_action" = "Edit";
+"create_invoice_client" = "Client";
+"create_invoice_client_placeholder" = "Select client";
+"create_invoice_client_search" = "Search client...";
+"create_invoice_dates" = "Dates";
+"create_invoice_issue_date" = "Issue date";
+"create_invoice_due_date" = "Due date";
+"create_invoice_items" = "Line items";
+"create_invoice_add_item" = "Add item";
+"create_invoice_add_item_manual" = "Add manually";
+"create_invoice_add_item_scan" = "Scan barcode";
+"create_invoice_item_name" = "Product or service name";
+"create_invoice_item_qty" = "Qty";
+"create_invoice_item_price" = "Price";
+"create_invoice_notes" = "Notes";
+"create_invoice_notes_placeholder" = "Optional";
+"create_invoice_pick_product" = "Select product";
+"invoice_detail_items" = "Items";
+"invoice_detail_no_items" = "No items";
+"invoice_status_change_title" = "Change Payment Status";
+"invoice_status_change_to %@" = "Set to «%@»?";
+
 /* User Activity */
 "activity_statistics" = "Statistics";
 "activity_actions %lld" = "%lld actions";

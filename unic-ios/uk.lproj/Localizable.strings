@@ -267,6 +267,32 @@
 "payment_unpaid" = "Не сплачено";
 "payment_overdue" = "Прострочено";
 
+/* Create / Edit Invoice */
+"create_invoice_title" = "Нова фактура";
+"edit_invoice_title" = "Редагувати фактуру";
+"create_invoice_submit" = "Виставити";
+"edit_invoice_action" = "Редагувати";
+"create_invoice_client" = "Клієнт";
+"create_invoice_client_placeholder" = "Оберіть клієнта";
+"create_invoice_client_search" = "Пошук клієнта...";
+"create_invoice_dates" = "Дати";
+"create_invoice_issue_date" = "Дата виставлення";
+"create_invoice_due_date" = "Термін оплати";
+"create_invoice_items" = "Позиції";
+"create_invoice_add_item" = "Додати позицію";
+"create_invoice_add_item_manual" = "Додати вручну";
+"create_invoice_add_item_scan" = "Сканувати штрихкод";
+"create_invoice_item_name" = "Назва товару або послуги";
+"create_invoice_item_qty" = "К-сть";
+"create_invoice_item_price" = "Ціна";
+"create_invoice_notes" = "Нотатки";
+"create_invoice_notes_placeholder" = "Необов'язково";
+"create_invoice_pick_product" = "Оберіть продукт";
+"invoice_detail_items" = "Позиції";
+"invoice_detail_no_items" = "Позиції відсутні";
+"invoice_status_change_title" = "Змінити статус оплати";
+"invoice_status_change_to %@" = "Встановити «%@»?";
+
 /* User Activity */
 "activity_statistics" = "Статистика";
 "activity_actions %lld" = "%lld дій";

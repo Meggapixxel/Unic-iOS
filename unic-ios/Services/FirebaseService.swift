@@ -534,6 +534,14 @@ final class FirebaseService: ObservableObject {
         return parts[idx + 1]
     }
 
+    // MARK: - Barcode Lookup
+
+    func lookupBarcodeArticle(_ barcode: String) async throws -> String? {
+        let doc = try await db.collection("barcodes").document(barcode).getDocument()
+        guard doc.exists else { return nil }
+        return doc.data()?["article"] as? String
+    }
+
     // MARK: - Geocoding
 
     private func geocode(_ query: String) async -> CLLocationCoordinate2D? {

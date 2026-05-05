@@ -270,6 +270,36 @@ extension String {
     static var payment_unpaid:  String { String(localized: "payment_unpaid") }
     static var payment_overdue: String { String(localized: "payment_overdue") }
 
+    // MARK: - Create / Edit Invoice
+    static var create_invoice_title:            String { String(localized: "create_invoice_title") }
+    static var edit_invoice_title:              String { String(localized: "edit_invoice_title") }
+    static var create_invoice_submit:           String { String(localized: "create_invoice_submit") }
+    static var edit_invoice_action:             String { String(localized: "edit_invoice_action") }
+    static var create_invoice_client:           String { String(localized: "create_invoice_client") }
+    static var create_invoice_client_placeholder: String { String(localized: "create_invoice_client_placeholder") }
+    static var create_invoice_client_search:    String { String(localized: "create_invoice_client_search") }
+    static var create_invoice_dates:            String { String(localized: "create_invoice_dates") }
+    static var create_invoice_issue_date:       String { String(localized: "create_invoice_issue_date") }
+    static var create_invoice_due_date:         String { String(localized: "create_invoice_due_date") }
+    static var create_invoice_items:            String { String(localized: "create_invoice_items") }
+    static var create_invoice_add_item:          String { String(localized: "create_invoice_add_item") }
+    static var create_invoice_add_item_manual:   String { String(localized: "create_invoice_add_item_manual") }
+    static var create_invoice_add_item_scan:     String { String(localized: "create_invoice_add_item_scan") }
+    static var create_invoice_item_name:        String { String(localized: "create_invoice_item_name") }
+    static var create_invoice_item_qty:         String { String(localized: "create_invoice_item_qty") }
+    static var create_invoice_item_price:       String { String(localized: "create_invoice_item_price") }
+    static var create_invoice_notes:            String { String(localized: "create_invoice_notes") }
+    static var create_invoice_notes_placeholder: String { String(localized: "create_invoice_notes_placeholder") }
+    static var create_invoice_pick_product:     String { String(localized: "create_invoice_pick_product") }
+
+    // MARK: - Invoice Detail
+    static var invoice_detail_items:    String { String(localized: "invoice_detail_items") }
+    static var invoice_detail_no_items: String { String(localized: "invoice_detail_no_items") }
+    static var invoice_status_change_title: String { String(localized: "invoice_status_change_title") }
+    static func invoice_status_change_to(_ s: String) -> String {
+        String(format: String(localized: "invoice_status_change_to %@"), s)
+    }
+
     // MARK: - User Activity
     static var activity_statistics: String { String(localized: "activity_statistics") }
     static var activity_today:      String { String(localized: "activity_today") }
