@@ -342,7 +342,7 @@ struct InvoiceFormView: View {
                 Text(String.create_invoice_items)
                 Spacer()
                 if viewModel.grandTotal > 0 {
-                    Text(invoiceCZK(viewModel.grandTotal))
+                    Text(czk(viewModel.grandTotal))
                         .font(.caption.bold())
                         .textCase(nil)
                         .foregroundStyle(.primary)
@@ -404,7 +404,7 @@ private struct LineItemRow: View {
                 Spacer()
 
                 if item.total > 0 {
-                    Text(invoiceCZK(item.total))
+                    Text(czk(item.total))
                         .font(.title3.bold())
                         .foregroundStyle(.primary)
                 }
@@ -515,7 +515,7 @@ struct ProductPickerForInvoiceView: View {
                             }
                             Spacer()
                             if item.sellPriceVAT > 0 {
-                                Text(invoiceCZK(item.sellPriceVAT))
+                                Text(czk(item.sellPriceVAT))
                                     .font(.callout.bold())
                                     .foregroundStyle(.secondary)
                             }
@@ -536,13 +536,3 @@ struct ProductPickerForInvoiceView: View {
     }
 }
 
-// MARK: - Helpers
-
-func invoiceCZK(_ amount: Double) -> String {
-    guard amount > 0 else { return "—" }
-    let fmt = NumberFormatter()
-    fmt.numberStyle = .currency
-    fmt.currencyCode = "CZK"
-    fmt.maximumFractionDigits = 0
-    return fmt.string(from: NSNumber(value: amount)) ?? "\(Int(amount)) Kč"
-}

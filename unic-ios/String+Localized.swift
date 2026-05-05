@@ -14,6 +14,7 @@ extension String {
     static var no_data:      String { String(localized: "no_data") }
     static var retry:        String { String(localized: "retry") }
     static var never:        String { String(localized: "never") }
+    static var see_all:      String { String(localized: "see_all") }
     static var filter_all:   String { String(localized: "filter_all") }
     static var sorting:      String { String(localized: "sorting") }
     static var category:     String { String(localized: "category") }

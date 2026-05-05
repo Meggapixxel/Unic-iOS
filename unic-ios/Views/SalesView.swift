@@ -1,56 +1,29 @@
 import SwiftUI
 import Charts
+import IdentifiedCollections
 
 // MARK: - Analytics Tab
 
 struct AnalyticsTabView: View {
     @ObservedObject var viewModel: SalesViewModel
+    @State private var router = AppRouter()
 
     var body: some View {
-        NavigationStack {
-            AnalyticsSectionView(viewModel: viewModel)
+        AppNavigationStack(router: router, salesViewModel: viewModel) {
+            AnalyticsSectionView(viewModel: viewModel, router: router)
                 .navigationTitle(String.sales_analytics)
-                .toolbar { syncToolbar }
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        SyncButton(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate) {
+                            Task { await viewModel.forceSync() }
+                        }
+                    }
+                }
                 .overlay {
-                    if viewModel.isLoading && viewModel.invoices.isEmpty { loadingOverlay }
+                    if viewModel.isLoading && viewModel.invoices.isEmpty { LoadingOverlay() }
                 }
                 .task { await viewModel.loadIfNeeded() }
         }
-    }
-
-    @ToolbarContentBuilder
-    private var syncToolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) { syncButton }
-    }
-
-    private var syncButton: some View {
-        Button { Task { await viewModel.forceSync() } } label: {
-            if viewModel.isLoading {
-                ProgressView().scaleEffect(0.8)
-            } else {
-                HStack(spacing: 6) {
-                    VStack(alignment: .trailing, spacing: 1) {
-                        Text(viewModel.lastSyncDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? String.never)
-                            .font(.caption2).foregroundStyle(.secondary)
-                        Text(viewModel.lastSyncDate.map { $0.formatted(date: .omitted, time: .shortened) } ?? "")
-                            .font(.caption2).foregroundStyle(.secondary)
-                    }
-                    Image(systemName: "arrow.clockwise").font(.caption)
-                }
-            }
-        }
-        .disabled(viewModel.isLoading)
-    }
-
-    private var loadingOverlay: some View {
-        VStack(spacing: 12) {
-            ProgressView()
-            Text("loading").font(.subheadline).foregroundStyle(.secondary)
-        }
-        .padding(24)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.black.opacity(0.15))
     }
 }
 
@@ -58,71 +31,33 @@ struct AnalyticsTabView: View {
 
 struct InvoicesTabView: View {
     @ObservedObject var viewModel: SalesViewModel
+    @State private var router = AppRouter()
     @State private var showCreateInvoice = false
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack(router: router, salesViewModel: viewModel) {
             InvoicesSectionView(viewModel: viewModel)
                 .navigationTitle(String.sales_invoices)
-                .toolbar { invoicesToolbar }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button { showCreateInvoice = true } label: {
+                            Image(systemName: "square.and.pencil").fontWeight(.semibold)
+                        }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        SyncButton(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate) {
+                            Task { await viewModel.forceSync() }
+                        }
+                    }
+                }
                 .overlay {
-                    if viewModel.isLoading && viewModel.invoices.isEmpty { loadingOverlay }
+                    if viewModel.isLoading && viewModel.invoices.isEmpty { LoadingOverlay() }
                 }
                 .task { await viewModel.loadIfNeeded() }
                 .sheet(isPresented: $showCreateInvoice) {
                     InvoiceFormSheetView(salesViewModel: viewModel)
                 }
-                .navigationDestination(for: FlexiBeeInvoice.self) { invoice in
-                    InvoiceDetailView(
-                        invoice: invoice,
-                        salesViewModel: viewModel,
-                        isAdmin: AuthService.shared.isAdmin
-                    )
-                }
-                .navigationDestination(for: FlexiBeeStockWithPrice.self) { product in
-                    FlexiBeeProductDetailView(item: product)
-                }
         }
-    }
-
-    @ToolbarContentBuilder
-    private var invoicesToolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            Button { showCreateInvoice = true } label: {
-                Image(systemName: "square.and.pencil").fontWeight(.semibold)
-            }
-        }
-        ToolbarItem(placement: .topBarTrailing) { syncButton }
-    }
-
-    private var syncButton: some View {
-        Button { Task { await viewModel.forceSync() } } label: {
-            if viewModel.isLoading {
-                ProgressView().scaleEffect(0.8)
-            } else {
-                HStack(spacing: 6) {
-                    VStack(alignment: .trailing, spacing: 1) {
-                        Text(viewModel.lastSyncDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? String.never)
-                            .font(.caption2).foregroundStyle(.secondary)
-                        Text(viewModel.lastSyncDate.map { $0.formatted(date: .omitted, time: .shortened) } ?? "")
-                            .font(.caption2).foregroundStyle(.secondary)
-                    }
-                    Image(systemName: "arrow.clockwise").font(.caption)
-                }
-            }
-        }
-        .disabled(viewModel.isLoading)
-    }
-
-    private var loadingOverlay: some View {
-        VStack(spacing: 12) {
-            ProgressView()
-            Text("loading").font(.subheadline).foregroundStyle(.secondary)
-        }
-        .padding(24)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.black.opacity(0.15))
     }
 }
 
@@ -130,6 +65,9 @@ struct InvoicesTabView: View {
 
 private struct AnalyticsSectionView: View {
     @ObservedObject var viewModel: SalesViewModel
+    var router: AppRouter
+
+    private let pageSize = 10
 
     var body: some View {
         ScrollView {
@@ -141,10 +79,10 @@ private struct AnalyticsSectionView: View {
                 .padding(.horizontal, 16)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    KPICard(value: czk(viewModel.totalRevenue),  label: String.sales_kpi_revenue, icon: "banknote",                 color: .blue)
-                    KPICard(value: czk(viewModel.paidRevenue),   label: String.sales_kpi_paid,    icon: "checkmark.circle.fill",    color: .green)
-                    KPICard(value: czk(viewModel.unpaidRevenue), label: String.sales_kpi_unpaid,  icon: "clock",                    color: .orange)
-                    KPICard(
+                    StatCard(value: czk(viewModel.totalRevenue),  label: String.sales_kpi_revenue, icon: "banknote",              color: .blue)
+                    StatCard(value: czk(viewModel.paidRevenue),   label: String.sales_kpi_paid,    icon: "checkmark.circle.fill", color: .green)
+                    StatCard(value: czk(viewModel.unpaidRevenue), label: String.sales_kpi_unpaid,  icon: "clock",                 color: .orange)
+                    StatCard(
                         value: "\(viewModel.overdueCount)",
                         label: String.sales_kpi_overdue,
                         icon: "exclamationmark.circle.fill",
@@ -174,31 +112,42 @@ private struct AnalyticsSectionView: View {
                     .padding(.horizontal, 16)
                 }
 
-                if !viewModel.topClients.isEmpty {
-                    RankingSection(title: String.sales_top_clients) {
-                        ForEach(Array(viewModel.topClients.enumerated()), id: \.offset) { idx, client in
+                let clients = viewModel.topClients
+                if !clients.isEmpty {
+                    RankingSection(
+                        title: String.sales_top_clients,
+                        seeAllDestination: clients.count > pageSize ? .allTopClients : nil
+                    ) {
+                        ForEach(Array(clients.prefix(pageSize).enumerated()), id: \.offset) { idx, client in
                             RankingRow(rank: idx + 1, title: client.name, subtitle: nil,
                                        value: czk(client.revenue), subvalue: nil,
-                                       isLast: idx == viewModel.topClients.count - 1)
+                                       isLast: idx == min(clients.count, pageSize) - 1)
                         }
                     }
                     .padding(.horizontal, 16)
                 }
 
-                if !viewModel.productAnalytics.isEmpty {
-                    RankingSection(title: String.sales_top_products) {
-                        ForEach(Array(viewModel.productAnalytics.prefix(10).enumerated()), id: \.offset) { idx, p in
-                            let stockItem = FlexiBeeService.shared.stockWithPrices.first { $0.code == p.code }
+                let products = viewModel.productAnalytics
+                if !products.isEmpty {
+                    RankingSection(
+                        title: String.sales_top_products,
+                        seeAllDestination: products.count > pageSize ? .allTopProducts : nil
+                    ) {
+                        ForEach(Array(products.prefix(pageSize).enumerated()), id: \.offset) { idx, p in
+                            let stockItem = FlexiBeeService.shared.stockWithPrices[id: p.code]
                             let row = RankingRow(
                                 rank: idx + 1,
                                 title: p.name,
                                 subtitle: p.code,
                                 value: czk(p.revenue),
                                 subvalue: String.sales_quantity(Int(p.quantity)),
-                                isLast: idx == min(viewModel.productAnalytics.count, 10) - 1
+                                isLast: idx == min(products.count, pageSize) - 1
                             )
                             if let stockItem {
-                                NavigationLink { FlexiBeeProductDetailView(item: stockItem) } label: { row }
+                                Button { router.push(.product(stockItem)) } label: {
+                                    row.contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
                             } else {
                                 row
                             }
@@ -237,11 +186,13 @@ private struct InvoicesSectionView: View {
 
             List {
                 ForEach(viewModel.filteredInvoices) { invoice in
-                    InvoiceRow(invoice: invoice)
+                    NavigationLink(value: AppDestination.invoice(invoice)) {
+                        InvoiceRowContent(invoice: invoice)
+                    }
                 }
             }
             .listStyle(.plain)
-            .searchable(text: $viewModel.searchText, prompt: "sales_search_prompt")
+            .searchable(text: $viewModel.searchText, prompt: String.sales_search_prompt)
             .overlay {
                 if viewModel.filteredInvoices.isEmpty && !viewModel.isLoading {
                     ContentUnavailableView(String.sales_invoices_empty, systemImage: "doc.text")
@@ -253,34 +204,87 @@ private struct InvoicesSectionView: View {
 
 // MARK: - Invoice Row
 
-private struct InvoiceRow: View {
+private struct InvoiceRowContent: View {
     let invoice: FlexiBeeInvoice
 
     var body: some View {
-        NavigationLink(value: invoice) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(invoice.invoiceNumber)
-                        .font(.callout.bold())
-                    Spacer()
-                    InvoiceStatusBadge(status: invoice.paymentStatus)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(invoice.invoiceNumber).font(.callout.bold())
+                Spacer()
+                InvoiceStatusBadge(status: invoice.paymentStatus)
+            }
+            Text(invoice.clientName)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            HStack {
+                if let date = invoice.issueDate {
+                    Text(date.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption).foregroundStyle(.secondary)
                 }
-                Text(invoice.clientName)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                HStack {
-                    if let date = invoice.issueDate {
-                        Text(date.formatted(date: .abbreviated, time: .omitted))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                Spacer()
+                Text(czk(invoice.total)).font(.subheadline.bold())
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - All Top Products
+
+struct AllTopProductsView: View {
+    @ObservedObject var viewModel: SalesViewModel
+    var router: AppRouter
+
+    var body: some View {
+        List {
+            ForEach(Array(viewModel.filteredTopProducts.enumerated()), id: \.offset) { idx, p in
+                let stockItem = FlexiBeeService.shared.stockWithPrices[id: p.code]
+                if let stockItem {
+                    Button { router.push(.product(stockItem)) } label: {
+                        StockWithPriceRow(item: stockItem).contentShape(Rectangle())
                     }
-                    Spacer()
-                    Text(czk(invoice.total))
-                        .font(.subheadline.bold())
+                    .buttonStyle(.plain)
+                } else {
+                    RankingRow(rank: idx + 1, title: p.name, subtitle: p.code,
+                               value: czk(p.revenue), subvalue: String.sales_quantity(Int(p.quantity)),
+                               isLast: true)
                 }
             }
-            .padding(.vertical, 4)
+        }
+        .listStyle(.plain)
+        .searchable(text: $viewModel.searchTextTopProducts, prompt: String.sales_search_prompt)
+        .navigationTitle(String.sales_top_products)
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay {
+            if viewModel.filteredTopProducts.isEmpty {
+                ContentUnavailableView(String.no_data, systemImage: "shippingbox")
+            }
+        }
+    }
+}
+
+// MARK: - All Top Clients
+
+struct AllTopClientsView: View {
+    @ObservedObject var viewModel: SalesViewModel
+
+    var body: some View {
+        List {
+            ForEach(Array(viewModel.filteredTopClients.enumerated()), id: \.offset) { idx, client in
+                RankingRow(rank: idx + 1, title: client.name, subtitle: nil,
+                           value: czk(client.revenue), subvalue: nil, isLast: true)
+            }
+        }
+        .listStyle(.plain)
+        .searchable(text: $viewModel.searchTextTopClients, prompt: String.sales_search_prompt)
+        .navigationTitle(String.sales_top_clients)
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay {
+            if viewModel.filteredTopClients.isEmpty {
+                ContentUnavailableView(String.no_data, systemImage: "person.2")
+            }
         }
     }
 }
@@ -289,11 +293,20 @@ private struct InvoiceRow: View {
 
 private struct RankingSection<Content: View>: View {
     let title: String
+    var seeAllDestination: AppDestination? = nil
     @ViewBuilder let content: Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.subheadline.weight(.semibold))
+            HStack {
+                Text(title).font(.subheadline.weight(.semibold))
+                Spacer()
+                if let dest = seeAllDestination {
+                    NavigationLink(value: dest) {
+                        Text(String.see_all).font(.caption).foregroundStyle(Color.accentColor)
+                    }
+                }
+            }
             content
         }
         .padding(16)
@@ -335,26 +348,6 @@ private struct RankingRow: View {
     }
 }
 
-// MARK: - KPI Card
-
-private struct KPICard: View {
-    let value: String
-    let label: String
-    let icon:  String
-    let color: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon).font(.title3).foregroundStyle(color)
-            Text(value).font(.title3.bold()).lineLimit(1).minimumScaleFactor(0.7)
-            Text(label).font(.caption).foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-    }
-}
-
 // MARK: - Status Badge
 
 struct InvoiceStatusBadge: View {
@@ -389,15 +382,4 @@ private struct SalesFilterChip: View {
         }
         .buttonStyle(.plain)
     }
-}
-
-// MARK: - Helpers
-
-private func czk(_ amount: Double) -> String {
-    guard amount > 0 else { return "—" }
-    let fmt = NumberFormatter()
-    fmt.numberStyle = .currency
-    fmt.currencyCode = "CZK"
-    fmt.maximumFractionDigits = 0
-    return fmt.string(from: NSNumber(value: amount)) ?? "\(Int(amount)) Kč"
 }

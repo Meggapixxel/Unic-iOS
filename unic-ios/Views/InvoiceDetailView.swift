@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import IdentifiedCollections
 
 // MARK: - View Model
 
@@ -130,7 +131,7 @@ struct InvoiceDetailView: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 6) {
-                    Text(invoiceCZK(viewModel.invoice.total))
+                    Text(czk(viewModel.invoice.total))
                         .font(.title3.bold())
                     if viewModel.canEdit(isAdmin: isAdmin) {
                         statusMenuButton
@@ -215,10 +216,10 @@ struct InvoiceDetailView: View {
                     .font(.callout)
             } else {
                 ForEach(viewModel.lineItems) { item in
-                    let stockItem = flexiBeeService.stockWithPrices.first { $0.code == item.productCode }
+                    let stockItem = flexiBeeService.stockWithPrices[id: item.cenikCode]
                     Group {
                         if let stockItem {
-                            NavigationLink(value: stockItem) {
+                            NavigationLink(value: AppDestination.product(stockItem)) {
                                 lineItemRow(item)
                             }
                         } else {
@@ -232,7 +233,7 @@ struct InvoiceDetailView: View {
                 Text(String.invoice_detail_items)
                 Spacer()
                 if !viewModel.isLoadingItems, !viewModel.lineItems.isEmpty {
-                    Text(invoiceCZK(viewModel.lineItems.reduce(0) { $0 + $1.total }))
+                    Text(czk(viewModel.lineItems.reduce(0) { $0 + $1.total }))
                         .font(.caption.bold())
                         .textCase(nil)
                         .foregroundStyle(.primary)
@@ -258,7 +259,7 @@ struct InvoiceDetailView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text(invoiceCZK(item.total))
+            Text(czk(item.total))
                 .font(.callout.bold())
         }
         .padding(.vertical, 2)

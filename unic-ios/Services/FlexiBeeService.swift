@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import IdentifiedCollections
 
 enum FlexiBeeError: LocalizedError {
     case networkError(Error)
@@ -36,7 +37,7 @@ final class FlexiBeeService: ObservableObject {
 
     @Published private(set) var lastSyncDate: Date? = UserDefaults.standard.object(forKey: "flexibee_lastSync") as? Date
 
-    private static let cacheTTL: TimeInterval = 24 * 60 * 60
+    private static let cacheTTL: TimeInterval = 60 * 60
     private static let stockKey  = "flexibee_cache_stock"
     private static let pricesKey = "flexibee_cache_prices"
 
@@ -51,9 +52,9 @@ final class FlexiBeeService: ObservableObject {
         return Date().timeIntervalSince(last) < Self.cacheTTL
     }
 
-    var stockWithPrices: [FlexiBeeStockWithPrice] {
+    var stockWithPrices: IdentifiedArrayOf<FlexiBeeStockWithPrice> {
         let priceByCode = Dictionary(uniqueKeysWithValues: priceList.map { ($0.code, $0) })
-        return stock.map { FlexiBeeStockWithPrice(card: $0, price: priceByCode[$0.code]) }
+        return IdentifiedArray(uniqueElements: stock.map { FlexiBeeStockWithPrice(card: $0, price: priceByCode[$0.code]) })
     }
 
     // MARK: - Load

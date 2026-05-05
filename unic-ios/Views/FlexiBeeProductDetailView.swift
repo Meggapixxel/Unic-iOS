@@ -82,11 +82,3 @@ struct FlexiBeeProductDetailView: View {
     }
 }
 
-private func czk(_ amount: Double) -> String {
-    guard amount > 0 else { return "—" }
-    let fmt = NumberFormatter()
-    fmt.numberStyle = .currency
-    fmt.currencyCode = "CZK"
-    fmt.maximumFractionDigits = 0
-    return fmt.string(from: NSNumber(value: amount)) ?? "\(Int(amount)) Kč"
-}

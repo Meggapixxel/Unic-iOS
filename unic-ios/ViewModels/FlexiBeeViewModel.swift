@@ -36,10 +36,10 @@ final class FlexiBeeViewModel: ObservableObject {
 
     var filteredStock: [FlexiBeeStockWithPrice] {
         let base = service.stockWithPrices
-        let items = searchText.isEmpty ? base : {
-            let q = searchText.lowercased()
-            return base.filter { $0.code.lowercased().contains(q) || $0.name.lowercased().contains(q) }
-        }()
+        let q = searchText.lowercased()
+        let items: [FlexiBeeStockWithPrice] = searchText.isEmpty
+            ? Array(base)
+            : base.filter { $0.code.lowercased().contains(q) || $0.name.lowercased().contains(q) }
         return items.sorted { sortAscending ? $0.quantity < $1.quantity : $0.quantity > $1.quantity }
     }
 

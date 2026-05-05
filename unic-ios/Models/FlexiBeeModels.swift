@@ -94,9 +94,10 @@ struct FlexiBeeCenikWrapper: Decodable {
 // MARK: - Joined Stock + Price
 
 struct FlexiBeeStockWithPrice: Identifiable, Hashable {
-    let id = UUID()
     let card:  FlexiBeeStockCard
     let price: FlexiBeeCenikItem?
+
+    var id: String { card.code }
 
     static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
@@ -215,6 +216,7 @@ struct FlexiBeeInvoiceItem: Identifiable, Codable {
     private let issueDateRaw:  String?
     private let quantityRaw:   String?
     private let totalRaw:      String?
+    private let cenikRef:      String?  // "code:CFB/220" — canonical price list code
 
     enum CodingKeys: String, CodingKey, CaseIterable {
         case id
@@ -223,6 +225,7 @@ struct FlexiBeeInvoiceItem: Identifiable, Codable {
         case issueDateRaw = "datVyst"
         case quantityRaw  = "mnozMj"
         case totalRaw     = "sumCelkem"
+        case cenikRef     = "cenik"
     }
 
     static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
@@ -232,6 +235,12 @@ struct FlexiBeeInvoiceItem: Identifiable, Codable {
     var productCode: String  { codeRaw ?? "" }
     var productName: String  { nameRaw ?? codeRaw ?? "—" }
     var isValid:     Bool    { !productCode.isEmpty && quantity > 0 }
+
+    // Canonical price list code (CFB/220), used for stock matching
+    var cenikCode: String {
+        guard let ref = cenikRef else { return productCode }
+        return ref.hasPrefix("code:") ? String(ref.dropFirst(5)) : ref
+    }
 
     var date: Date? {
         guard let s = issueDateRaw else { return nil }
@@ -269,6 +278,7 @@ struct FlexiBeeStockMovementItem: Identifiable, Codable {
     private let dateRaw: String?
     private let quantityRaw: String?
     private let totalRaw:    String?
+    private let cenikRef:    String?  // "code:CFB/220" — canonical price-list code
 
     enum CodingKeys: String, CodingKey, CaseIterable {
         case id
@@ -277,6 +287,7 @@ struct FlexiBeeStockMovementItem: Identifiable, Codable {
         case dateRaw     = "datVyst"
         case quantityRaw = "mnozMj"
         case totalRaw    = "sumCelkem"
+        case cenikRef    = "cenik"
     }
 
     static var apiFields: String {
@@ -287,6 +298,11 @@ struct FlexiBeeStockMovementItem: Identifiable, Codable {
     var productName:    String { nameRaw ?? codeRaw ?? "—" }
     var quantityIssued: Double { Double(quantityRaw ?? "") ?? 0 }
     var total:          Double { Double(totalRaw ?? "") ?? 0 }
+
+    var cenikCode: String {
+        guard let ref = cenikRef else { return productCode }
+        return ref.hasPrefix("code:") ? String(ref.dropFirst(5)) : ref
+    }
 
     var date: Date? {
         guard let s = dateRaw else { return nil }

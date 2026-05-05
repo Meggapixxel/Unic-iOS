@@ -235,6 +235,7 @@
 
 /* FlexiBee */
 "never" = "Никогда";
+"see_all" = "Показать все";
 "stock_units" = "Единиц";
 "stock_low" = "Мало";
 

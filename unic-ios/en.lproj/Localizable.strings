@@ -235,6 +235,7 @@
 
 /* FlexiBee */
 "never" = "Never";
+"see_all" = "See all";
 "stock_units" = "Units";
 "stock_low" = "Low";
 

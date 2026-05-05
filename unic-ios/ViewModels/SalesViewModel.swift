@@ -60,6 +60,8 @@ final class SalesViewModel: ObservableObject {
     @Published private(set) var lastSyncDate: Date? = UserDefaults.standard.object(forKey: "sales_lastSync") as? Date
     @Published var period: SalesPeriod = .year
     @Published var searchText = ""
+    @Published var searchTextTopProducts = ""
+    @Published var searchTextTopClients = ""
     @Published var statusFilter: PaymentStatus? = nil
 
     private let service = FlexiBeeService.shared
@@ -235,14 +237,18 @@ final class SalesViewModel: ObservableObject {
         Dictionary(grouping: periodInvoices) { $0.clientName }
             .map { (name: $0.key, revenue: $0.value.reduce(0) { $0 + $1.total }) }
             .sorted { $0.revenue > $1.revenue }
-            .prefix(5)
-            .map { $0 }
+    }
+
+    var filteredTopClients: [(name: String, revenue: Double)] {
+        guard !searchTextTopClients.isEmpty else { return topClients }
+        let q = searchTextTopClients.lowercased()
+        return topClients.filter { $0.name.lowercased().contains(q) }
     }
 
     // MARK: - Product analytics
 
     var productAnalytics: [ProductSales] {
-        let grouped = Dictionary(grouping: periodMovements) { $0.productCode }
+        let grouped = Dictionary(grouping: periodMovements) { $0.cenikCode }
         return grouped
             .map { code, items in
                 ProductSales(
@@ -253,5 +259,13 @@ final class SalesViewModel: ObservableObject {
                 )
             }
             .sorted { $0.quantity > $1.quantity }
+    }
+
+    var filteredTopProducts: [ProductSales] {
+        guard !searchTextTopProducts.isEmpty else { return productAnalytics }
+        let q = searchTextTopProducts.lowercased()
+        return productAnalytics.filter {
+            $0.name.lowercased().contains(q) || $0.code.lowercased().contains(q)
+        }
     }
 }
