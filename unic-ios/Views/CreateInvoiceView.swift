@@ -51,8 +51,8 @@ final class InvoiceFormViewModel: ObservableObject {
     var title: String { isEditing ? String.edit_invoice_title : String.create_invoice_title }
     var submitLabel: String { isEditing ? String.save : String.create_invoice_submit }
 
-    var canCreateClient: Bool { AuthService.shared.isAdmin || AuthService.shared.isManager }
-    var canDeleteClient: Bool { AuthService.shared.isAdmin }
+    var canCreateClient: Bool { AuthService.shared.canCreateClient }
+    var canDeleteClient: Bool { AuthService.shared.canDeleteClient }
 
     var isValid: Bool {
         selectedFirm != nil && lineItems.contains { $0.isValid }

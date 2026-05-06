@@ -28,6 +28,13 @@ final class AuthService: ObservableObject {
     var isManager: Bool   { currentUser?.isManager ?? false }
     var isSales: Bool     { currentUser?.isSales ?? false }
 
+    // MARK: - Permissions
+
+    var canCreateClient: Bool { isAdmin || isManager }
+    var canDeleteClient: Bool { isAdmin }
+    var canEditInvoice:  Bool { isAdmin || isManager }
+    var canDeleteInvoice: Bool { isAdmin }
+
     private let db = Firestore.firestore()
     private static let storageKey = "auth_current_user"
 
