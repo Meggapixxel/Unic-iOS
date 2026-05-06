@@ -201,6 +201,25 @@ final class FlexiBeeService: ObservableObject {
         }
     }
 
+    func deleteFirm(id: String) async throws {
+        guard let url = URL(string: baseURL + "/adresar/\(id).json") else {
+            throw FlexiBeeError.apiError("Invalid URL")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 30
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
+        guard (200...204).contains(http.statusCode) else {
+            if let err = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
+                throw FlexiBeeError.apiError(err.winstrom.message ?? "HTTP \(http.statusCode)")
+            }
+            throw FlexiBeeError.httpError(http.statusCode)
+        }
+    }
+
     func createFirm(_ firm: NewFirm) async throws -> FlexiBeeFirm {
         let envelope = CreateFirmEnvelope(winstrom: .init(adresar: [firm]))
         let data = try JSONEncoder().encode(envelope)

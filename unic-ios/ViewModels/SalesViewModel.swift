@@ -144,6 +144,11 @@ final class SalesViewModel: ObservableObject {
         isFirmsLoading = false
     }
 
+    func deleteClient(id: String) async throws {
+        try await service.deleteFirm(id: id)
+        firms.removeAll { $0.id == id }
+    }
+
     func createInvoice(_ invoice: NewInvoice) async throws {
         try await service.createInvoice(invoice)
         await fetchData()

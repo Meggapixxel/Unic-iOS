@@ -51,6 +51,9 @@ final class InvoiceFormViewModel: ObservableObject {
     var title: String { isEditing ? String.edit_invoice_title : String.create_invoice_title }
     var submitLabel: String { isEditing ? String.save : String.create_invoice_submit }
 
+    var canCreateClient: Bool { AuthService.shared.isAdmin || AuthService.shared.isManager }
+    var canDeleteClient: Bool { AuthService.shared.isAdmin }
+
     var isValid: Bool {
         selectedFirm != nil && lineItems.contains { $0.isValid }
     }
@@ -149,6 +152,12 @@ final class InvoiceFormViewModel: ObservableObject {
         firms = salesViewModel.firms
         selectedFirm = created
         justCreatedClient = created
+    }
+
+    func deleteClient(_ firm: FlexiBeeFirm) async throws {
+        try await salesViewModel.deleteClient(id: firm.id)
+        firms.removeAll { $0.id == firm.id }
+        if selectedFirm?.id == firm.id { selectedFirm = nil }
     }
 
     func submit() async {
@@ -426,6 +435,7 @@ struct FirmPickerView: View {
     @ObservedObject var viewModel: InvoiceFormViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var showCreateClient = false
+    @State private var deleteError: String?
 
     private var filtered: [FlexiBeeFirm] {
         guard !viewModel.firmPickerSearch.isEmpty else { return viewModel.firms }
@@ -460,6 +470,18 @@ struct FirmPickerView: View {
                                 }
                             }
                             .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                if viewModel.canDeleteClient {
+                                    Button(role: .destructive) {
+                                        Task {
+                                            do { try await viewModel.deleteClient(firm) }
+                                            catch { deleteError = error.localizedDescription }
+                                        }
+                                    } label: {
+                                        Label(String.delete, systemImage: "trash")
+                                    }
+                                }
+                            }
                         }
                     }
                     .searchable(text: $viewModel.firmPickerSearch, prompt: String.create_invoice_client_search)
@@ -471,14 +493,24 @@ struct FirmPickerView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String.cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showCreateClient = true } label: {
-                        Image(systemName: "person.badge.plus")
+                if viewModel.canCreateClient {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { showCreateClient = true } label: {
+                            Image(systemName: "person.badge.plus")
+                        }
                     }
                 }
             }
             .sheet(isPresented: $showCreateClient) {
                 CreateClientView(formViewModel: viewModel)
+            }
+            .alert(String.error, isPresented: .init(
+                get: { deleteError != nil },
+                set: { if !$0 { deleteError = nil } }
+            )) {
+                Button("OK") { deleteError = nil }
+            } message: {
+                Text(deleteError ?? "")
             }
             .onChange(of: viewModel.justCreatedClient) { _, _ in
                 dismiss()
