@@ -267,6 +267,10 @@
 "payment_partial" = "Partial";
 "payment_unpaid" = "Unpaid";
 "payment_overdue" = "Overdue";
+"payment_method" = "Payment";
+"payment_method_prevod" = "Transfer";
+"payment_method_hotove" = "Cash";
+"payment_method_karta" = "Card";
 
 /* Create / Edit Invoice */
 "create_invoice_title" = "New Invoice";

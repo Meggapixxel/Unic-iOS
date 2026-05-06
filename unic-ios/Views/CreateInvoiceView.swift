@@ -27,6 +27,7 @@ final class InvoiceFormViewModel: ObservableObject {
     @Published var selectedFirm: FlexiBeeFirm?
     @Published var issueDate = Date()
     @Published var dueDate = Calendar.current.date(byAdding: .day, value: 14, to: Date()) ?? Date()
+    @Published var paymentMethod: PaymentMethod = .prevod
     @Published var notes = ""
     @Published var lineItems: [InvoiceLineItemDraft] = [InvoiceLineItemDraft()]
     @Published var firmPickerSearch = ""
@@ -67,9 +68,10 @@ final class InvoiceFormViewModel: ObservableObject {
         self.editingInvoice = editingInvoice
 
         if let invoice = editingInvoice {
-            issueDate = invoice.issueDate ?? Date()
-            dueDate = invoice.dueDate ?? Date()
-            notes = invoice.notes ?? ""
+            issueDate     = invoice.issueDate ?? Date()
+            dueDate       = invoice.dueDate ?? Date()
+            paymentMethod = invoice.paymentMethod ?? .prevod
+            notes         = invoice.notes ?? ""
         }
     }
 
@@ -169,12 +171,13 @@ final class InvoiceFormViewModel: ObservableObject {
         fmt.dateFormat = "yyyy-MM-dd"
 
         let invoice = NewInvoice(
-            documentType: "code:FAKTURA",
-            clientCode:   "code:\(firm.code)",
-            issueDate:    fmt.string(from: issueDate),
-            dueDate:      fmt.string(from: dueDate),
-            notes:        notes.isEmpty ? nil : notes,
-            lineItems:    lineItems.filter { $0.isValid }.map { $0.toNewLine() }
+            documentType:  "code:FAKTURA",
+            clientCode:    "code:\(firm.code)",
+            issueDate:     fmt.string(from: issueDate),
+            dueDate:       fmt.string(from: dueDate),
+            notes:         notes.isEmpty ? nil : notes,
+            paymentMethod: paymentMethod.rawValue,
+            lineItems:     lineItems.filter { $0.isValid }.map { $0.toNewLine() }
         )
 
         do {
@@ -222,6 +225,7 @@ struct InvoiceFormView: View {
         NavigationStack {
             Form {
                 clientSection
+                paymentMethodSection
                 datesSection
                 lineItemsSection
                 notesSection
@@ -318,6 +322,17 @@ struct InvoiceFormView: View {
                 }
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    private var paymentMethodSection: some View {
+        Section(String.payment_method) {
+            Picker(String.payment_method, selection: $viewModel.paymentMethod) {
+                ForEach(PaymentMethod.allCases, id: \.self) { method in
+                    Label(method.displayName, systemImage: method.icon).tag(method)
+                }
+            }
+            .pickerStyle(.segmented)
         }
     }
 

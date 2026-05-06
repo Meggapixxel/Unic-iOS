@@ -267,6 +267,10 @@
 "payment_partial" = "Частково";
 "payment_unpaid" = "Не сплачено";
 "payment_overdue" = "Прострочено";
+"payment_method" = "Оплата";
+"payment_method_prevod" = "Переказ";
+"payment_method_hotove" = "Готівка";
+"payment_method_karta" = "Картка";
 
 /* Create / Edit Invoice */
 "create_invoice_title" = "Нова фактура";

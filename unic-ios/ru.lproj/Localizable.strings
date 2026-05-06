@@ -267,6 +267,10 @@
 "payment_partial" = "Частично";
 "payment_unpaid" = "Не оплачено";
 "payment_overdue" = "Просрочено";
+"payment_method" = "Оплата";
+"payment_method_prevod" = "Перевод";
+"payment_method_hotove" = "Наличные";
+"payment_method_karta" = "Карта";
 
 /* Create / Edit Invoice */
 "create_invoice_title" = "Новый счёт";

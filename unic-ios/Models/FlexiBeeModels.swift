@@ -156,6 +156,7 @@ struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
     private let totalRaw:          String?
     private let paymentStatusCode: String?
     private let clientRef:         String?
+    private let paymentMethodCode: String?
 
     enum CodingKeys: String, CodingKey, CaseIterable {
         case id
@@ -166,6 +167,7 @@ struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
         case totalRaw          = "sumCelkem"
         case paymentStatusCode = "stavUhrK"
         case clientRef         = "firma@showAs"
+        case paymentMethodCode = "formaUhradyCis"
     }
 
     static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
@@ -192,6 +194,8 @@ struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
         f.dateFormat = "yyyy-MM-dd"
         return f.date(from: String(s.prefix(10)))
     }
+
+    var paymentMethod: PaymentMethod? { PaymentMethod(rawValue: paymentMethodCode ?? "") }
 
     var paymentStatus: PaymentStatus {
         let s = paymentStatusCode ?? ""
@@ -320,6 +324,30 @@ struct FlexiBeeStockMovementItemsWrapper: Decodable {
     enum CodingKeys: String, CodingKey { case items = "skladovy-pohyb-polozka" }
 }
 
+// MARK: - Payment Method
+
+enum PaymentMethod: String, CaseIterable {
+    case prevod = "code:PREVOD"
+    case hotove = "code:HOTOVE"
+    case karta  = "code:KARTA"
+
+    var displayName: String {
+        switch self {
+        case .prevod: return String.payment_method_prevod
+        case .hotove: return String.payment_method_hotove
+        case .karta:  return String.payment_method_karta
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .prevod: return "building.columns"
+        case .hotove: return "banknote"
+        case .karta:  return "creditcard"
+        }
+    }
+}
+
 // MARK: - Firm (Client / Address Book)
 
 struct FlexiBeeFirm: Identifiable, Decodable, Equatable {
@@ -373,20 +401,22 @@ struct NewInvoiceLine: Encodable {
 }
 
 struct NewInvoice: Encodable {
-    let documentType: String
-    let clientCode:   String
-    let issueDate:    String
-    let dueDate:      String
-    let notes:        String?
-    let lineItems:    [NewInvoiceLine]
+    let documentType:  String
+    let clientCode:    String
+    let issueDate:     String
+    let dueDate:       String
+    let notes:         String?
+    let paymentMethod: String
+    let lineItems:     [NewInvoiceLine]
 
     enum CodingKeys: String, CodingKey {
-        case documentType = "typDokl"
-        case clientCode   = "firma"
-        case issueDate    = "datVyst"
-        case dueDate      = "datSplat"
-        case notes        = "popis"
-        case lineItems    = "polozkyFaktury"
+        case documentType  = "typDokl"
+        case clientCode    = "firma"
+        case issueDate     = "datVyst"
+        case dueDate       = "datSplat"
+        case notes         = "popis"
+        case paymentMethod = "formaUhradyCis"
+        case lineItems     = "polozkyFaktury"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -396,6 +426,7 @@ struct NewInvoice: Encodable {
         try c.encode(issueDate,          forKey: .issueDate)
         try c.encode(dueDate,            forKey: .dueDate)
         try c.encodeIfPresent(notes,     forKey: .notes)
+        try c.encode(paymentMethod,      forKey: .paymentMethod)
         try c.encode(lineItems,          forKey: .lineItems)
     }
 }

@@ -271,6 +271,11 @@ extension String {
     static var payment_unpaid:  String { String(localized: "payment_unpaid") }
     static var payment_overdue: String { String(localized: "payment_overdue") }
 
+    static var payment_method:        String { String(localized: "payment_method") }
+    static var payment_method_prevod:  String { String(localized: "payment_method_prevod") }
+    static var payment_method_hotove:  String { String(localized: "payment_method_hotove") }
+    static var payment_method_karta:   String { String(localized: "payment_method_karta") }
+
     // MARK: - Create / Edit Invoice
     static var create_invoice_title:            String { String(localized: "create_invoice_title") }
     static var edit_invoice_title:              String { String(localized: "edit_invoice_title") }
