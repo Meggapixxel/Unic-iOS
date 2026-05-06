@@ -185,12 +185,23 @@ final class InvoiceFormViewModel: ObservableObject {
                 try await salesViewModel.updateInvoice(id: invoiceId, invoice: invoice)
             } else {
                 try await salesViewModel.createInvoice(invoice)
+                await createStockMovement(from: lineItems)
             }
             didSucceed = true
         } catch {
             submitError = error.localizedDescription
         }
         isSubmitting = false
+    }
+
+    private func createStockMovement(from items: [InvoiceLineItemDraft]) async {
+        let lines = items.compactMap { item -> NewStockMovementLine? in
+            guard let code = item.productCode, !code.isEmpty, item.quantityDouble > 0 else { return nil }
+            return NewStockMovementLine(productCode: "code:\(code)", quantity: item.quantityDouble)
+        }
+        guard !lines.isEmpty else { return }
+        let movement = NewStockMovement(documentType: "code:VYDEJ", description: nil, lines: lines)
+        try? await FlexiBeeService.shared.createStockMovement(movement)
     }
 }
 

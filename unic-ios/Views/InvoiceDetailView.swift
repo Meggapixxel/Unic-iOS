@@ -55,7 +55,6 @@ struct InvoiceDetailView: View {
     @StateObject private var viewModel: InvoiceDetailViewModel
     @ObservedObject private var flexiBeeService = FlexiBeeService.shared
     @State private var showEdit = false
-    @State private var showStockMovement = false
     @State private var pendingStatus: PaymentStatus?
     @State private var showStatusAlert = false
     @State private var showStatusError = false
@@ -73,7 +72,6 @@ struct InvoiceDetailView: View {
             infoSection
             notesSection
             itemsSection
-            warehouseSection
         }
         .listStyle(.insetGrouped)
         .navigationTitle(viewModel.invoice.invoiceNumber)
@@ -92,12 +90,6 @@ struct InvoiceDetailView: View {
         }
         .sheet(isPresented: $showEdit) {
             InvoiceFormSheetView(salesViewModel: salesViewModel, editingInvoice: viewModel.invoice)
-        }
-        .sheet(isPresented: $showStockMovement) {
-            StockMovementFormView(viewModel: StockMovementFormViewModel(
-                invoice: viewModel.invoice,
-                lineItems: viewModel.lineItems
-            ))
         }
         .alert(String.invoice_status_change_title, isPresented: $showStatusAlert) {
             Button(pendingStatus?.label ?? "") {
@@ -269,23 +261,6 @@ struct InvoiceDetailView: View {
                 .font(.callout.bold())
         }
         .padding(.vertical, 2)
-    }
-
-    // MARK: - Warehouse
-
-    @ViewBuilder
-    private var warehouseSection: some View {
-        if AuthService.shared.canCreateStockMovement && !viewModel.lineItems.isEmpty {
-            Section {
-                Button {
-                    showStockMovement = true
-                } label: {
-                    Label(String.stock_movement_create, systemImage: "shippingbox.and.arrow.backward")
-                }
-            } header: {
-                Text(String.stock_movement_section)
-            }
-        }
     }
 
     // MARK: - Helpers
