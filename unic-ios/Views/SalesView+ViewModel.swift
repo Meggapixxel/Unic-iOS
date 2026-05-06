@@ -57,6 +57,8 @@ final class SalesViewModel: ObservableObject {
     @Published private(set) var isLoading = false
     @Published private(set) var isFirmsLoading = false
     @Published private(set) var error: String?
+    @Published private(set) var isMigrating = false
+    @Published private(set) var migrationResult: String?
     @Published private(set) var lastSyncDate: Date? = UserDefaults.standard.object(forKey: "sales_lastSync") as? Date
     @Published var period: SalesPeriod = .year
     @Published var searchText = ""
@@ -149,13 +151,56 @@ final class SalesViewModel: ObservableObject {
         firms.removeAll { $0.id == id }
     }
 
-    func createInvoice(_ invoice: NewInvoice) async throws {
-        try await service.createInvoice(invoice)
+    @discardableResult
+    func createInvoice(_ invoice: NewInvoice) async throws -> String {
+        let id = try await service.createInvoice(invoice)
         await fetchData()
+        return id
     }
 
     func updateInvoice(id: String, invoice: NewInvoice) async throws {
         try await service.updateInvoice(id: id, invoice: invoice)
+        await fetchData()
+    }
+
+    // One-time migration: creates stock movements for invoices that don't have one yet.
+    func migrateStockMovements() async {
+        isMigrating = true
+        migrationResult = nil
+        var migrated = 0, skipped = 0, failed = 0
+        for invoice in invoices {
+            do {
+                if let _ = try await service.fetchStockMovementId(linkedToInvoiceId: invoice.id) {
+                    skipped += 1; continue
+                }
+                let items = try await service.fetchLineItemsForInvoice(invoice.id)
+                let lines: [NewStockMovementLine] = items.compactMap { item in
+                    guard !item.cenikCode.isEmpty, item.quantity > 0 else { return nil }
+                    return NewStockMovementLine(productCode: "code:\(item.cenikCode)", quantity: item.quantity)
+                }
+                guard !lines.isEmpty else { skipped += 1; continue }
+                try await service.createStockMovement(NewStockMovement(
+                    documentType: "code:VYDEJ",
+                    description: "inv:\(invoice.id)",
+                    lines: lines
+                ))
+                migrated += 1
+            } catch {
+                failed += 1
+            }
+        }
+        migrationResult = "✓ \(migrated) · ↷ \(skipped) · ✗ \(failed)"
+        isMigrating = false
+    }
+
+    func clearMigrationResult() { migrationResult = nil }
+
+    // Deletes the linked stock movement first, then deletes the invoice.
+    func deleteInvoice(id: String) async throws {
+        if let movementId = try await service.fetchStockMovementId(linkedToInvoiceId: id) {
+            try await service.deleteStockMovement(id: movementId)
+        }
+        try await service.deleteInvoice(id: id)
         await fetchData()
     }
 

@@ -13,11 +13,34 @@ struct AnalyticsTabView: View {
             AnalyticsSectionView(viewModel: viewModel, router: router)
                 .navigationTitle(String.sales_analytics)
                 .toolbar {
+                    if AuthService.shared.canCreateStockMovement {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button {
+                                Task { await viewModel.migrateStockMovements() }
+                            } label: {
+                                if viewModel.isMigrating {
+                                    ProgressView().scaleEffect(0.8)
+                                } else {
+                                    Image(systemName: "shippingbox.and.arrow.backward")
+                                }
+                            }
+                            .disabled(viewModel.isMigrating)
+                            .help("Migrate stock movements for existing invoices")
+                        }
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         SyncButton(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate) {
                             Task { await viewModel.forceSync() }
                         }
                     }
+                }
+                .alert("Migration", isPresented: Binding(
+                    get: { viewModel.migrationResult != nil },
+                    set: { if !$0 { viewModel.clearMigrationResult() } }
+                )) {
+                    Button("OK") { viewModel.clearMigrationResult() }
+                } message: {
+                    Text(viewModel.migrationResult ?? "")
                 }
                 .overlay {
                     if viewModel.isLoading && viewModel.invoices.isEmpty { LoadingOverlay() }
