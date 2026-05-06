@@ -14,10 +14,13 @@ enum ActivityGroupMode: String, CaseIterable {
     }
 }
 
+/// Displays the status-change log for a single team member, grouped by day or week.
+/// Entries are fetched via a Firestore collectionGroup query across all salon status-history subcollections.
 @MainActor
 final class UserActivityViewModel: ObservableObject {
     @Published var entries: [UserActivityEntry] = []
     @Published var isLoading = false
+    @Published var error: String?
     @Published var groupMode: ActivityGroupMode = .day
 
     private let service = FirebaseService.shared
@@ -25,15 +28,27 @@ final class UserActivityViewModel: ObservableObject {
     func load(userId: String) async {
         guard !isLoading else { return }
         isLoading = true
-        entries = (try? await service.fetchUserActivity(userId: userId)) ?? []
+        error = nil
+        do {
+            entries = try await service.fetchUserActivity(userId: userId)
+        } catch {
+            self.error = error.localizedDescription
+        }
         isLoading = false
     }
 
+    /// Soft delete: removes the Firestore subcollection entry and updates local state immediately
+    /// so the UI doesn't wait for a re-fetch.
     func delete(_ entry: UserActivityEntry) async {
-        try? await service.deleteStatusHistoryEntry(salonId: entry.salonId, entryId: entry.id)
-        entries.removeAll { $0.id == entry.id }
+        do {
+            try await service.deleteStatusHistoryEntry(salonId: entry.salonId, entryId: entry.id)
+            entries.removeAll { $0.id == entry.id }
+        } catch {
+            self.error = error.localizedDescription
+        }
     }
 
+    /// Aggregated status breakdown for the summary bar at the top of the activity screen.
     var statusCounts: [(status: SalonStatus, count: Int)] {
         let grouped = Dictionary(grouping: entries) { $0.status }
         return SalonStatus.allCases

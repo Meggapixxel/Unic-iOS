@@ -64,9 +64,13 @@ final class AuthService: ObservableObject {
     private static let storageKey = "auth_current_user"
 
     private init() {
-        if let data = UserDefaults.standard.data(forKey: Self.storageKey),
-           let user = try? JSONDecoder().decode(AppUser.self, from: data) {
-            currentUser = user
+        if let data = UserDefaults.standard.data(forKey: Self.storageKey) {
+            do {
+                currentUser = try JSONDecoder().decode(AppUser.self, from: data)
+            } catch {
+                // Corrupted cache — clear and require fresh login
+                UserDefaults.standard.removeObject(forKey: Self.storageKey)
+            }
         }
     }
 
@@ -88,7 +92,11 @@ final class AuthService: ObservableObject {
     }
 
     func logout() {
-        try? Auth.auth().signOut()
+        do {
+            try Auth.auth().signOut()
+        } catch {
+            // Firebase signOut fails only for keychain issues; user session is cleared locally regardless
+        }
         UserDefaults.standard.removeObject(forKey: Self.storageKey)
         currentUser = nil
     }
@@ -104,8 +112,11 @@ final class AuthService: ObservableObject {
         let role = UserRole(rawValue: roleString) ?? .sales
         let user = AppUser(id: uid, firstName: firstName, lastName: lastName, role: role)
 
-        if let encoded = try? JSONEncoder().encode(user) {
+        do {
+            let encoded = try JSONEncoder().encode(user)
             UserDefaults.standard.set(encoded, forKey: Self.storageKey)
+        } catch {
+            // JSONEncoder failure for a simple Codable struct is unexpected; session remains active
         }
         currentUser = user
     }

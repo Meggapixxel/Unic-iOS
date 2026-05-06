@@ -1,5 +1,6 @@
 /* Common */
 "loading" = "Завантаження...";
+"ok" = "OK";
 "close" = "Закрити";
 "cancel" = "Скасувати";
 "done" = "Готово";
@@ -201,6 +202,8 @@
 /* Errors */
 "history_load_error" = "Не вдалося завантажити історію";
 "save_error" = "Помилка збереження";
+"error_fetch_stock" = "Склад";
+"error_fetch_prices" = "Ціни";
 "error_network %@" = "Помилка мережі: %@";
 "error_parsing %@" = "Помилка парсингу: %@";
 "error_api %@" = "Помилка API: %@";
@@ -304,6 +307,8 @@
 "stock_movement_items" = "Позиції";
 "stock_movement_add_item" = "Додати позицію";
 "stock_movement_code" = "Код товару";
+"stock_required_title" = "Потрібен рух складу";
+"stock_required_body" = "Спочатку виконайте рух складу, щоб позначити інвойс як оплачений.";
 "invoice_detail_items" = "Позиції";
 "invoice_detail_no_items" = "Позиції відсутні";
 "invoice_status_change_title" = "Змінити статус оплати";

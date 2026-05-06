@@ -45,7 +45,7 @@ final class FirebaseService: ObservableObject {
             .getDocuments()
 
         let salons = snapshot.documents.compactMap { doc -> Salon? in
-            try? doc.data(as: Salon.self)
+            do { return try doc.data(as: Salon.self) } catch { return nil }
         }
 
         await MainActor.run {
@@ -64,7 +64,7 @@ final class FirebaseService: ObservableObject {
             .getDocuments()
 
         let salons = snapshot.documents.compactMap { doc -> Salon? in
-            try? doc.data(as: Salon.self)
+            do { return try doc.data(as: Salon.self) } catch { return nil }
         }
 
         await MainActor.run {
@@ -100,7 +100,7 @@ final class FirebaseService: ObservableObject {
             .getDocuments()
 
         return snapshot.documents.compactMap { doc -> Salon? in
-            try? doc.data(as: Salon.self)
+            do { return try doc.data(as: Salon.self) } catch { return nil }
         }
     }
 
@@ -108,7 +108,8 @@ final class FirebaseService: ObservableObject {
 
     func getSalon(id: String) async throws -> Salon? {
         let doc = try await db.collection("salons").document(id).getDocument()
-        return try? doc.data(as: Salon.self)
+        guard doc.exists else { return nil }
+        return try doc.data(as: Salon.self)
     }
 
     // MARK: - Update Salon
@@ -146,15 +147,18 @@ final class FirebaseService: ObservableObject {
     // MARK: - Works On Tags
 
     func loadWorksOnTags() async {
-        guard let snapshot = try? await db.collection("worksOnTags")
-            .order(by: "name")
-            .getDocuments()
-        else { return }
-        let tags = snapshot.documents.compactMap { doc -> WorksOnTag? in
-            guard let name = doc.data()["name"] as? String else { return nil }
-            return WorksOnTag(id: doc.documentID, name: name)
+        do {
+            let snapshot = try await db.collection("worksOnTags")
+                .order(by: "name")
+                .getDocuments()
+            let tags = snapshot.documents.compactMap { doc -> WorksOnTag? in
+                guard let name = doc.data()["name"] as? String else { return nil }
+                return WorksOnTag(id: doc.documentID, name: name)
+            }
+            await MainActor.run { worksOnTags = tags }
+        } catch {
+            await MainActor.run { self.error = error }
         }
-        await MainActor.run { worksOnTags = tags }
     }
 
     func addWorksOnTag(_ name: String) async throws -> String {
@@ -325,7 +329,8 @@ final class FirebaseService: ObservableObject {
             .order(by: "timestamp", descending: true)
             .limit(to: 1)
             .getDocuments()
-        return snapshot.documents.first.flatMap { try? $0.data(as: StatusHistoryEntry.self) }
+        guard let doc = snapshot.documents.first else { return nil }
+        return try doc.data(as: StatusHistoryEntry.self)
     }
 
     func fetchStatusHistory(salonId: String) async throws -> [StatusHistoryEntry] {
@@ -336,7 +341,7 @@ final class FirebaseService: ObservableObject {
             .getDocuments()
 
         return snapshot.documents.compactMap { doc -> StatusHistoryEntry? in
-            try? doc.data(as: StatusHistoryEntry.self)
+            do { return try doc.data(as: StatusHistoryEntry.self) } catch { return nil }
         }
     }
 
@@ -471,7 +476,7 @@ final class FirebaseService: ObservableObject {
                 }
 
                 self?.salons = snapshot?.documents.compactMap { doc -> Salon? in
-                    try? doc.data(as: Salon.self)
+                    do { return try doc.data(as: Salon.self) } catch { return nil }
                 } ?? []
             }
     }
@@ -508,8 +513,12 @@ final class FirebaseService: ObservableObject {
         await withTaskGroup(of: (String, String).self) { group in
             for id in salonIds {
                 group.addTask {
-                    let doc = try? await self.db.collection("salons").document(id).getDocument()
-                    return (id, doc?.data()?["name"] as? String ?? id)
+                    do {
+                        let doc = try await self.db.collection("salons").document(id).getDocument()
+                        return (id, doc.data()?["name"] as? String ?? id)
+                    } catch {
+                        return (id, id)
+                    }
                 }
             }
             for await (id, name) in group { salonNames[id] = name }
@@ -532,6 +541,20 @@ final class FirebaseService: ObservableObject {
         let parts = path.components(separatedBy: "/")
         guard let idx = parts.firstIndex(of: "salons"), idx + 1 < parts.count else { return nil }
         return parts[idx + 1]
+    }
+
+    // MARK: - Bundle Codes (starter kit exclusion list for stock movements)
+
+    @Published private(set) var bundleCodes: Set<String> = []
+
+    func loadBundleCodes() async {
+        do {
+            let doc = try await db.collection("config").document("bundleCodes").getDocument()
+            guard let codes = doc.data()?["codes"] as? [String] else { return }
+            await MainActor.run { bundleCodes = Set(codes) }
+        } catch {
+            await MainActor.run { self.error = error }
+        }
     }
 
     // MARK: - Barcode Lookup

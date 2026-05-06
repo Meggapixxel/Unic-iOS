@@ -9,6 +9,11 @@ import Foundation
 import Combine
 import IdentifiedCollections
 
+/// Manages a single CRM salon record. Status history is the primary CRM action here —
+/// each status change creates a Firestore subcollection entry and updates the denormalized
+/// `latestStatusEntry` field on the salon document for list-level display without extra fetches.
+///
+/// Changes propagate back to the list via `onSalonUpdated` / `onSalonDeleted` callbacks.
 @MainActor
 class SalonDetailViewModel: ObservableObject {
     @Published var salon: Salon
@@ -18,6 +23,8 @@ class SalonDetailViewModel: ObservableObject {
 
     // Status History
     @Published var statusHistory: IdentifiedArrayOf<StatusHistoryEntry> = []
+    /// Mirrors the denormalized `salon.latestStatusEntry` — updated locally after mutations
+    /// to avoid a full re-fetch of the salon document.
     @Published var latestStatusEntry: StatusHistoryEntry? = nil
     @Published var isLoadingHistory = false
     @Published var showAddStatus = false
@@ -37,6 +44,10 @@ class SalonDetailViewModel: ObservableObject {
 
     private let service = FirebaseService.shared
 
+    /// All active tasks — cancelled together when the view disappears via `cancelAllTasks()`.
+    private var tasks: [Task<Void, Never>] = []
+
+    /// Called after any mutation so the parent list view stays in sync without a full reload.
     var onSalonUpdated: (Salon) -> Void
     var onSalonDeleted: () -> Void
 
@@ -48,16 +59,27 @@ class SalonDetailViewModel: ObservableObject {
         self.onSalonDeleted = onSalonDeleted
     }
 
+    /// Cancels all in-flight tasks. Call from `.onDisappear` in the owning view.
+    func cancelAllTasks() {
+        tasks.forEach { $0.cancel() }
+        tasks.removeAll()
+    }
+
     // MARK: - Status History
 
     func loadLatestStatusEntry() {
-        Task {
-            latestStatusEntry = try? await service.fetchLatestStatusEntry(salonId: salon.salonId)
+        let task = Task {
+            do {
+                latestStatusEntry = try await service.fetchLatestStatusEntry(salonId: salon.salonId)
+            } catch {
+                showError(String.error, message: error.localizedDescription)
+            }
         }
+        tasks.append(task)
     }
 
     func loadStatusHistory() {
-        Task {
+        let task = Task {
             isLoadingHistory = true
             defer { isLoadingHistory = false }
             do {
@@ -68,10 +90,11 @@ class SalonDetailViewModel: ObservableObject {
                 showError(String.error, message: String.history_load_error)
             }
         }
+        tasks.append(task)
     }
 
     func addStatusEntry(status: SalonStatus, note: String?, createdBy: String?) {
-        Task {
+        let task = Task {
             isSaving = true
             defer { isSaving = false }
             do {
@@ -93,11 +116,12 @@ class SalonDetailViewModel: ObservableObject {
                 showError(String.error, message: error.localizedDescription)
             }
         }
+        tasks.append(task)
     }
 
     func updateStatusEntryNote(_ entry: StatusHistoryEntry, note: String?) {
         guard let entryId = entry.id else { return }
-        Task {
+        let task = Task {
             isSaving = true
             defer { isSaving = false }
             do {
@@ -113,11 +137,12 @@ class SalonDetailViewModel: ObservableObject {
                 showError(String.error, message: error.localizedDescription)
             }
         }
+        tasks.append(task)
     }
 
     func deleteStatusEntry(_ entry: StatusHistoryEntry) {
         guard let entryId = entry.id else { return }
-        Task {
+        let task = Task {
             isSaving = true
             defer { isSaving = false }
             do {
@@ -127,12 +152,13 @@ class SalonDetailViewModel: ObservableObject {
                 showError(String.error, message: error.localizedDescription)
             }
         }
+        tasks.append(task)
     }
 
     // MARK: - Delete
 
     func deleteSalon() {
-        Task {
+        let task = Task {
             isSaving = true
             defer { isSaving = false }
             do {
@@ -143,6 +169,7 @@ class SalonDetailViewModel: ObservableObject {
                 showError(String.error, message: error.localizedDescription)
             }
         }
+        tasks.append(task)
     }
 
     // MARK: - Error

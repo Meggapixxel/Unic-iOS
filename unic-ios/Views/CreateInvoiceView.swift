@@ -24,7 +24,6 @@ struct InvoiceLineItemDraft: Identifiable {
 
 struct InvoiceFormSheetView: View {
     @StateObject private var formVM: InvoiceFormViewModel
-    @State private var router = AppRouter()
 
     init(salesViewModel: SalesViewModel, editingInvoice: FlexiBeeInvoice? = nil) {
         _formVM = StateObject(wrappedValue: InvoiceFormViewModel(
@@ -34,13 +33,7 @@ struct InvoiceFormSheetView: View {
     }
 
     var body: some View {
-        AppNavigationStack(router: router) {
-            InvoiceFormView(viewModel: formVM)
-        }
-        .onChange(of: formVM.pendingMovement) { _, pending in
-            guard let pending else { return }
-            router.push(.stockMovement(pending))
-        }
+        InvoiceFormView(viewModel: formVM)
     }
 }
 
@@ -55,6 +48,7 @@ struct InvoiceFormView: View {
     @State private var productPickerForItemID: UUID?
 
     var body: some View {
+        NavigationStack {
         Form {
             clientSection
             paymentMethodSection
@@ -98,8 +92,7 @@ struct InvoiceFormView: View {
                       let idx = viewModel.lineItems.firstIndex(where: { $0.id == itemID }) else { return }
                 viewModel.lineItems[idx].name = item.displayName
                 viewModel.lineItems[idx].productCode = item.code
-                viewModel.lineItems[idx].unitPrice = item.sellPriceVAT > 0
-                    ? String(format: "%.0f", item.sellPriceVAT) : ""
+                viewModel.lineItems[idx].unitPrice = item.unitPrice
             }
         }
         .overlay {
@@ -134,6 +127,7 @@ struct InvoiceFormView: View {
         .onChange(of: viewModel.didSucceed) { _, success in
             if success { dismiss() }
         }
+        } // NavigationStack
     }
 
     // MARK: - Sections

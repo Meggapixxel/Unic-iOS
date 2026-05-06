@@ -12,6 +12,13 @@ import MapKit
 import CoreLocation
 import IdentifiedCollections
 
+/// Two-phase ViewModel for the route planner:
+///   Phase 1 (selection): user picks salons from a list/map.
+///   Phase 2 (route): stops are ordered via nearest-neighbor heuristic, then
+///   routed segment-by-segment with MKDirections.
+///
+/// Route calculation runs in a stored `currentTask` so it can be cancelled when the user
+/// switches transport type, removes a stop, or navigates back.
 @MainActor
 final class RouteViewModel: ObservableObject {
 
@@ -126,6 +133,10 @@ final class RouteViewModel: ObservableObject {
     }
 
     // MARK: - Nearest-Neighbor Optimization
+    //
+    // Greedy heuristic: always move to the closest unvisited salon from the current position.
+    // If user location is available it serves as the starting point; otherwise the salon
+    // nearest to Prague center is picked first. O(n²) — acceptable for the typical ≤20 stops.
 
     private func optimizeOrder(_ salons: [Salon], startingFrom userLocation: CLLocationCoordinate2D?) -> [Salon] {
         guard salons.count > 1 else { return salons }
@@ -167,6 +178,13 @@ final class RouteViewModel: ObservableObject {
     }
 
     // MARK: - MKDirections Calculation
+    //
+    // Fetches real road routes for every consecutive stop pair, accumulating polyline
+    // coordinates, distance, and expected travel time. Results are published after each
+    // segment so the map updates progressively rather than waiting for all pairs.
+    //
+    // On MKDirections failure (e.g., no route found, network offline) the segment falls
+    // back to a straight line with an estimated travel time based on transport speed.
 
     private func calculateDirections() {
         currentTask?.cancel()

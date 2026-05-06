@@ -23,6 +23,7 @@ struct FlexiBeeCenikItem: Identifiable, Codable {
     var sellPriceVAT: Double  { Double(priceWithVATRaw  ?? "") ?? 0 }
     var purchasePrice: Double { Double(purchasePriceRaw ?? "") ?? 0 }
     var displayName: String   { name ?? code }
+    var unitPrice: String     { sellPriceVAT > 0 ? String(format: "%.0f", sellPriceVAT) : "" }
 
     var marginPercent: Double? {
         guard purchasePrice > 0, sellPriceVAT > 0 else { return nil }
@@ -243,6 +244,12 @@ struct FlexiBeeInvoiceItem: Identifiable, Codable {
     // Canonical price list code (CFB/220), used for stock matching
     var cenikCode: String {
         guard let ref = cenikRef else { return productCode }
+        return ref.hasPrefix("code:") ? String(ref.dropFirst(5)) : ref
+    }
+
+    // Non-nil only when the item has an explicit ceník reference (real stock item, not a bundle)
+    var stockCode: String? {
+        guard let ref = cenikRef, !ref.isEmpty else { return nil }
         return ref.hasPrefix("code:") ? String(ref.dropFirst(5)) : ref
     }
 

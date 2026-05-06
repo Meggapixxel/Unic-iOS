@@ -56,7 +56,14 @@ struct InvoicesTabView: View {
                     if viewModel.isLoading && viewModel.invoices.isEmpty { LoadingOverlay() }
                 }
                 .task { await viewModel.loadIfNeeded() }
-                .sheet(isPresented: $showCreateInvoice) {
+                .sheet(isPresented: $showCreateInvoice, onDismiss: {
+                    if let id = viewModel.recentlyCreatedInvoiceId {
+                        viewModel.clearRecentlyCreatedInvoice()
+                        if let invoice = viewModel.invoices.first(where: { $0.id == id }) {
+                            router.push(.invoiceWithMovement(invoice))
+                        }
+                    }
+                }) {
                     InvoiceFormSheetView(salesViewModel: viewModel)
                 }
         }

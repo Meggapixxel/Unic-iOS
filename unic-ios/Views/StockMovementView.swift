@@ -1,69 +1,95 @@
 import SwiftUI
 
+// MARK: - Picker Target
+
+private enum PickerTarget {
+    case regularItem(UUID)
+    case bundleComponent(sectionId: UUID, itemId: UUID)
+}
+
 // MARK: - View
 
 struct StockMovementView: View {
     @StateObject private var viewModel: StockMovementViewModel
-    let onDone: () -> Void
+    @Environment(\.dismiss) private var dismiss
 
     @State private var showProductPicker = false
-    @State private var productPickerForItemID: UUID?
+    @State private var pickerTarget: PickerTarget?
 
-    init(pending: PendingMovement, onDone: @escaping () -> Void) {
+    init(pending: PendingMovement) {
         _viewModel = StateObject(wrappedValue: StockMovementViewModel(pending: pending))
-        self.onDone = onDone
     }
 
     var body: some View {
-        Form {
-            itemsSection
-            if let error = viewModel.submitError {
-                Section {
-                    Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
-                        .font(.callout)
+        NavigationStack {
+            Form {
+                regularItemsSection
+                ForEach($viewModel.bundleSections) { $section in
+                    bundleSectionView(section: $section)
                 }
-            }
-        }
-        .navigationTitle(String.stock_movement_title + " – " + viewModel.invoiceNumber)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button(String.stock_movement_skip) { viewModel.skip() }
-                    .disabled(viewModel.isSubmitting)
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                if viewModel.isSubmitting {
-                    ProgressView().scaleEffect(0.8)
-                } else {
-                    Button(String.stock_movement_submit) {
-                        Task { await viewModel.submit() }
+                if let error = viewModel.submitError {
+                    Section {
+                        Label(error, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                            .font(.callout)
                     }
-                    .disabled(!viewModel.isValid)
-                    .fontWeight(.semibold)
                 }
             }
-        }
-        .sheet(isPresented: $showProductPicker) {
-            ProductPickerForInvoiceView(priceList: viewModel.priceList) { item in
-                guard let itemID = productPickerForItemID,
-                      let idx = viewModel.items.firstIndex(where: { $0.id == itemID }) else { return }
-                viewModel.items[idx].productCode = item.code
-                viewModel.items[idx].productName = item.displayName
+            .navigationTitle(String.stock_movement_title + " – " + viewModel.invoiceNumber)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String.stock_movement_skip) { viewModel.skip() }
+                        .disabled(viewModel.isSubmitting)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if viewModel.isSubmitting {
+                        ProgressView().scaleEffect(0.8)
+                    } else {
+                        Button(String.stock_movement_submit) {
+                            Task { await viewModel.submit() }
+                        }
+                        .disabled(!viewModel.isValid)
+                        .fontWeight(.semibold)
+                    }
+                }
             }
-        }
-        .onChange(of: viewModel.didSucceed) { _, success in
-            if success { onDone() }
+            .sheet(isPresented: $showProductPicker) {
+                ProductPickerForInvoiceView(priceList: viewModel.priceList) { item in
+                    handleProductPicked(item)
+                }
+            }
+            .onChange(of: viewModel.didSucceed) { _, success in
+                if success { dismiss() }
+            }
         }
     }
 
-    // MARK: - Items Section
+    // MARK: - Product Picker Handler
 
-    private var itemsSection: some View {
+    private func handleProductPicked(_ item: FlexiBeeCenikItem) {
+        guard let target = pickerTarget else { return }
+        switch target {
+        case .regularItem(let id):
+            guard let idx = viewModel.items.firstIndex(where: { $0.id == id }) else { return }
+            viewModel.items[idx].productCode = item.code
+            viewModel.items[idx].productName = item.displayName
+
+        case .bundleComponent(let sId, let iId):
+            guard let sIdx = viewModel.bundleSections.firstIndex(where: { $0.id == sId }),
+                  let iIdx = viewModel.bundleSections[sIdx].components.firstIndex(where: { $0.id == iId }) else { return }
+            viewModel.bundleSections[sIdx].components[iIdx].productCode = item.code
+            viewModel.bundleSections[sIdx].components[iIdx].productName = item.displayName
+        }
+    }
+
+    // MARK: - Regular Items Section
+
+    private var regularItemsSection: some View {
         Section {
             ForEach($viewModel.items) { $item in
                 MovementItemRow(item: $item) {
-                    productPickerForItemID = item.id
+                    pickerTarget = .regularItem(item.id)
                     showProductPicker = true
                 }
             }
@@ -76,6 +102,36 @@ struct StockMovementView: View {
             }
         } header: {
             Text(String.stock_movement_items)
+        }
+    }
+
+    // MARK: - Bundle Section
+
+    @ViewBuilder
+    private func bundleSectionView(section: Binding<BundleSection>) -> some View {
+        Section {
+            ForEach(section.components) { $component in
+                MovementItemRow(item: $component) {
+                    pickerTarget = .bundleComponent(sectionId: section.wrappedValue.id, itemId: component.id)
+                    showProductPicker = true
+                }
+            }
+            .onDelete { viewModel.removeBundleComponent(from: section.wrappedValue.id, at: $0) }
+
+            Button {
+                if let newId = viewModel.addBundleComponent(to: section.wrappedValue.id) {
+                    pickerTarget = .bundleComponent(sectionId: section.wrappedValue.id, itemId: newId)
+                    showProductPicker = true
+                }
+            } label: {
+                Label(String.stock_movement_add_item, systemImage: "plus.circle.fill")
+            }
+        } header: {
+            HStack(spacing: 6) {
+                Image(systemName: "shippingbox.fill")
+                    .foregroundStyle(.orange)
+                Text(section.wrappedValue.bundleName)
+            }
         }
     }
 }

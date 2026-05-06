@@ -3,6 +3,14 @@ import Combine
 
 // MARK: - Invoice Form ViewModel
 
+/// Shared ViewModel for invoice creation and editing.
+///
+/// `prepare()` reuses data already cached by `SalesViewModel` (firms, price list) to avoid
+/// redundant network calls. In edit mode it also fetches the existing line items from FlexiBee.
+///
+/// `submit()` delegates to `SalesViewModel.createInvoice()` / `updateInvoice()` and sets
+/// `didSucceed = true` on completion. Navigation (post-create stock movement flow) is handled
+/// by the parent view reacting to `SalesViewModel.recentlyCreatedInvoiceId`.
 @MainActor
 final class InvoiceFormViewModel: ObservableObject {
     @Published var selectedFirm: FlexiBeeFirm?
@@ -25,8 +33,6 @@ final class InvoiceFormViewModel: ObservableObject {
     @Published var showBarcodeScanner = false
     @Published private(set) var isSearchingBarcode = false
     @Published private(set) var barcodeError: String?
-
-    @Published private(set) var pendingMovement: PendingMovement?
 
     let editingInvoice: FlexiBeeInvoice?
     private let salesViewModel: SalesViewModel
@@ -83,7 +89,8 @@ final class InvoiceFormViewModel: ObservableObject {
 
     private func loadLineItems(for invoiceId: String) async {
         isLoadingItems = true
-        if let items = try? await FlexiBeeService.shared.fetchLineItemsForInvoice(invoiceId) {
+        do {
+            let items = try await FlexiBeeService.shared.fetchLineItemsForInvoice(invoiceId)
             let drafts: [InvoiceLineItemDraft] = items.compactMap { item in
                 let name = item.productName
                 guard !name.isEmpty, item.quantity > 0 else { return nil }
@@ -96,10 +103,15 @@ final class InvoiceFormViewModel: ObservableObject {
                 return draft
             }
             if !drafts.isEmpty { lineItems = drafts }
+        } catch {
+            submitError = error.localizedDescription
         }
         isLoadingItems = false
     }
 
+    /// Barcode scan handler: looks up the barcode in Firestore to get the article code,
+    /// then matches it against the FlexiBee price list. `normalizeKod` strips non-alphanumeric
+    /// characters so that codes like "UC-001" and "UC001" resolve to the same product.
     func handleScannedBarcode(_ barcode: String) async {
         showBarcodeScanner = false
         barcodeError = nil
@@ -120,7 +132,7 @@ final class InvoiceFormViewModel: ObservableObject {
             draft.name = product.displayName
             draft.productCode = product.code
             draft.quantity = "1"
-            draft.unitPrice = product.sellPriceVAT > 0 ? String(format: "%.0f", product.sellPriceVAT) : ""
+            draft.unitPrice = product.unitPrice
             lineItems.append(draft)
         } catch {
             barcodeError = String.barcode_search_error(error.localizedDescription)
@@ -166,41 +178,15 @@ final class InvoiceFormViewModel: ObservableObject {
         do {
             if let invoiceId = editingInvoice?.id {
                 try await salesViewModel.updateInvoice(id: invoiceId, invoice: invoice)
-                didSucceed = true
             } else {
-                let newId = try await salesViewModel.createInvoice(invoice)
-                let number = await FlexiBeeService.shared.fetchInvoiceNumber(id: newId) ?? newId
-                let capturedItems = lineItems
-                let capturedPrices = priceList
-                pendingMovement = PendingMovement(
-                    invoiceId: newId,
-                    invoiceNumber: number,
-                    items: capturedItems,
-                    priceList: capturedPrices,
-                    onDone: { [weak self] in self?.didSucceed = true }
-                )
+                try await salesViewModel.createInvoice(invoice)
             }
+            didSucceed = true
         } catch {
             submitError = error.localizedDescription
         }
         isSubmitting = false
     }
-}
-
-// MARK: - Pending Stock Movement
-
-// Hashable by UUID so it can be used as AppDestination enum value.
-// onDone is excluded from equality/hashing.
-struct PendingMovement: Hashable {
-    let _id = UUID()
-    let invoiceId:     String
-    let invoiceNumber: String
-    let items:         [InvoiceLineItemDraft]
-    let priceList:     [FlexiBeeCenikItem]
-    let onDone:        () -> Void
-
-    static func == (lhs: PendingMovement, rhs: PendingMovement) -> Bool { lhs._id == rhs._id }
-    func hash(into hasher: inout Hasher) { hasher.combine(_id) }
 }
 
 // MARK: - Create Client ViewModel

@@ -109,8 +109,8 @@ final class FlexiBeeService: ObservableObject {
 
         var errors: [String] = []
 
-        if let s = try? await stockTask { stock = s } else { errors.append("склад") }
-        if let p = try? await pricesTask { priceList = p } else { errors.append("ціни") }
+        do { stock = try await stockTask } catch { errors.append(String.error_fetch_stock) }
+        do { priceList = try await pricesTask } catch { errors.append(String.error_fetch_prices) }
 
         if errors.isEmpty {
             let now = Date()
@@ -243,15 +243,14 @@ final class FlexiBeeService: ObservableObject {
         return id
     }
 
-    // Fetches the invoice number (kod) for a given invoice ID. Returns nil on failure.
-    func fetchInvoiceNumber(id: String) async -> String? {
-        let response = try? await fetch(
+    func fetchInvoiceNumber(id: String) async throws -> String? {
+        let response = try await fetch(
             FlexiBeeResponse<FlexiBeeInvoicesWrapper>.self,
             path: "/faktura-vydana/\(id).json",
             fields: "id,kod",
             limit: 1
         )
-        return response?.winstrom.invoices.first?.invoiceNumber
+        return response.winstrom.invoices.first?.invoiceNumber
     }
 
     func deleteInvoice(id: String) async throws {
@@ -372,14 +371,14 @@ final class FlexiBeeService: ObservableObject {
         return result.winstrom.results.first?.id ?? ""
     }
 
-    func fetchStockMovementItems() async -> [FlexiBeeStockMovementItem] {
+    func fetchStockMovementItems() async throws -> [FlexiBeeStockMovementItem] {
         // Step 1: fetch all movement headers, keep only outflows (S- prefix)
-        guard let headers = try? await fetch(
+        let headers = try await fetch(
             FlexiBeeResponse<FlexiBeeStockMovementWrapper>.self,
             path: "/skladovy-pohyb.json",
             fields: "id,kod",
             limit: 1000
-        ) else { return [] }
+        )
         let outflowIds = headers.winstrom.movements
             .filter { $0.code.hasPrefix("S-") }
             .map { $0.id }
@@ -390,13 +389,17 @@ final class FlexiBeeService: ObservableObject {
         return await withTaskGroup(of: [FlexiBeeStockMovementItem].self) { group in
             for id in outflowIds {
                 group.addTask {
-                    guard let response = try? await self.fetch(
-                        FlexiBeeResponse<FlexiBeeStockMovementItemsWrapper>.self,
-                        path: "/skladovy-pohyb/\(id)/skladovy-pohyb-polozka.json",
-                        fields: FlexiBeeStockMovementItem.apiFields,
-                        limit: 500
-                    ) else { return [] }
-                    return response.winstrom.items.filter { $0.isValid }
+                    do {
+                        let response = try await self.fetch(
+                            FlexiBeeResponse<FlexiBeeStockMovementItemsWrapper>.self,
+                            path: "/skladovy-pohyb/\(id)/skladovy-pohyb-polozka.json",
+                            fields: FlexiBeeStockMovementItem.apiFields,
+                            limit: 500
+                        )
+                        return response.winstrom.items.filter { $0.isValid }
+                    } catch {
+                        return []
+                    }
                 }
             }
             var all: [FlexiBeeStockMovementItem] = []

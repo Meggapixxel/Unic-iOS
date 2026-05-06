@@ -7,17 +7,19 @@ import IdentifiedCollections
 struct InvoiceDetailView: View {
     @StateObject private var viewModel: InvoiceDetailViewModel
 
-    init(invoice: FlexiBeeInvoice, salesViewModel: SalesViewModel, router: AppRouter) {
+    init(invoice: FlexiBeeInvoice, salesViewModel: SalesViewModel, router: AppRouter, autoShowMovement: Bool = false) {
         _viewModel = StateObject(wrappedValue: InvoiceDetailViewModel(
             invoice: invoice,
             salesViewModel: salesViewModel,
-            router: router
+            router: router,
+            autoShowMovement: autoShowMovement
         ))
     }
 
     var body: some View {
         List {
             headerSection
+            primaryActionSection
             infoSection
             notesSection
             itemsSection
@@ -40,6 +42,11 @@ struct InvoiceDetailView: View {
         }
         .sheet(isPresented: $viewModel.showEdit) {
             InvoiceFormSheetView(salesViewModel: viewModel.salesViewModel, editingInvoice: viewModel.invoice)
+        }
+        .sheet(isPresented: $viewModel.showStockMovement) {
+            if let pending = viewModel.pendingMovement {
+                StockMovementView(pending: pending)
+            }
         }
         .alert(String.invoice_status_change_title, isPresented: $viewModel.showStatusAlert) {
             Button(viewModel.pendingStatus?.label ?? "") {
@@ -89,38 +96,11 @@ struct InvoiceDetailView: View {
                 VStack(alignment: .trailing, spacing: 6) {
                     Text(czk(viewModel.invoice.total))
                         .font(.title3.bold())
-                    if viewModel.canEdit {
-                        statusMenuButton
-                    } else {
-                        InvoiceStatusBadge(status: viewModel.invoice.paymentStatus)
-                    }
+                    InvoiceStatusBadge(status: viewModel.invoice.paymentStatus)
                 }
             }
             .padding(.vertical, 4)
         }
-    }
-
-    private var statusMenuButton: some View {
-        Menu {
-            ForEach(
-                PaymentStatus.allCases.filter { $0 != .overdue && $0 != viewModel.invoice.paymentStatus },
-                id: \.self
-            ) { status in
-                Button {
-                    viewModel.selectPendingStatus(status)
-                } label: {
-                    Label(status.label, systemImage: statusIcon(for: status))
-                }
-            }
-        } label: {
-            HStack(spacing: 3) {
-                InvoiceStatusBadge(status: viewModel.invoice.paymentStatus)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .disabled(viewModel.isUpdatingStatus)
     }
 
     // MARK: - Info
@@ -226,7 +206,7 @@ struct InvoiceDetailView: View {
     private var deleteSection: some View {
         if viewModel.canDelete {
             Section {
-                Button(role: .destructive) {
+                Button {
                     viewModel.showDeleteAlert = true
                 } label: {
                     HStack {
@@ -235,23 +215,59 @@ struct InvoiceDetailView: View {
                             ProgressView()
                         } else {
                             Text(String.delete_invoice_action)
+                                .fontWeight(.semibold)
                         }
                         Spacer()
                     }
                 }
+                .foregroundStyle(.white)
+                .listRowBackground(Color.red)
                 .disabled(viewModel.isDeleting)
             }
         }
     }
 
-    // MARK: - Helpers
+    // MARK: - Primary Action
 
-    private func statusIcon(for status: PaymentStatus) -> String {
-        switch status {
-        case .paid:    return "checkmark.circle.fill"
-        case .partial: return "clock.badge.checkmark"
-        case .unpaid:  return "clock"
-        case .overdue: return "exclamationmark.circle.fill"
+    @ViewBuilder
+    private var primaryActionSection: some View {
+        if viewModel.invoice.paymentStatus != .paid {
+            if viewModel.canManageStock && !viewModel.stockMovementCreated {
+                Section {
+                    Button {
+                        viewModel.openStockMovement()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Label(String.stock_movement_title, systemImage: "shippingbox.fill")
+                                .fontWeight(.semibold)
+                            Spacer()
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .listRowBackground(Color.blue)
+                }
+            } else if viewModel.canEdit {
+                Section {
+                    Button {
+                        viewModel.selectPendingStatus(.paid)
+                    } label: {
+                        HStack {
+                            Spacer()
+                            if viewModel.isUpdatingStatus {
+                                ProgressView()
+                            } else {
+                                Label(String.payment_paid, systemImage: "checkmark.circle.fill")
+                                    .fontWeight(.semibold)
+                            }
+                            Spacer()
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .listRowBackground(Color.green)
+                    .disabled(viewModel.isUpdatingStatus)
+                }
+            }
         }
     }
 }

@@ -3,6 +3,8 @@ import SwiftUI
 import Combine
 import FirebaseFirestore
 
+/// Thin proxy over `FlexiBeeService` for the stock inventory screen.
+/// Exists to keep view-specific state (search, sort, barcode UI) separate from the shared service.
 @MainActor
 final class FlexiBeeViewModel: ObservableObject {
     @Published var searchText = ""
@@ -17,7 +19,8 @@ final class FlexiBeeViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        // Forward service changes to this ViewModel so views re-render
+        // Propagate service updates so the view re-renders when stock data refreshes
+        // without holding a direct @ObservedObject reference to the service.
         service.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
@@ -30,10 +33,12 @@ final class FlexiBeeViewModel: ObservableObject {
     var errorMessage: String? { service.errorMessage }
     var lastSyncDate: Date? { service.lastSyncDate }
     var totalStockUnits: Double { service.stock.reduce(0) { $0 + $1.quantity } }
+    /// Items with quantity ≤ 2 are considered low stock.
     var lowStockCount: Int { service.stock.filter { $0.quantity <= 2 }.count }
 
     // MARK: - View-specific
 
+    /// Filtering and sorting are applied in-memory over the service's cached list — no separate cache needed.
     var filteredStock: [FlexiBeeStockWithPrice] {
         let base = service.stockWithPrices
         let q = searchText.lowercased()
@@ -49,11 +54,15 @@ final class FlexiBeeViewModel: ObservableObject {
     func forceSync() async { await service.forceSync() }
     func resetFilters() { searchText = "" }
 
+    /// Strips non-alphanumeric characters and uppercases so barcode article codes
+    /// match FlexiBee product codes regardless of formatting differences (dashes, spaces, etc.).
     private func normalizeKod(_ s: String) -> String {
         s.replacingOccurrences(of: #"[^A-Za-z0-9]+"#, with: "", options: .regularExpression)
          .uppercased()
     }
 
+    /// Barcode lookup flow: Firestore `barcodes/{barcode}` → article code → matched against
+    /// in-memory `stockWithPrices` using normalized code comparison.
     func handleScannedBarcode(_ barcode: String) async {
         showBarcodeScanner = false
         barcodeError = nil

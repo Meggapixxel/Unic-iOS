@@ -1,5 +1,6 @@
 /* Common */
 "loading" = "Загрузка...";
+"ok" = "OK";
 "close" = "Закрыть";
 "cancel" = "Отмена";
 "done" = "Готово";
@@ -201,6 +202,8 @@
 /* Errors */
 "history_load_error" = "Не удалось загрузить историю";
 "save_error" = "Ошибка сохранения";
+"error_fetch_stock" = "Склад";
+"error_fetch_prices" = "Цены";
 "error_network %@" = "Ошибка сети: %@";
 "error_parsing %@" = "Ошибка парсинга: %@";
 "error_api %@" = "Ошибка API: %@";
@@ -304,6 +307,8 @@
 "stock_movement_items" = "Позиции";
 "stock_movement_add_item" = "Добавить позицию";
 "stock_movement_code" = "Код товара";
+"stock_required_title" = "Требуется движение склада";
+"stock_required_body" = "Сначала выполните движение склада, чтобы отметить инвойс как оплаченный.";
 "invoice_detail_items" = "Позиции";
 "invoice_detail_no_items" = "Позиции отсутствуют";
 "invoice_status_change_title" = "Изменить статус оплаты";

@@ -13,6 +13,7 @@ struct TagEditor: View {
     let onAddNew: ((String) async throws -> String)?
 
     @State private var inputText = ""
+    @State private var addError: String?
 
     private var suggestions: [TagItem] {
         let query = inputText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -88,6 +89,14 @@ struct TagEditor: View {
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedIds)
         .animation(.easeInOut(duration: 0.2), value: suggestions.map(\.id))
+        .alert(String.error, isPresented: Binding(
+            get: { addError != nil },
+            set: { if !$0 { addError = nil } }
+        )) {
+            Button(String.ok, role: .cancel) {}
+        } message: {
+            Text(addError ?? "")
+        }
     }
 
     private func addExisting(_ tag: TagItem) {
@@ -102,11 +111,15 @@ struct TagEditor: View {
         guard !name.isEmpty, let onAddNew else { return }
         inputText = ""
         Task {
-            guard let id = try? await onAddNew(name) else { return }
-            await MainActor.run {
-                if !selectedIds.contains(id) {
-                    selectedIds.append(id)
+            do {
+                let id = try await onAddNew(name)
+                await MainActor.run {
+                    if !selectedIds.contains(id) {
+                        selectedIds.append(id)
+                    }
                 }
+            } catch {
+                await MainActor.run { addError = error.localizedDescription }
             }
         }
     }

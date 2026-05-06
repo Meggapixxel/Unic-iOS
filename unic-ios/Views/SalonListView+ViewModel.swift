@@ -26,6 +26,8 @@ enum SalonSortOption: String, CaseIterable, Identifiable {
     }
 }
 
+/// Drives the CRM salon list. All filtering, sorting and stats are computed in-memory
+/// from the full `salons` array fetched once at startup.
 @MainActor
 final class SalonsViewModel: ObservableObject {
     @Published var salons: IdentifiedArrayOf<Salon> = []
@@ -47,7 +49,10 @@ final class SalonsViewModel: ObservableObject {
     @Published var alertMessage = ""
 
     private let service = FirebaseService.shared
+    private var tasks: [Task<Void, Never>] = []
 
+    /// Full filter + sort pipeline applied in-memory. Status, search, and business-type
+    /// filters are combined; result is sorted by the selected `sortOption`.
     var displayedSalons: IdentifiedArrayOf<Salon> {
         var result = salons
 
@@ -122,8 +127,9 @@ final class SalonsViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Stats (filtered by search & type, but NOT by status)
-
+    // MARK: - Stats
+    // Intentionally omits the status filter so the header always shows counts across all statuses,
+    // even when the list is filtered to a specific status.
     private var salonsForStats: [Salon] {
         var result = Array(salons)
 
@@ -163,6 +169,7 @@ final class SalonsViewModel: ObservableObject {
         errorMessage = nil
 
         do {
+            // Fetch salons and works-on tags in parallel.
             async let fetchedSalons = service.fetchAllSalons()
             async let _ = service.loadWorksOnTags()
             salons = IdentifiedArrayOf(uniqueElements: try await fetchedSalons)
@@ -174,6 +181,8 @@ final class SalonsViewModel: ObservableObject {
         isLoading = false
     }
 
+    /// Derives available business-type filter options from Google Places data on each salon.
+    /// Generic types (establishment, point_of_interest, etc.) are excluded to keep the filter meaningful.
     private func buildTypeOptions() {
         let ignoredTypes: Set<String> = ["establishment", "point_of_interest", "health", "store"]
         let types = Set(salons.compactMap(\.googlePlacesTypes).flatMap { $0 })
@@ -184,9 +193,13 @@ final class SalonsViewModel: ObservableObject {
     }
 
     func retry() {
-        Task {
-            await loadSalons()
-        }
+        let task = Task { await loadSalons() }
+        tasks.append(task)
+    }
+
+    func cancelAllTasks() {
+        tasks.forEach { $0.cancel() }
+        tasks.removeAll()
     }
 
     func addSalon(_ salon: Salon) {

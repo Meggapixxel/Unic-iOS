@@ -1,14 +1,18 @@
 import SwiftUI
 import Combine
 
+/// Loads and displays the team member list. Only admins can see other admin accounts —
+/// non-admin roles receive a filtered list via `visibleUsers`.
 @MainActor
 final class UsersViewModel: ObservableObject {
     @Published private var users: [AppUser] = []
     @Published var isLoading = false
+    @Published var error: String?
 
     private let service = FirebaseService.shared
     private let auth    = AuthService.shared
 
+    /// Hides admin accounts from non-admin users to prevent role enumeration.
     var visibleUsers: [AppUser] {
         auth.canViewAllUsers
             ? users
@@ -26,7 +30,12 @@ final class UsersViewModel: ObservableObject {
     func load() async {
         guard !isLoading else { return }
         isLoading = true
-        users = (try? await service.fetchAllUsers()) ?? []
+        error = nil
+        do {
+            users = try await service.fetchAllUsers()
+        } catch {
+            self.error = error.localizedDescription
+        }
         isLoading = false
     }
 }

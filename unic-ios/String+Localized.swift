@@ -4,6 +4,7 @@ extension String {
 
     // MARK: - Common
     static var loading:      String { String(localized: "loading") }
+    static var ok:           String { String(localized: "ok") }
     static var close:        String { String(localized: "close") }
     static var cancel:       String { String(localized: "cancel") }
     static var done:         String { String(localized: "done") }
@@ -39,8 +40,10 @@ extension String {
     static var auth_error_wrong_password:  String { String(localized: "auth_error_wrong_password") }
 
     // MARK: - Errors
-    static var history_load_error: String { String(localized: "history_load_error") }
-    static var save_error:         String { String(localized: "save_error") }
+    static var history_load_error:  String { String(localized: "history_load_error") }
+    static var save_error:          String { String(localized: "save_error") }
+    static var error_fetch_stock:   String { String(localized: "error_fetch_stock") }
+    static var error_fetch_prices:  String { String(localized: "error_fetch_prices") }
     static func error_network(_ detail: String) -> String { String(localized: "error_network \(detail)") }
     static func error_parsing(_ detail: String) -> String { String(localized: "error_parsing \(detail)") }
     static func error_api(_ msg: String)        -> String { String(localized: "error_api \(msg)") }
@@ -310,6 +313,8 @@ extension String {
     static var stock_movement_items:    String { String(localized: "stock_movement_items") }
     static var stock_movement_add_item: String { String(localized: "stock_movement_add_item") }
     static var stock_movement_code:     String { String(localized: "stock_movement_code") }
+    static var stock_required_title:    String { String(localized: "stock_required_title") }
+    static var stock_required_body:     String { String(localized: "stock_required_body") }
 
     // MARK: - Invoice Detail
     static var invoice_detail_items:    String { String(localized: "invoice_detail_items") }

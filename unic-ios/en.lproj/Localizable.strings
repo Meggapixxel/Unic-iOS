@@ -1,5 +1,6 @@
 /* Common */
 "loading" = "Loading...";
+"ok" = "OK";
 "close" = "Close";
 "cancel" = "Cancel";
 "done" = "Done";
@@ -201,6 +202,8 @@
 /* Errors */
 "history_load_error" = "Failed to load history";
 "save_error" = "Save error";
+"error_fetch_stock" = "Warehouse";
+"error_fetch_prices" = "Prices";
 "error_network %@" = "Network error: %@";
 "error_parsing %@" = "Parsing error: %@";
 "error_api %@" = "API error: %@";
@@ -304,6 +307,8 @@
 "stock_movement_items" = "Items";
 "stock_movement_add_item" = "Add Item";
 "stock_movement_code" = "Product Code";
+"stock_required_title" = "Stock Movement Required";
+"stock_required_body" = "Complete the stock movement before marking this invoice as paid.";
 "invoice_detail_items" = "Items";
 "invoice_detail_no_items" = "No items";
 "invoice_status_change_title" = "Change Payment Status";

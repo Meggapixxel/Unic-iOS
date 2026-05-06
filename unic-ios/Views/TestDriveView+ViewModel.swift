@@ -8,6 +8,9 @@ import Combine
 
 // MARK: - ViewModel
 
+/// Filters the already-loaded salon list to `testDrive` status entries and schedules
+/// local push notifications as reminders. No additional API calls are made — data comes
+/// from the `salons` array passed by the parent view.
 @MainActor
 final class TestDriveViewModel: ObservableObject {
     @Published var entries: [TestDriveEntry] = []
@@ -41,6 +44,7 @@ final class TestDriveViewModel: ObservableObject {
             await notifications.scheduleTestDriveReminders(for: all)
         }
 
+        // Admins see all test drives; managers and sales reps see only entries they created.
         let currentUserId = auth.currentUser?.id
         entries = all.filter { auth.canViewAllTestDrives || $0.createdBy == currentUserId }
     }

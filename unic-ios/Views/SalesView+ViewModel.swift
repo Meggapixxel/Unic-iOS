@@ -48,6 +48,19 @@ struct ProductSales: Identifiable {
     let revenue:  Double
 }
 
+/// Central ViewModel for the Sales tab.
+///
+/// Cache strategy: invoices, invoice items, and stock movement items are persisted to
+/// UserDefaults (JSON) with a 1-hour TTL. On app launch `restoreFromDisk()` pre-fills the
+/// UI immediately; `loadIfNeeded()` skips the network if the cache is still valid.
+///
+/// `productAnalytics` is derived from stock movement items (not invoice line items) because
+/// Chariot Studio has `zdrojProSkl` disabled — invoices don't auto-deduct stock, so movement
+/// records are the only reliable source of actual product outflows.
+///
+/// `recentlyCreatedInvoiceId` is set after `fetchData()` completes inside `createInvoice()`.
+/// The invoices tab's sheet `onDismiss` reads this to navigate directly to the new invoice
+/// detail and trigger the stock movement flow.
 @MainActor
 final class SalesViewModel: ObservableObject {
     @Published private(set) var invoices: [FlexiBeeInvoice] = []
@@ -63,6 +76,7 @@ final class SalesViewModel: ObservableObject {
     @Published var searchTextTopProducts = ""
     @Published var searchTextTopClients = ""
     @Published var statusFilter: PaymentStatus? = nil
+    @Published private(set) var recentlyCreatedInvoiceId: String?
 
     private let service = FlexiBeeService.shared
     private static let cacheTTL: TimeInterval = 60 * 60
@@ -130,16 +144,20 @@ final class SalesViewModel: ObservableObject {
     func loadFirms() async {
         guard firms.isEmpty else { return }
         isFirmsLoading = true
-        if let f = try? await service.fetchFirms() {
-            firms = f
+        do {
+            firms = try await service.fetchFirms()
+        } catch {
+            self.error = error.localizedDescription
         }
         isFirmsLoading = false
     }
 
     func reloadFirms() async {
         isFirmsLoading = true
-        if let f = try? await service.fetchFirms() {
-            firms = f
+        do {
+            firms = try await service.fetchFirms()
+        } catch {
+            self.error = error.localizedDescription
         }
         isFirmsLoading = false
     }
@@ -153,7 +171,12 @@ final class SalesViewModel: ObservableObject {
     func createInvoice(_ invoice: NewInvoice) async throws -> String {
         let id = try await service.createInvoice(invoice)
         await fetchData()
+        recentlyCreatedInvoiceId = id
         return id
+    }
+
+    func clearRecentlyCreatedInvoice() {
+        recentlyCreatedInvoiceId = nil
     }
 
     func updateInvoice(id: String, invoice: NewInvoice) async throws {
@@ -176,7 +199,7 @@ final class SalesViewModel: ObservableObject {
             async let movements = service.fetchStockMovementItems()
             invoices           = try await inv
             invoiceItems       = try await items
-            stockMovementItems = await movements
+            stockMovementItems = try await movements
             let now = Date()
             lastSyncDate = now
             UserDefaults.standard.set(now, forKey: "sales_lastSync")
