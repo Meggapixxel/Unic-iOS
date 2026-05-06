@@ -300,6 +300,7 @@
 "stock_movement_section" = "Склад";
 "stock_movement_create" = "Списать со склада";
 "stock_movement_submit" = "Списать";
+"stock_movement_skip" = "Пропустить";
 "stock_movement_items" = "Позиции";
 "stock_movement_add_item" = "Добавить позицию";
 "stock_movement_code" = "Код товара";

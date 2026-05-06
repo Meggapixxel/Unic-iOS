@@ -439,6 +439,47 @@ struct CreateInvoiceEnvelope: Encodable {
     }
 }
 
+// MARK: - Create Stock Movement Request
+
+struct NewStockMovementLine: Encodable {
+    let productCode: String
+    let quantity:    Double
+
+    enum CodingKeys: String, CodingKey {
+        case productCode = "cenik"
+        case quantity    = "mnozMj"
+    }
+}
+
+// typDokl must be "code:STANDARD" — FlexiBee rejects "code:VYDEJ" (invalid type identifier).
+// Line items key is "skladovePolozky", not "polozkyPohybu".
+struct NewStockMovement: Encodable {
+    let documentType: String
+    let description:  String?
+    let lines:        [NewStockMovementLine]
+
+    enum CodingKeys: String, CodingKey {
+        case documentType = "typDokl"
+        case description  = "popis"
+        case lines        = "skladovePolozky"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(documentType,         forKey: .documentType)
+        try c.encodeIfPresent(description, forKey: .description)
+        try c.encode(lines,                forKey: .lines)
+    }
+}
+
+struct CreateStockMovementEnvelope: Encodable {
+    let winstrom: Winstrom
+    struct Winstrom: Encodable {
+        let skladovyPohyb: [NewStockMovement]
+        enum CodingKeys: String, CodingKey { case skladovyPohyb = "skladovy-pohyb" }
+    }
+}
+
 // MARK: - Create Firm Request
 
 struct NewFirm: Encodable {

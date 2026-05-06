@@ -149,9 +149,11 @@ final class SalesViewModel: ObservableObject {
         firms.removeAll { $0.id == id }
     }
 
-    func createInvoice(_ invoice: NewInvoice) async throws {
-        try await service.createInvoice(invoice)
+    @discardableResult
+    func createInvoice(_ invoice: NewInvoice) async throws -> String {
+        let id = try await service.createInvoice(invoice)
         await fetchData()
+        return id
     }
 
     func updateInvoice(id: String, invoice: NewInvoice) async throws {

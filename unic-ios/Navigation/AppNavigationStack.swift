@@ -25,6 +25,8 @@ struct AppNavigationStack<Content: View>: View {
                         if let vm = salesViewModel {
                             AllTopClientsView(viewModel: vm)
                         }
+                    case .stockMovement(let pending):
+                        StockMovementView(pending: pending, onDone: pending.onDone)
                     }
                 }
         }

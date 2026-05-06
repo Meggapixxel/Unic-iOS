@@ -26,6 +26,8 @@ final class InvoiceFormViewModel: ObservableObject {
     @Published private(set) var isSearchingBarcode = false
     @Published private(set) var barcodeError: String?
 
+    @Published private(set) var pendingMovement: PendingMovement?
+
     let editingInvoice: FlexiBeeInvoice?
     private let salesViewModel: SalesViewModel
 
@@ -164,15 +166,41 @@ final class InvoiceFormViewModel: ObservableObject {
         do {
             if let invoiceId = editingInvoice?.id {
                 try await salesViewModel.updateInvoice(id: invoiceId, invoice: invoice)
+                didSucceed = true
             } else {
-                try await salesViewModel.createInvoice(invoice)
+                let newId = try await salesViewModel.createInvoice(invoice)
+                let number = await FlexiBeeService.shared.fetchInvoiceNumber(id: newId) ?? newId
+                let capturedItems = lineItems
+                let capturedPrices = priceList
+                pendingMovement = PendingMovement(
+                    invoiceId: newId,
+                    invoiceNumber: number,
+                    items: capturedItems,
+                    priceList: capturedPrices,
+                    onDone: { [weak self] in self?.didSucceed = true }
+                )
             }
-            didSucceed = true
         } catch {
             submitError = error.localizedDescription
         }
         isSubmitting = false
     }
+}
+
+// MARK: - Pending Stock Movement
+
+// Hashable by UUID so it can be used as AppDestination enum value.
+// onDone is excluded from equality/hashing.
+struct PendingMovement: Hashable {
+    let _id = UUID()
+    let invoiceId:     String
+    let invoiceNumber: String
+    let items:         [InvoiceLineItemDraft]
+    let priceList:     [FlexiBeeCenikItem]
+    let onDone:        () -> Void
+
+    static func == (lhs: PendingMovement, rhs: PendingMovement) -> Bool { lhs._id == rhs._id }
+    func hash(into hasher: inout Hasher) { hasher.combine(_id) }
 }
 
 // MARK: - Create Client ViewModel

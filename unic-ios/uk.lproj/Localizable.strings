@@ -300,6 +300,7 @@
 "stock_movement_section" = "Склад";
 "stock_movement_create" = "Виписати зі складу";
 "stock_movement_submit" = "Списати";
+"stock_movement_skip" = "Пропустити";
 "stock_movement_items" = "Позиції";
 "stock_movement_add_item" = "Додати позицію";
 "stock_movement_code" = "Код товару";

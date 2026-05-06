@@ -306,6 +306,7 @@ extension String {
     static var stock_movement_section:  String { String(localized: "stock_movement_section") }
     static var stock_movement_create:   String { String(localized: "stock_movement_create") }
     static var stock_movement_submit:   String { String(localized: "stock_movement_submit") }
+    static var stock_movement_skip:     String { String(localized: "stock_movement_skip") }
     static var stock_movement_items:    String { String(localized: "stock_movement_items") }
     static var stock_movement_add_item: String { String(localized: "stock_movement_add_item") }
     static var stock_movement_code:     String { String(localized: "stock_movement_code") }

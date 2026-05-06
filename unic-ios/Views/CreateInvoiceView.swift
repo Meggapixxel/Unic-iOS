@@ -24,6 +24,7 @@ struct InvoiceLineItemDraft: Identifiable {
 
 struct InvoiceFormSheetView: View {
     @StateObject private var formVM: InvoiceFormViewModel
+    @State private var router = AppRouter()
 
     init(salesViewModel: SalesViewModel, editingInvoice: FlexiBeeInvoice? = nil) {
         _formVM = StateObject(wrappedValue: InvoiceFormViewModel(
@@ -33,7 +34,13 @@ struct InvoiceFormSheetView: View {
     }
 
     var body: some View {
-        InvoiceFormView(viewModel: formVM)
+        AppNavigationStack(router: router) {
+            InvoiceFormView(viewModel: formVM)
+        }
+        .onChange(of: formVM.pendingMovement) { _, pending in
+            guard let pending else { return }
+            router.push(.stockMovement(pending))
+        }
     }
 }
 
@@ -48,86 +55,84 @@ struct InvoiceFormView: View {
     @State private var productPickerForItemID: UUID?
 
     var body: some View {
-        NavigationStack {
-            Form {
-                clientSection
-                paymentMethodSection
-                datesSection
-                lineItemsSection
-                notesSection
-                if let error = viewModel.submitError {
-                    Section {
-                        Label(error, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                            .font(.callout)
+        Form {
+            clientSection
+            paymentMethodSection
+            datesSection
+            lineItemsSection
+            notesSection
+            if let error = viewModel.submitError {
+                Section {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                }
+            }
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .navigationTitle(viewModel.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button(String.cancel) { dismiss() }
+                    .disabled(viewModel.isSubmitting)
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                if viewModel.isSubmitting {
+                    ProgressView().scaleEffect(0.8)
+                } else {
+                    Button(viewModel.submitLabel) {
+                        Task { await viewModel.submit() }
                     }
+                    .disabled(!viewModel.isValid)
+                    .fontWeight(.semibold)
                 }
             }
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(viewModel.title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String.cancel) { dismiss() }
-                        .disabled(viewModel.isSubmitting)
+        }
+        .sheet(isPresented: $showFirmPicker) {
+            FirmPickerView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $showProductPicker) {
+            ProductPickerForInvoiceView(priceList: viewModel.priceList) { item in
+                guard let itemID = productPickerForItemID,
+                      let idx = viewModel.lineItems.firstIndex(where: { $0.id == itemID }) else { return }
+                viewModel.lineItems[idx].name = item.displayName
+                viewModel.lineItems[idx].productCode = item.code
+                viewModel.lineItems[idx].unitPrice = item.sellPriceVAT > 0
+                    ? String(format: "%.0f", item.sellPriceVAT) : ""
+            }
+        }
+        .overlay {
+            if viewModel.isLoadingItems || viewModel.isSearchingBarcode {
+                VStack(spacing: 10) {
+                    ProgressView()
+                    Text(viewModel.isSearchingBarcode ? String.barcode_searching : String.loading)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    if viewModel.isSubmitting {
-                        ProgressView().scaleEffect(0.8)
-                    } else {
-                        Button(viewModel.submitLabel) {
-                            Task { await viewModel.submit() }
-                        }
-                        .disabled(!viewModel.isValid)
-                        .fontWeight(.semibold)
-                    }
-                }
+                .padding(20)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             }
-            .sheet(isPresented: $showFirmPicker) {
-                FirmPickerView(viewModel: viewModel)
-            }
-            .sheet(isPresented: $showProductPicker) {
-                ProductPickerForInvoiceView(priceList: viewModel.priceList) { item in
-                    guard let itemID = productPickerForItemID,
-                          let idx = viewModel.lineItems.firstIndex(where: { $0.id == itemID }) else { return }
-                    viewModel.lineItems[idx].name = item.displayName
-                    viewModel.lineItems[idx].productCode = item.code
-                    viewModel.lineItems[idx].unitPrice = item.sellPriceVAT > 0
-                        ? String(format: "%.0f", item.sellPriceVAT) : ""
-                }
-            }
-            .overlay {
-                if viewModel.isLoadingItems || viewModel.isSearchingBarcode {
-                    VStack(spacing: 10) {
-                        ProgressView()
-                        Text(viewModel.isSearchingBarcode ? String.barcode_searching : String.loading)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(20)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                }
-            }
-            .fullScreenCover(isPresented: $viewModel.showBarcodeScanner) {
-                BarcodeScannerScreen(
-                    onScan: { barcode in
-                        Task { await viewModel.handleScannedBarcode(barcode) }
-                    },
-                    onDismiss: { viewModel.showBarcodeScanner = false }
-                )
-            }
-            .alert(String.barcode_title, isPresented: Binding(
-                get: { viewModel.barcodeError != nil },
-                set: { _ in }
-            )) {
-                Button("OK") { }
-            } message: {
-                Text(viewModel.barcodeError ?? "")
-            }
-            .task { await viewModel.prepare() }
-            .onChange(of: viewModel.didSucceed) { _, success in
-                if success { dismiss() }
-            }
+        }
+        .fullScreenCover(isPresented: $viewModel.showBarcodeScanner) {
+            BarcodeScannerScreen(
+                onScan: { barcode in
+                    Task { await viewModel.handleScannedBarcode(barcode) }
+                },
+                onDismiss: { viewModel.showBarcodeScanner = false }
+            )
+        }
+        .alert(String.barcode_title, isPresented: Binding(
+            get: { viewModel.barcodeError != nil },
+            set: { _ in }
+        )) {
+            Button("OK") { }
+        } message: {
+            Text(viewModel.barcodeError ?? "")
+        }
+        .task { await viewModel.prepare() }
+        .onChange(of: viewModel.didSucceed) { _, success in
+            if success { dismiss() }
         }
     }
 

@@ -211,6 +211,49 @@ final class FlexiBeeService: ObservableObject {
         }
     }
 
+    // Creates a STANDARD stock movement (vydej). typDokl must be "code:STANDARD".
+    // Returns the FlexiBee internal ID of the created movement.
+    @discardableResult
+    func createStockMovement(_ movement: NewStockMovement) async throws -> String {
+        try require(AuthService.shared.canCreateStockMovement)
+        let envelope = CreateStockMovementEnvelope(winstrom: .init(skladovyPohyb: [movement]))
+        let data = try JSONEncoder().encode(envelope)
+        guard let url = URL(string: baseURL + "/skladovy-pohyb.json") else {
+            throw FlexiBeeError.apiError("Invalid URL")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpBody = data
+        request.timeoutInterval = 30
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
+        guard (200...201).contains(http.statusCode) else {
+            if let err = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
+                throw FlexiBeeError.apiError(err.winstrom.message ?? "HTTP \(http.statusCode)")
+            }
+            throw FlexiBeeError.httpError(http.statusCode)
+        }
+        let result = try JSONDecoder().decode(FlexiBeeCreateResponse.self, from: responseData)
+        guard let id = result.winstrom.results.first?.id else {
+            throw FlexiBeeError.apiError("No ID in stock movement response")
+        }
+        return id
+    }
+
+    // Fetches the invoice number (kod) for a given invoice ID. Returns nil on failure.
+    func fetchInvoiceNumber(id: String) async -> String? {
+        let response = try? await fetch(
+            FlexiBeeResponse<FlexiBeeInvoicesWrapper>.self,
+            path: "/faktura-vydana/\(id).json",
+            fields: "id,kod",
+            limit: 1
+        )
+        return response?.winstrom.invoices.first?.invoiceNumber
+    }
+
     func deleteInvoice(id: String) async throws {
         try require(AuthService.shared.canDeleteInvoice)
         guard let url = URL(string: baseURL + "/faktura-vydana/\(id).json") else {

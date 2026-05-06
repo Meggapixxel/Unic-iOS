@@ -300,6 +300,7 @@
 "stock_movement_section" = "Warehouse";
 "stock_movement_create" = "Issue Stock";
 "stock_movement_submit" = "Issue";
+"stock_movement_skip" = "Skip";
 "stock_movement_items" = "Items";
 "stock_movement_add_item" = "Add Item";
 "stock_movement_code" = "Product Code";
