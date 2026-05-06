@@ -201,6 +201,29 @@ final class FlexiBeeService: ObservableObject {
         }
     }
 
+    func createStockMovement(_ movement: NewStockMovement) async throws {
+        let envelope = CreateStockMovementEnvelope(winstrom: .init(skladovyPohyb: [movement]))
+        let data = try JSONEncoder().encode(envelope)
+        guard let url = URL(string: baseURL + "/skladovy-pohyb.json") else {
+            throw FlexiBeeError.apiError("Invalid URL")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpBody = data
+        request.timeoutInterval = 30
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
+        guard (200...201).contains(http.statusCode) else {
+            if let err = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
+                throw FlexiBeeError.apiError(err.winstrom.message ?? "HTTP \(http.statusCode)")
+            }
+            throw FlexiBeeError.httpError(http.statusCode)
+        }
+    }
+
     func deleteFirm(id: String) async throws {
         guard let url = URL(string: baseURL + "/adresar/\(id).json") else {
             throw FlexiBeeError.apiError("Invalid URL")

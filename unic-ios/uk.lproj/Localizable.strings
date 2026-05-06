@@ -295,6 +295,13 @@
 "create_invoice_pick_product" = "Оберіть продукт";
 "new_client" = "Новий клієнт";
 "create_client_name_placeholder" = "Назва компанії або особи";
+"stock_movement_title" = "Складський рух";
+"stock_movement_section" = "Склад";
+"stock_movement_create" = "Виписати зі складу";
+"stock_movement_submit" = "Списати";
+"stock_movement_items" = "Позиції";
+"stock_movement_add_item" = "Додати позицію";
+"stock_movement_code" = "Код товару";
 "invoice_detail_items" = "Позиції";
 "invoice_detail_no_items" = "Позиції відсутні";
 "invoice_status_change_title" = "Змінити статус оплати";

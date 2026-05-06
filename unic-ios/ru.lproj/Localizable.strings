@@ -295,6 +295,13 @@
 "create_invoice_pick_product" = "Выберите продукт";
 "new_client" = "Новый клиент";
 "create_client_name_placeholder" = "Название компании или лица";
+"stock_movement_title" = "Складское движение";
+"stock_movement_section" = "Склад";
+"stock_movement_create" = "Списать со склада";
+"stock_movement_submit" = "Списать";
+"stock_movement_items" = "Позиции";
+"stock_movement_add_item" = "Добавить позицию";
+"stock_movement_code" = "Код товара";
 "invoice_detail_items" = "Позиции";
 "invoice_detail_no_items" = "Позиции отсутствуют";
 "invoice_status_change_title" = "Изменить статус оплаты";
