@@ -103,7 +103,7 @@ struct UserActivityView: View {
                         ForEach(group.entries) { entry in
                             ActivityRow(entry: entry)
                         }
-                        .onDelete(perform: auth.isAdmin ? { offsets in
+                        .onDelete(perform: auth.canDeleteActivity ? { offsets in
                             let toDelete = offsets.map { group.entries[$0] }
                             Task { for e in toDelete { await viewModel.delete(e) } }
                         } : nil)
@@ -115,7 +115,7 @@ struct UserActivityView: View {
                         ForEach(group.entries) { entry in
                             ActivityRow(entry: entry, showDate: true)
                         }
-                        .onDelete(perform: auth.isAdmin ? { offsets in
+                        .onDelete(perform: auth.canDeleteActivity ? { offsets in
                             let toDelete = offsets.map { group.entries[$0] }
                             Task { for e in toDelete { await viewModel.delete(e) } }
                         } : nil)

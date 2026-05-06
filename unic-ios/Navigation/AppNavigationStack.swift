@@ -15,7 +15,7 @@ struct AppNavigationStack<Content: View>: View {
                         FlexiBeeProductDetailView(item: item)
                     case .invoice(let invoice):
                         if let vm = salesViewModel {
-                            InvoiceDetailView(invoice: invoice, salesViewModel: vm, isAdmin: AuthService.shared.isAdmin)
+                            InvoiceDetailView(invoice: invoice, salesViewModel: vm)
                         }
                     case .allTopProducts:
                         if let vm = salesViewModel {

@@ -10,7 +10,7 @@ final class UsersViewModel: ObservableObject {
     private let auth    = AuthService.shared
 
     var visibleUsers: [AppUser] {
-        auth.isAdmin
+        auth.canViewAllUsers
             ? users
             : users.filter { $0.role != .admin }
     }

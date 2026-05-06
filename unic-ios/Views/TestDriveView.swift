@@ -78,7 +78,7 @@ final class TestDriveViewModel: ObservableObject {
         }
 
         let currentUserId = auth.currentUser?.id
-        entries = all.filter { auth.isAdmin || $0.createdBy == currentUserId }
+        entries = all.filter { auth.canViewAllTestDrives || $0.createdBy == currentUserId }
     }
 }
 

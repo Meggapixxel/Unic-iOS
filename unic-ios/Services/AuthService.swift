@@ -30,15 +30,32 @@ final class AuthService: ObservableObject {
 
     // MARK: - Permissions
 
-    var canViewAnalytics: Bool { isAdmin || isManager }
-    var canViewInvoices:  Bool { isAdmin || isManager }
-    var canViewUsers:     Bool { isAdmin }
+    // Tabs
+    var canViewAnalytics:      Bool { isAdmin || isManager }
+    var canViewInvoices:       Bool { isAdmin || isManager }
+    var canViewUsers:          Bool { isAdmin }
 
-    var canCreateClient:  Bool { isAdmin || isManager }
-    var canDeleteClient:  Bool { isAdmin }
-    var canCreateInvoice: Bool { isAdmin || isManager }
-    var canEditInvoice:   Bool { isAdmin || isManager }
-    var canDeleteInvoice: Bool { isAdmin }
+    // Clients
+    var canCreateClient:       Bool { isAdmin || isManager }
+    var canDeleteClient:       Bool { isAdmin }
+
+    // Invoices
+    var canCreateInvoice:      Bool { isAdmin || isManager }
+    var canEditInvoice:        Bool { isAdmin || isManager }
+    var canDeleteInvoice:      Bool { isAdmin }
+
+    // Salons
+    var canEditSalon:          Bool { isAdmin || isManager }
+    var canDeleteSalon:        Bool { isAdmin }
+    var canEditStatusHistory:  Bool { isAdmin }
+    var canDeleteStatusHistory: Bool { isAdmin }
+
+    // Activity / Test drives
+    var canViewAllTestDrives:  Bool { isAdmin }
+    var canDeleteActivity:     Bool { isAdmin }
+
+    // Users
+    var canViewAllUsers:       Bool { isAdmin }
 
     private let db = Firestore.firestore()
     private static let storageKey = "auth_current_user"

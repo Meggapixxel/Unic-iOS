@@ -29,8 +29,8 @@ final class InvoiceDetailViewModel: ObservableObject {
         isLoadingItems = false
     }
 
-    func canEdit(isAdmin: Bool) -> Bool {
-        isAdmin || invoice.paymentStatus != .paid
+    var canEdit: Bool {
+        AuthService.shared.canEditInvoice || invoice.paymentStatus != .paid
     }
 
     func setPaymentStatus(_ status: PaymentStatus, salesVM: SalesViewModel) async {
@@ -60,12 +60,10 @@ struct InvoiceDetailView: View {
     @State private var showStatusError = false
 
     private let salesViewModel: SalesViewModel
-    private let isAdmin: Bool
 
-    init(invoice: FlexiBeeInvoice, salesViewModel: SalesViewModel, isAdmin: Bool) {
+    init(invoice: FlexiBeeInvoice, salesViewModel: SalesViewModel) {
         _viewModel = StateObject(wrappedValue: InvoiceDetailViewModel(invoice: invoice))
         self.salesViewModel = salesViewModel
-        self.isAdmin = isAdmin
     }
 
     var body: some View {
@@ -79,7 +77,7 @@ struct InvoiceDetailView: View {
         .navigationTitle(viewModel.invoice.invoiceNumber)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if viewModel.canEdit(isAdmin: isAdmin) {
+            if viewModel.canEdit {
                 ToolbarItem(placement: .topBarTrailing) {
                     if viewModel.isUpdatingStatus {
                         ProgressView().scaleEffect(0.8)
@@ -133,7 +131,7 @@ struct InvoiceDetailView: View {
                 VStack(alignment: .trailing, spacing: 6) {
                     Text(czk(viewModel.invoice.total))
                         .font(.title3.bold())
-                    if viewModel.canEdit(isAdmin: isAdmin) {
+                    if viewModel.canEdit {
                         statusMenuButton
                     } else {
                         InvoiceStatusBadge(status: viewModel.invoice.paymentStatus)

@@ -53,7 +53,7 @@ struct SalonDetailView: View {
         .navigationTitle(salon.displayName)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            if auth.isAdmin {
+            if auth.canEditSalon {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         viewModel.showEditSalon = true
@@ -457,7 +457,7 @@ struct SalonDetailView: View {
 
     @ViewBuilder
     private var deleteSection: some View {
-        if auth.isAdmin {
+        if auth.canDeleteSalon {
             Button(role: .destructive) {
                 viewModel.showDeleteConfirmation = true
             } label: {
@@ -676,7 +676,7 @@ struct StatusHistorySheet: View {
                         ForEach(viewModel.statusHistory) { entry in
                             StatusHistoryRow(entry: entry)
                                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                    if auth.isAdmin {
+                                    if auth.canEditStatusHistory {
                                         Button {
                                             editingEntry = entry
                                         } label: {
@@ -686,7 +686,7 @@ struct StatusHistorySheet: View {
                                     }
                                 }
                         }
-                        .onDelete(perform: auth.isAdmin ? { indexSet in
+                        .onDelete(perform: auth.canDeleteStatusHistory ? { indexSet in
                             for index in indexSet {
                                 let entry = viewModel.statusHistory[index]
                                 viewModel.deleteStatusEntry(entry)
