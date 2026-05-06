@@ -164,46 +164,14 @@ final class InvoiceFormViewModel: ObservableObject {
         do {
             if let invoiceId = editingInvoice?.id {
                 try await salesViewModel.updateInvoice(id: invoiceId, invoice: invoice)
-                try await updateStockMovement(from: lineItems, for: invoiceId)
             } else {
-                let newId = try await salesViewModel.createInvoice(invoice)
-                try await createLinkedStockMovement(from: lineItems, for: newId)
+                try await salesViewModel.createInvoice(invoice)
             }
             didSucceed = true
         } catch {
             submitError = error.localizedDescription
         }
         isSubmitting = false
-    }
-
-    // Creates a VYDEJ (outflow) stock movement. Description "inv:{invoiceId}" is the link key.
-    // Only items picked from the price list (have a productCode) generate movement lines.
-    private func createLinkedStockMovement(from items: [InvoiceLineItemDraft], for invoiceId: String) async throws {
-        let lines = stockMovementLines(from: items)
-        guard !lines.isEmpty else { return }
-        let movement = NewStockMovement(
-            documentType: "code:VYDEJ",
-            description: "inv:\(invoiceId)",
-            lines: lines
-        )
-        try await FlexiBeeService.shared.createStockMovement(movement)
-    }
-
-    // On invoice edit: deletes the old movement (found by popis), then creates a fresh one.
-    // If no linked movement exists (e.g. invoice predates this feature), just creates a new one.
-    private func updateStockMovement(from items: [InvoiceLineItemDraft], for invoiceId: String) async throws {
-        if let oldId = try await FlexiBeeService.shared.fetchStockMovementId(linkedToInvoiceId: invoiceId) {
-            try await FlexiBeeService.shared.deleteStockMovement(id: oldId)
-        }
-        try await createLinkedStockMovement(from: items, for: invoiceId)
-    }
-
-    // Only lines with a price-list code produce warehouse movement; manual name-only items are skipped.
-    private func stockMovementLines(from items: [InvoiceLineItemDraft]) -> [NewStockMovementLine] {
-        items.compactMap { item -> NewStockMovementLine? in
-            guard let code = item.productCode, !code.isEmpty, item.quantityDouble > 0 else { return nil }
-            return NewStockMovementLine(productCode: "code:\(code)", quantity: item.quantityDouble)
-        }
     }
 }
 

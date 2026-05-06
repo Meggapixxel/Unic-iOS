@@ -439,47 +439,6 @@ struct CreateInvoiceEnvelope: Encodable {
     }
 }
 
-// MARK: - Create Stock Movement Request
-
-struct NewStockMovementLine: Encodable {
-    let productCode: String
-    let quantity:    Double
-
-    enum CodingKeys: String, CodingKey {
-        case productCode = "cenik"
-        case quantity    = "mnozMj"
-    }
-}
-
-struct NewStockMovement: Encodable {
-    let documentType: String
-    // popis is used as the link key: "inv:{invoiceId}".
-    // This lets us find and delete the movement when the invoice is edited or deleted.
-    let description:  String?
-    let lines:        [NewStockMovementLine]
-
-    enum CodingKeys: String, CodingKey {
-        case documentType = "typDokl"
-        case description  = "popis"
-        case lines        = "polozkyPohybu"
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(documentType,         forKey: .documentType)
-        try c.encodeIfPresent(description, forKey: .description)
-        try c.encode(lines,                forKey: .lines)
-    }
-}
-
-struct CreateStockMovementEnvelope: Encodable {
-    let winstrom: Winstrom
-    struct Winstrom: Encodable {
-        let skladovyPohyb: [NewStockMovement]
-        enum CodingKeys: String, CodingKey { case skladovyPohyb = "skladovy-pohyb" }
-    }
-}
-
 // MARK: - Create Firm Request
 
 struct NewFirm: Encodable {

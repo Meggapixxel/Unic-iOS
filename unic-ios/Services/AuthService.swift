@@ -50,9 +50,6 @@ final class AuthService: ObservableObject {
     var canEditStatusHistory:  Bool { isAdmin }
     var canDeleteStatusHistory: Bool { isAdmin }
 
-    // Warehouse
-    var canCreateStockMovement: Bool { canCreateInvoice }
-
     // Activity / Test drives
     var canViewAllTestDrives:  Bool { isAdmin }
     var canDeleteActivity:     Bool { isAdmin }
