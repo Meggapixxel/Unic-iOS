@@ -1,5 +1,5 @@
 //
-//  SalonDetailViewModel.swift
+//  SalonDetailView+ViewModel.swift
 //  unic-ios
 //
 //  Created by UNIC Team on 04/02/2026.
