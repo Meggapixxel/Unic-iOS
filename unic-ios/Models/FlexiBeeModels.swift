@@ -453,6 +453,8 @@ struct NewStockMovementLine: Encodable {
 
 struct NewStockMovement: Encodable {
     let documentType: String
+    // popis is used as the link key: "inv:{invoiceId}".
+    // This lets us find and delete the movement when the invoice is edited or deleted.
     let description:  String?
     let lines:        [NewStockMovementLine]
 

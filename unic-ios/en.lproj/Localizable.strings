@@ -205,6 +205,7 @@
 "error_parsing %@" = "Parsing error: %@";
 "error_api %@" = "API error: %@";
 "error_http %lld" = "HTTP error %lld";
+"error_unauthorized" = "You don't have permission to perform this action.";
 
 /* Salon model */
 "unnamed_salon" = "Unnamed Salon";
@@ -306,6 +307,9 @@
 "invoice_detail_no_items" = "No items";
 "invoice_status_change_title" = "Change Payment Status";
 "invoice_status_change_to %@" = "Set to «%@»?";
+"delete_invoice_action" = "Delete Invoice";
+"delete_invoice_confirm_title" = "Delete Invoice?";
+"delete_invoice_confirm_body %@" = "Invoice \"%@\" will be permanently deleted along with its stock movement.";
 
 /* User Activity */
 "activity_statistics" = "Statistics";

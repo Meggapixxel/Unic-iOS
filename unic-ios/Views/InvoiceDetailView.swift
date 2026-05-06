@@ -2,68 +2,17 @@ import SwiftUI
 import Combine
 import IdentifiedCollections
 
-// MARK: - View Model
-
-@MainActor
-final class InvoiceDetailViewModel: ObservableObject {
-    @Published private(set) var invoice: FlexiBeeInvoice
-    @Published private(set) var lineItems: [FlexiBeeInvoiceItem] = []
-    @Published private(set) var isLoadingItems = false
-    @Published private(set) var loadError: String?
-    @Published private(set) var isUpdatingStatus = false
-    @Published private(set) var statusUpdateError: String?
-
-    init(invoice: FlexiBeeInvoice) {
-        self.invoice = invoice
-    }
-
-    func load() async {
-        isLoadingItems = true
-        loadError = nil
-        do {
-            let raw = try await FlexiBeeService.shared.fetchLineItemsForInvoice(invoice.id)
-            lineItems = raw.filter { !$0.productName.isEmpty && $0.quantity > 0 }
-        } catch {
-            loadError = error.localizedDescription
-        }
-        isLoadingItems = false
-    }
-
-    var canEdit: Bool {
-        AuthService.shared.canEditInvoice || invoice.paymentStatus != .paid
-    }
-
-    func setPaymentStatus(_ status: PaymentStatus, salesVM: SalesViewModel) async {
-        isUpdatingStatus = true
-        statusUpdateError = nil
-        do {
-            try await FlexiBeeService.shared.updateInvoicePaymentStatus(id: invoice.id, status: status)
-            if let updated = try? await FlexiBeeService.shared.fetchSingleInvoice(id: invoice.id) {
-                invoice = updated
-            }
-            Task { await salesVM.forceSync() }
-        } catch {
-            statusUpdateError = error.localizedDescription
-        }
-        isUpdatingStatus = false
-    }
-}
-
 // MARK: - View
 
 struct InvoiceDetailView: View {
     @StateObject private var viewModel: InvoiceDetailViewModel
-    @ObservedObject private var flexiBeeService = FlexiBeeService.shared
-    @State private var showEdit = false
-    @State private var pendingStatus: PaymentStatus?
-    @State private var showStatusAlert = false
-    @State private var showStatusError = false
 
-    private let salesViewModel: SalesViewModel
-
-    init(invoice: FlexiBeeInvoice, salesViewModel: SalesViewModel) {
-        _viewModel = StateObject(wrappedValue: InvoiceDetailViewModel(invoice: invoice))
-        self.salesViewModel = salesViewModel
+    init(invoice: FlexiBeeInvoice, salesViewModel: SalesViewModel, router: AppRouter) {
+        _viewModel = StateObject(wrappedValue: InvoiceDetailViewModel(
+            invoice: invoice,
+            salesViewModel: salesViewModel,
+            router: router
+        ))
     }
 
     var body: some View {
@@ -72,6 +21,7 @@ struct InvoiceDetailView: View {
             infoSection
             notesSection
             itemsSection
+            deleteSection
         }
         .listStyle(.insetGrouped)
         .navigationTitle(viewModel.invoice.invoiceNumber)
@@ -82,32 +32,40 @@ struct InvoiceDetailView: View {
                     if viewModel.isUpdatingStatus {
                         ProgressView().scaleEffect(0.8)
                     } else {
-                        Button(String.edit_invoice_action) { showEdit = true }
+                        Button(String.edit_invoice_action) { viewModel.showEdit = true }
                             .fontWeight(.semibold)
                     }
                 }
             }
         }
-        .sheet(isPresented: $showEdit) {
-            InvoiceFormSheetView(salesViewModel: salesViewModel, editingInvoice: viewModel.invoice)
+        .sheet(isPresented: $viewModel.showEdit) {
+            InvoiceFormSheetView(salesViewModel: viewModel.salesViewModel, editingInvoice: viewModel.invoice)
         }
-        .alert(String.invoice_status_change_title, isPresented: $showStatusAlert) {
-            Button(pendingStatus?.label ?? "") {
-                guard let s = pendingStatus else { return }
-                pendingStatus = nil
-                Task { await viewModel.setPaymentStatus(s, salesVM: salesViewModel) }
+        .alert(String.invoice_status_change_title, isPresented: $viewModel.showStatusAlert) {
+            Button(viewModel.pendingStatus?.label ?? "") {
+                viewModel.confirmStatusChange()
             }
-            Button(String.cancel, role: .cancel) { pendingStatus = nil }
+            Button(String.cancel, role: .cancel) { viewModel.cancelStatusChange() }
         } message: {
-            Text(String.invoice_status_change_to(pendingStatus?.label ?? ""))
+            Text(String.invoice_status_change_to(viewModel.pendingStatus?.label ?? ""))
         }
-        .alert(String.error, isPresented: $showStatusError) {
+        .alert(String.error, isPresented: $viewModel.showStatusError) {
             Button("OK") { }
         } message: {
             Text(viewModel.statusUpdateError ?? "")
         }
-        .onChange(of: viewModel.statusUpdateError) { _, err in
-            if err != nil { showStatusError = true }
+        .alert(String.delete_invoice_confirm_title, isPresented: $viewModel.showDeleteAlert) {
+            Button(String.delete, role: .destructive) {
+                Task { await viewModel.delete() }
+            }
+            Button(String.cancel, role: .cancel) { }
+        } message: {
+            Text(String.delete_invoice_confirm_body(viewModel.invoice.invoiceNumber))
+        }
+        .alert(String.error, isPresented: $viewModel.showDeleteError) {
+            Button("OK") { }
+        } message: {
+            Text(viewModel.deleteError ?? "")
         }
         .task {
             await viewModel.load()
@@ -149,8 +107,7 @@ struct InvoiceDetailView: View {
                 id: \.self
             ) { status in
                 Button {
-                    pendingStatus = status
-                    showStatusAlert = true
+                    viewModel.selectPendingStatus(status)
                 } label: {
                     Label(status.label, systemImage: statusIcon(for: status))
                 }
@@ -214,7 +171,7 @@ struct InvoiceDetailView: View {
                     .font(.callout)
             } else {
                 ForEach(viewModel.lineItems) { item in
-                    let stockItem = flexiBeeService.stockWithPrices[id: item.cenikCode]
+                    let stockItem = viewModel.stockItem(for: item.cenikCode)
                     Group {
                         if let stockItem {
                             NavigationLink(value: AppDestination.product(stockItem)) {
@@ -261,6 +218,30 @@ struct InvoiceDetailView: View {
                 .font(.callout.bold())
         }
         .padding(.vertical, 2)
+    }
+
+    // MARK: - Delete
+
+    @ViewBuilder
+    private var deleteSection: some View {
+        if viewModel.canDelete {
+            Section {
+                Button(role: .destructive) {
+                    viewModel.showDeleteAlert = true
+                } label: {
+                    HStack {
+                        Spacer()
+                        if viewModel.isDeleting {
+                            ProgressView()
+                        } else {
+                            Text(String.delete_invoice_action)
+                        }
+                        Spacer()
+                    }
+                }
+                .disabled(viewModel.isDeleting)
+            }
+        }
     }
 
     // MARK: - Helpers

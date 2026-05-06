@@ -205,6 +205,7 @@
 "error_parsing %@" = "Помилка парсингу: %@";
 "error_api %@" = "Помилка API: %@";
 "error_http %lld" = "HTTP помилка %lld";
+"error_unauthorized" = "У вас немає прав для цієї дії.";
 
 /* Salon model */
 "unnamed_salon" = "Безіменний салон";
@@ -306,6 +307,9 @@
 "invoice_detail_no_items" = "Позиції відсутні";
 "invoice_status_change_title" = "Змінити статус оплати";
 "invoice_status_change_to %@" = "Встановити «%@»?";
+"delete_invoice_action" = "Видалити інвойс";
+"delete_invoice_confirm_title" = "Видалити інвойс?";
+"delete_invoice_confirm_body %@" = "Інвойс \"%@\" буде видалено разом із рухом складу.";
 
 /* User Activity */
 "activity_statistics" = "Статистика";

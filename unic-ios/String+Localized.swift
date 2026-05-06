@@ -45,6 +45,7 @@ extension String {
     static func error_parsing(_ detail: String) -> String { String(localized: "error_parsing \(detail)") }
     static func error_api(_ msg: String)        -> String { String(localized: "error_api \(msg)") }
     static func error_http(_ code: Int)         -> String { String(localized: "error_http \(code)") }
+    static var error_unauthorized:              String    { String(localized: "error_unauthorized") }
 
     // MARK: - Salon List
     static var search_salons:  String { String(localized: "search_salons") }
@@ -312,9 +313,14 @@ extension String {
     // MARK: - Invoice Detail
     static var invoice_detail_items:    String { String(localized: "invoice_detail_items") }
     static var invoice_detail_no_items: String { String(localized: "invoice_detail_no_items") }
-    static var invoice_status_change_title: String { String(localized: "invoice_status_change_title") }
+    static var invoice_status_change_title:  String { String(localized: "invoice_status_change_title") }
     static func invoice_status_change_to(_ s: String) -> String {
         String(format: String(localized: "invoice_status_change_to %@"), s)
+    }
+    static var delete_invoice_action:        String { String(localized: "delete_invoice_action") }
+    static var delete_invoice_confirm_title: String { String(localized: "delete_invoice_confirm_title") }
+    static func delete_invoice_confirm_body(_ number: String) -> String {
+        String(format: String(localized: "delete_invoice_confirm_body %@"), number)
     }
 
     // MARK: - User Activity

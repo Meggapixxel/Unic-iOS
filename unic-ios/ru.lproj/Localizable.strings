@@ -205,6 +205,7 @@
 "error_parsing %@" = "Ошибка парсинга: %@";
 "error_api %@" = "Ошибка API: %@";
 "error_http %lld" = "HTTP ошибка %lld";
+"error_unauthorized" = "У вас нет прав для этого действия.";
 
 /* Salon model */
 "unnamed_salon" = "Безымянный салон";
@@ -306,6 +307,9 @@
 "invoice_detail_no_items" = "Позиции отсутствуют";
 "invoice_status_change_title" = "Изменить статус оплаты";
 "invoice_status_change_to %@" = "Установить «%@»?";
+"delete_invoice_action" = "Удалить инвойс";
+"delete_invoice_confirm_title" = "Удалить инвойс?";
+"delete_invoice_confirm_body %@" = "Инвойс \"%@\" будет удалён вместе с движением склада.";
 
 /* User Activity */
 "activity_statistics" = "Статистика";
