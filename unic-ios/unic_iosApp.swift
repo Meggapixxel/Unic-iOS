@@ -46,13 +46,17 @@ struct RootView: View {
                         .tabItem { Label("CRM", systemImage: "person.2") }
                     FlexiBeeView()
                         .tabItem { Label("FlexiBee", systemImage: "chart.bar.doc.horizontal") }
-                    if auth.isAdmin || auth.isManager {
+                    if auth.canViewAnalytics {
                         AnalyticsTabView(viewModel: salesViewModel)
                             .tabItem { Label(String.sales_analytics, systemImage: "chart.line.uptrend.xyaxis") }
+                    }
+                    if auth.canViewInvoices {
                         InvoicesTabView(viewModel: salesViewModel)
                             .tabItem { Label(String.sales_invoices, systemImage: "doc.text") }
+                    }
+                    if auth.canViewUsers {
                         UsersView()
-                            .tabItem { Label("Users", systemImage: "person.2.fill") }
+                            .tabItem { Label(String.users_nav_title, systemImage: "person.2.fill") }
                     }
                 }
                 .onAppear {

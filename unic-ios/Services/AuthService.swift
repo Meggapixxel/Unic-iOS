@@ -30,9 +30,14 @@ final class AuthService: ObservableObject {
 
     // MARK: - Permissions
 
-    var canCreateClient: Bool { isAdmin || isManager }
-    var canDeleteClient: Bool { isAdmin }
-    var canEditInvoice:  Bool { isAdmin || isManager }
+    var canViewAnalytics: Bool { isAdmin || isManager }
+    var canViewInvoices:  Bool { isAdmin || isManager }
+    var canViewUsers:     Bool { isAdmin }
+
+    var canCreateClient:  Bool { isAdmin || isManager }
+    var canDeleteClient:  Bool { isAdmin }
+    var canCreateInvoice: Bool { isAdmin || isManager }
+    var canEditInvoice:   Bool { isAdmin || isManager }
     var canDeleteInvoice: Bool { isAdmin }
 
     private let db = Firestore.firestore()

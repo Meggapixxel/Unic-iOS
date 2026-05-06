@@ -39,9 +39,11 @@ struct InvoicesTabView: View {
             InvoicesSectionView(viewModel: viewModel)
                 .navigationTitle(String.sales_invoices)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button { showCreateInvoice = true } label: {
-                            Image(systemName: "square.and.pencil").fontWeight(.semibold)
+                    if AuthService.shared.canCreateInvoice {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button { showCreateInvoice = true } label: {
+                                Image(systemName: "square.and.pencil").fontWeight(.semibold)
+                            }
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
