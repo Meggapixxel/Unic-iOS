@@ -289,6 +289,8 @@
 "create_invoice_notes" = "Нотатки";
 "create_invoice_notes_placeholder" = "Необов'язково";
 "create_invoice_pick_product" = "Оберіть продукт";
+"new_client" = "Новий клієнт";
+"create_client_name_placeholder" = "Назва компанії або особи";
 "invoice_detail_items" = "Позиції";
 "invoice_detail_no_items" = "Позиції відсутні";
 "invoice_status_change_title" = "Змінити статус оплати";

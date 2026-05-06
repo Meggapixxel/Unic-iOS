@@ -136,6 +136,14 @@ final class SalesViewModel: ObservableObject {
         isFirmsLoading = false
     }
 
+    func reloadFirms() async {
+        isFirmsLoading = true
+        if let f = try? await service.fetchFirms() {
+            firms = f
+        }
+        isFirmsLoading = false
+    }
+
     func createInvoice(_ invoice: NewInvoice) async throws {
         try await service.createInvoice(invoice)
         await fetchData()

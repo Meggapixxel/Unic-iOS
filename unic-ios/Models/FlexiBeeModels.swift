@@ -322,7 +322,7 @@ struct FlexiBeeStockMovementItemsWrapper: Decodable {
 
 // MARK: - Firm (Client / Address Book)
 
-struct FlexiBeeFirm: Identifiable, Decodable {
+struct FlexiBeeFirm: Identifiable, Decodable, Equatable {
     let id:   String
     let code: String
     let name: String?
@@ -407,3 +407,30 @@ struct CreateInvoiceEnvelope: Encodable {
         enum CodingKeys: String, CodingKey { case fakturaVydana = "faktura-vydana" }
     }
 }
+
+// MARK: - Create Firm Request
+
+struct NewFirm: Encodable {
+    let name:  String
+    let ic:    String?
+    let dic:   String?
+    let email: String?
+    let phone: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name  = "nazev"
+        case ic    = "ic"
+        case dic   = "dic"
+        case email = "email"
+        case phone = "tel"
+    }
+}
+
+struct CreateFirmEnvelope: Encodable {
+    let winstrom: Winstrom
+    struct Winstrom: Encodable { let adresar: [NewFirm] }
+}
+
+struct FlexiBeeCreateResult: Decodable { let id: String }
+struct FlexiBeeCreateWrapper: Decodable { let results: [FlexiBeeCreateResult] }
+struct FlexiBeeCreateResponse: Decodable { let winstrom: FlexiBeeCreateWrapper }

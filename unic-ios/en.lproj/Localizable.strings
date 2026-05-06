@@ -289,6 +289,8 @@
 "create_invoice_notes" = "Notes";
 "create_invoice_notes_placeholder" = "Optional";
 "create_invoice_pick_product" = "Select product";
+"new_client" = "New Client";
+"create_client_name_placeholder" = "Company or person name";
 "invoice_detail_items" = "Items";
 "invoice_detail_no_items" = "No items";
 "invoice_status_change_title" = "Change Payment Status";

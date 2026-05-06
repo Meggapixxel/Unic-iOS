@@ -292,6 +292,8 @@ extension String {
     static var create_invoice_notes:            String { String(localized: "create_invoice_notes") }
     static var create_invoice_notes_placeholder: String { String(localized: "create_invoice_notes_placeholder") }
     static var create_invoice_pick_product:     String { String(localized: "create_invoice_pick_product") }
+    static var new_client:                      String { String(localized: "new_client") }
+    static var create_client_name_placeholder:  String { String(localized: "create_client_name_placeholder") }
 
     // MARK: - Invoice Detail
     static var invoice_detail_items:    String { String(localized: "invoice_detail_items") }

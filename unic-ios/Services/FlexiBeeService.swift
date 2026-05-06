@@ -201,6 +201,43 @@ final class FlexiBeeService: ObservableObject {
         }
     }
 
+    func createFirm(_ firm: NewFirm) async throws -> FlexiBeeFirm {
+        let envelope = CreateFirmEnvelope(winstrom: .init(adresar: [firm]))
+        let data = try JSONEncoder().encode(envelope)
+        guard let url = URL(string: baseURL + "/adresar.json") else {
+            throw FlexiBeeError.apiError("Invalid URL")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpBody = data
+        request.timeoutInterval = 30
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
+        guard (200...201).contains(http.statusCode) else {
+            if let err = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
+                throw FlexiBeeError.apiError(err.winstrom.message ?? "HTTP \(http.statusCode)")
+            }
+            throw FlexiBeeError.httpError(http.statusCode)
+        }
+        let result = try JSONDecoder().decode(FlexiBeeCreateResponse.self, from: responseData)
+        guard let id = result.winstrom.results.first?.id else {
+            throw FlexiBeeError.apiError("No ID in response")
+        }
+        let firmResponse = try await fetch(
+            FlexiBeeResponse<FlexiBeeFirmWrapper>.self,
+            path: "/adresar/\(id).json",
+            fields: FlexiBeeFirm.apiFields,
+            limit: 1
+        )
+        guard let created = firmResponse.winstrom.firms.first else {
+            throw FlexiBeeError.apiError("Created firm not found")
+        }
+        return created
+    }
+
     func fetchSingleInvoice(id: String) async throws -> FlexiBeeInvoice? {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeInvoicesWrapper>.self,

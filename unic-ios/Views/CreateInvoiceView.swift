@@ -29,6 +29,7 @@ final class InvoiceFormViewModel: ObservableObject {
     @Published var dueDate = Calendar.current.date(byAdding: .day, value: 14, to: Date()) ?? Date()
     @Published var notes = ""
     @Published var lineItems: [InvoiceLineItemDraft] = [InvoiceLineItemDraft()]
+    @Published var firmPickerSearch = ""
 
     @Published private(set) var firms: [FlexiBeeFirm] = []
     @Published private(set) var priceList: [FlexiBeeCenikItem] = []
@@ -37,6 +38,7 @@ final class InvoiceFormViewModel: ObservableObject {
     @Published private(set) var isSubmitting = false
     @Published private(set) var submitError: String?
     @Published private(set) var didSucceed = false
+    @Published private(set) var justCreatedClient: FlexiBeeFirm?
 
     @Published var showBarcodeScanner = false
     @Published private(set) var isSearchingBarcode = false
@@ -141,6 +143,14 @@ final class InvoiceFormViewModel: ObservableObject {
         s.replacingOccurrences(of: #"[^A-Za-z0-9]+"#, with: "", options: .regularExpression).uppercased()
     }
 
+    func createClient(_ firm: NewFirm) async throws {
+        let created = try await FlexiBeeService.shared.createFirm(firm)
+        await salesViewModel.reloadFirms()
+        firms = salesViewModel.firms
+        selectedFirm = created
+        justCreatedClient = created
+    }
+
     func submit() async {
         guard let firm = selectedFirm, isValid else { return }
         isSubmitting = true
@@ -235,11 +245,7 @@ struct InvoiceFormView: View {
                 }
             }
             .sheet(isPresented: $showFirmPicker) {
-                FirmPickerView(
-                    firms: viewModel.firms,
-                    isFirmsLoading: viewModel.isFirmsLoading,
-                    selected: $viewModel.selectedFirm
-                )
+                FirmPickerView(viewModel: viewModel)
             }
             .sheet(isPresented: $showProductPicker) {
                 ProductPickerForInvoiceView(priceList: viewModel.priceList) { item in
@@ -417,16 +423,14 @@ private struct LineItemRow: View {
 // MARK: - Firm Picker
 
 struct FirmPickerView: View {
-    let firms: [FlexiBeeFirm]
-    let isFirmsLoading: Bool
-    @Binding var selected: FlexiBeeFirm?
+    @ObservedObject var viewModel: InvoiceFormViewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var search = ""
+    @State private var showCreateClient = false
 
     private var filtered: [FlexiBeeFirm] {
-        guard !search.isEmpty else { return firms }
-        let q = search.lowercased()
-        return firms.filter {
+        guard !viewModel.firmPickerSearch.isEmpty else { return viewModel.firms }
+        let q = viewModel.firmPickerSearch.lowercased()
+        return viewModel.firms.filter {
             $0.displayName.lowercased().contains(q) || $0.code.lowercased().contains(q)
         }
     }
@@ -434,40 +438,31 @@ struct FirmPickerView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if isFirmsLoading && firms.isEmpty {
-                    VStack(spacing: 12) {
-                        ProgressView()
-                        Text("loading")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if viewModel.isFirmsLoading && viewModel.firms.isEmpty {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
                         ForEach(filtered) { firm in
                             Button {
-                                selected = firm
+                                viewModel.selectedFirm = firm
                                 dismiss()
                             } label: {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(firm.displayName)
-                                            .foregroundStyle(.primary)
-                                        Text(firm.code)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                        Text(firm.displayName).foregroundStyle(.primary)
+                                        Text(firm.code).font(.caption).foregroundStyle(.secondary)
                                     }
                                     Spacer()
-                                    if selected?.id == firm.id {
-                                        Image(systemName: "checkmark")
-                                            .foregroundStyle(Color.accentColor)
+                                    if viewModel.selectedFirm?.id == firm.id {
+                                        Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
                                     }
                                 }
                             }
                             .buttonStyle(.plain)
                         }
                     }
-                    .searchable(text: $search, prompt: String.create_invoice_client_search)
+                    .searchable(text: $viewModel.firmPickerSearch, prompt: String.create_invoice_client_search)
                 }
             }
             .navigationTitle(String.create_invoice_client)
@@ -476,6 +471,127 @@ struct FirmPickerView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String.cancel) { dismiss() }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showCreateClient = true } label: {
+                        Image(systemName: "person.badge.plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showCreateClient) {
+                CreateClientView(formViewModel: viewModel)
+            }
+            .onChange(of: viewModel.justCreatedClient) { _, _ in
+                dismiss()
+            }
+        }
+    }
+}
+
+// MARK: - Create Client ViewModel
+
+@MainActor
+final class CreateClientViewModel: ObservableObject {
+    @Published var name = ""
+    @Published var ic = ""
+    @Published var dic = ""
+    @Published var email = ""
+    @Published var phone = ""
+    @Published private(set) var isSubmitting = false
+    @Published private(set) var error: String?
+    @Published private(set) var didSucceed = false
+
+    var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    func submit(using formVM: InvoiceFormViewModel) async {
+        guard isValid else { return }
+        isSubmitting = true
+        error = nil
+        do {
+            let firm = NewFirm(
+                name:  name.trimmingCharacters(in: .whitespaces),
+                ic:    ic.isEmpty    ? nil : ic,
+                dic:   dic.isEmpty   ? nil : dic,
+                email: email.isEmpty ? nil : email,
+                phone: phone.isEmpty ? nil : phone
+            )
+            try await formVM.createClient(firm)
+            didSucceed = true
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isSubmitting = false
+    }
+}
+
+// MARK: - Create Client View
+
+struct CreateClientView: View {
+    @ObservedObject var formViewModel: InvoiceFormViewModel
+    @StateObject private var clientVM = CreateClientViewModel()
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(String.create_invoice_client) {
+                    TextField(String.create_client_name_placeholder, text: $clientVM.name)
+                        .autocorrectionDisabled()
+                }
+                Section("IČO / DIČ") {
+                    LabeledContent("IČO") {
+                        TextField("12345678", text: $clientVM.ic)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("DIČ") {
+                        TextField("CZ12345678", text: $clientVM.dic)
+                            .multilineTextAlignment(.trailing)
+                            .autocorrectionDisabled()
+                    }
+                }
+                Section(String.section_contacts) {
+                    LabeledContent("Email") {
+                        TextField("info@company.cz", text: $clientVM.email)
+                            .keyboardType(.emailAddress)
+                            .multilineTextAlignment(.trailing)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                    }
+                    LabeledContent(String.phone_label) {
+                        TextField("+420 123 456 789", text: $clientVM.phone)
+                            .keyboardType(.phonePad)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+                if let err = clientVM.error {
+                    Section {
+                        Label(err, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                            .font(.callout)
+                    }
+                }
+            }
+            .navigationTitle(String.new_client)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String.cancel) { dismiss() }
+                        .disabled(clientVM.isSubmitting)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if clientVM.isSubmitting {
+                        ProgressView().scaleEffect(0.8)
+                    } else {
+                        Button(String.save) {
+                            Task { await clientVM.submit(using: formViewModel) }
+                        }
+                        .disabled(!clientVM.isValid)
+                        .fontWeight(.semibold)
+                    }
+                }
+            }
+            .onChange(of: clientVM.didSucceed) { _, success in
+                if success { dismiss() }
             }
         }
     }
