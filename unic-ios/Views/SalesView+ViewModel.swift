@@ -149,9 +149,6 @@ final class SalesViewModel: ObservableObject {
             isLoading = true
             do {
                 invoices = try await service.fetchInvoices()
-                let now = Date()
-                lastSyncDate = now
-                UserDefaults.standard.set(now, forKey: "sales_lastSync")
             } catch {
                 self.error = error.localizedDescription
             }
