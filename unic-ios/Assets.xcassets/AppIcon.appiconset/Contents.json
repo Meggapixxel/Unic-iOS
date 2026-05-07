@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "unic_cz_app_icon.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
