@@ -26,14 +26,14 @@ struct PendingMovement {
     let items:             [InvoiceLineItemDraft]
     /// One section per bundle in the invoice — user adds individual components to each.
     let bundleSections:    [BundleSection]
-    var onMovementCreated: (() -> Void)? = nil
+    var onMovementCreated: (() async -> Void)? = nil
 
     init(
         invoiceId: String,
         invoiceNumber: String,
         items: [InvoiceLineItemDraft],
         bundleSections: [BundleSection] = [],
-        onMovementCreated: (() -> Void)? = nil
+        onMovementCreated: ((() async -> Void))? = nil
     ) {
         self.invoiceId = invoiceId
         self.invoiceNumber = invoiceNumber
@@ -82,7 +82,7 @@ final class StockMovementViewModel: ObservableObject {
 
     let invoiceId:     String
     let invoiceNumber: String
-    private let onMovementCreated: (() -> Void)?
+    private let onMovementCreated: (() async -> Void)?
 
     /// Computed so the picker always reflects the latest price list from `FlexiBeeService`.
     var priceList: [FlexiBeeCenikItem] { FlexiBeeService.shared.priceList }
@@ -150,7 +150,7 @@ final class StockMovementViewModel: ObservableObject {
         )
         do {
             try await FlexiBeeService.shared.createStockMovement(movement)
-            onMovementCreated?()
+            await onMovementCreated?()
             await FlexiBeeService.shared.forceSync()
             didSucceed = true
         } catch {

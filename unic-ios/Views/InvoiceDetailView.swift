@@ -7,12 +7,11 @@ import IdentifiedCollections
 struct InvoiceDetailView: View {
     @StateObject private var viewModel: InvoiceDetailViewModel
 
-    init(invoice: FlexiBeeInvoice, salesViewModel: SalesViewModel, router: AppRouter, autoShowMovement: Bool = false) {
+    init(invoice: FlexiBeeInvoice, salesViewModel: SalesViewModel, router: AppRouter) {
         _viewModel = StateObject(wrappedValue: InvoiceDetailViewModel(
             invoice: invoice,
             salesViewModel: salesViewModel,
-            router: router,
-            autoShowMovement: autoShowMovement
+            router: router
         ))
     }
 
@@ -23,6 +22,7 @@ struct InvoiceDetailView: View {
             infoSection
             notesSection
             itemsSection
+            stockMovementSection
             deleteSection
         }
         .listStyle(.insetGrouped)
@@ -200,11 +200,51 @@ struct InvoiceDetailView: View {
         .padding(.vertical, 2)
     }
 
+    // MARK: - Stock Movement
+
+    @ViewBuilder
+    private var stockMovementSection: some View {
+        if !viewModel.stockMovementItems.isEmpty {
+            Section {
+                ForEach(viewModel.stockMovementItems) { item in
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.productName)
+                                .font(.callout)
+                            if !item.productCode.isEmpty {
+                                Text(item.productCode)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Text("\(String.create_invoice_item_qty): \(String(format: "%g", item.quantityIssued))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical, 2)
+                }
+            } header: {
+                HStack {
+                    Text(String.stock_movement_title)
+                    Spacer()
+                    if viewModel.canEditStockMovement {
+                        Button(String.stock_movement_edit) {
+                            viewModel.editStockMovement()
+                        }
+                        .font(.caption.bold())
+                        .textCase(nil)
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: - Delete
 
     @ViewBuilder
     private var deleteSection: some View {
-        if viewModel.canDelete {
+        if !viewModel.isLoadingItems, viewModel.canDelete {
             Section {
                 Button {
                     viewModel.showDeleteAlert = true
@@ -231,8 +271,27 @@ struct InvoiceDetailView: View {
 
     @ViewBuilder
     private var primaryActionSection: some View {
-        if viewModel.invoice.paymentStatus != .paid {
+        let showPaid = !viewModel.isLoadingItems
+            && viewModel.invoice.paymentStatus != .paid
+            && (viewModel.stockMovementCreated || viewModel.canManageStock)
+        if showPaid {
             Section {
+                if viewModel.canCreateMovementManually {
+                    Button {
+                        viewModel.manualCreateMovement()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Label(String.stock_movement_create, systemImage: "shippingbox.fill")
+                                .fontWeight(.semibold)
+                            Spacer()
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .listRowBackground(Color.blue)
+                    .disabled(viewModel.isUpdatingStatus)
+                }
+
                 Button {
                     viewModel.selectPendingStatus(.paid)
                 } label: {

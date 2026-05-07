@@ -8,19 +8,13 @@ import IdentifiedCollections
 ///
 /// ## Payment + stock movement flow
 ///
-/// **No bundles (common case):**
-///   "Paid" button → auto-creates stock movement → changes status to paid in one tap.
+/// **No bundles:** "Paid" → confirmation alert → status = paid.
+///   FlexiBee auto-creates the stock movement at invoice creation time.
 ///
-/// **Bundles present:**
-///   "Stock Movement" button → opens StockMovementView sheet where the user manually adds
-///   bundle components → on submit, `stockMovementCreated` is set and persisted →
-///   "Paid" button appears → changes status only (movement already done).
+/// **Bundles present:** "Paid" → opens StockMovementView where user fills bundle components
+///   → on submit, movement is created and status is set to paid automatically.
+///   (FlexiBee cannot auto-create movements for bundles — no warehouse code.)
 ///
-/// `autoShowMovement = true` (set after invoice creation) only triggers the bundle sheet
-/// for invoices that have starter-kit items. Non-bundle invoices do nothing on creation —
-/// movement happens on payment.
-///
-/// `stockMovementCreated` is persisted to UserDefaults so it survives navigation.
 @MainActor
 final class InvoiceDetailViewModel: ObservableObject {
     @Published private(set) var invoice: FlexiBeeInvoice
@@ -32,7 +26,6 @@ final class InvoiceDetailViewModel: ObservableObject {
     @Published private(set) var isDeleting = false
     @Published private(set) var deleteError: String?
 
-    // Sheet / alert presentation — owned by ViewModel so the view has no @State
     @Published var showEdit = false
     @Published var showStatusAlert = false
     @Published var showStatusError = false
@@ -41,38 +34,23 @@ final class InvoiceDetailViewModel: ObservableObject {
     @Published private(set) var pendingStatus: PaymentStatus?
     @Published var showStockMovement = false
     @Published private(set) var pendingMovement: PendingMovement?
-    @Published private(set) var stockMovementCreated: Bool
+    @Published private(set) var stockMovementCreated = false
+    @Published private(set) var stockMovement: FlexiBeeStockMovement?
+    @Published private(set) var stockMovementItems: [FlexiBeeStockMovementItem] = []
 
-    private let autoShowMovement: Bool
+    private var pendingPayWhenLoaded = false
 
     let salesViewModel: SalesViewModel
     private let router: AppRouter
     private var cancellables = Set<AnyCancellable>()
     private var tasks: [Task<Void, Never>] = []
 
-    // MARK: - Persistence
-
-    private static let udKey = "stock_movement_done_ids"
-
-    private static func isMovementDone(for invoiceId: String) -> Bool {
-        (UserDefaults.standard.stringArray(forKey: udKey) ?? []).contains(invoiceId)
-    }
-
-    private static func markMovementDone(for invoiceId: String) {
-        var ids = UserDefaults.standard.stringArray(forKey: udKey) ?? []
-        guard !ids.contains(invoiceId) else { return }
-        ids.append(invoiceId)
-        UserDefaults.standard.set(ids, forKey: udKey)
-    }
-
     // MARK: - Init
 
-    init(invoice: FlexiBeeInvoice, salesViewModel: SalesViewModel, router: AppRouter, autoShowMovement: Bool = false) {
+    init(invoice: FlexiBeeInvoice, salesViewModel: SalesViewModel, router: AppRouter) {
         self.invoice = invoice
         self.salesViewModel = salesViewModel
         self.router = router
-        self.autoShowMovement = autoShowMovement
-        self.stockMovementCreated = Self.isMovementDone(for: invoice.id)
 
         FlexiBeeService.shared.objectWillChange
             .receive(on: RunLoop.main)
@@ -99,6 +77,10 @@ final class InvoiceDetailViewModel: ObservableObject {
         AuthService.shared.canCreateStockMovement && invoice.paymentStatus != .paid
     }
 
+    var canEditStockMovement: Bool {
+        AuthService.shared.canEditStockMovement && stockMovement != nil
+    }
+
     /// True when at least one line item is a bundle/starter-kit.
     /// Computed from live lineItems, so it's valid only after `load()` completes.
     var hasBundles: Bool {
@@ -106,10 +88,14 @@ final class InvoiceDetailViewModel: ObservableObject {
         return lineItems.contains { codes.contains($0.productCode) }
     }
 
-    /// True when the "Stock Movement" button should be shown.
-    /// Only bundle invoices need the manual sheet; non-bundle invoices go straight to payment.
+    /// True when pressing "Paid" should open StockMovementView first (bundle invoices with no movement yet).
     var needsBundleMovement: Bool {
         canManageStock && hasBundles && !stockMovementCreated
+    }
+
+    /// True when the manual "Issue Stock" button should be shown.
+    var canCreateMovementManually: Bool {
+        canManageStock && !stockMovementCreated
     }
 
     // MARK: - Stock item lookup
@@ -124,33 +110,38 @@ final class InvoiceDetailViewModel: ObservableObject {
         isLoadingItems = true
         loadError = nil
         do {
-            async let rawItems = FlexiBeeService.shared.fetchLineItemsForInvoice(invoice.id)
-            async let movementExists = FlexiBeeService.shared.hasStockMovement(for: invoice.invoiceNumber)
-            let (items, exists) = try await (rawItems, movementExists)
-            lineItems = items.filter { !$0.productName.isEmpty && $0.quantity > 0 }
-            if exists { setStockMovementDone() }
+            lineItems = try await FlexiBeeService.shared
+                .fetchLineItemsForInvoice(invoice.id)
+                .filter { !$0.productName.isEmpty && $0.quantity > 0 }
         } catch {
             loadError = error.localizedDescription
         }
+        // Movement fetch is non-fatal — a failure just means no section is shown
+        if let (header, movItems) = try? await FlexiBeeService.shared
+            .fetchStockMovement(for: invoice.invoiceNumber) {
+            stockMovement = header
+            stockMovementItems = movItems
+            setStockMovementDone()
+        }
         isLoadingItems = false
-        // After invoice creation: show bundle sheet if needed; non-bundle movement happens on payment
-        if autoShowMovement, hasBundles { openStockMovement() }
+        if pendingPayWhenLoaded {
+            pendingPayWhenLoaded = false
+            selectPendingStatus(.paid)
+        }
     }
 
     // MARK: - Stock Movement
 
     private func setStockMovementDone() {
         stockMovementCreated = true
-        Self.markMovementDone(for: invoice.id)
     }
 
-    /// Silently creates a stock movement in FlexiBee for all non-bundle line items.
-    /// Sets `stockMovementCreated` on success; opens the manual sheet on API failure.
+    /// Creates a stock movement for all non-bundle line items.
+    /// Called automatically when confirming payment on a non-bundle invoice.
     private func autoCreateStockMovement() async {
         let bundleCodes = FirebaseService.shared.bundleCodes
         let lines: [NewStockMovementLine] = lineItems.compactMap { item in
-            guard !item.productCode.isEmpty,
-                  !bundleCodes.contains(item.productCode) else { return nil }
+            guard !item.productCode.isEmpty, !bundleCodes.contains(item.productCode) else { return nil }
             return NewStockMovementLine(productCode: "code:\(item.productCode)", quantity: item.quantity)
         }
         guard !lines.isEmpty else { setStockMovementDone(); return }
@@ -164,17 +155,37 @@ final class InvoiceDetailViewModel: ObservableObject {
             setStockMovementDone()
             await FlexiBeeService.shared.forceSync()
         } catch {
-            // Fall back to manual sheet so the user can retry
             openStockMovement()
         }
     }
 
-    func openStockMovement() {
+    /// Parses bundle component lines from invoice finalText (zavTxt).
+    /// Expected line format: `- CODE: Product name` — lines without a code are skipped (e.g. gifts).
+    private func parseBundleComponents(from text: String?) -> [StockMovementItemDraft] {
+        guard let text, !text.isEmpty else { return [] }
+        return text.components(separatedBy: "\n").compactMap { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.hasPrefix("- ") else { return nil }
+            let content = String(trimmed.dropFirst(2))
+            guard let colonRange = content.range(of: ": ") else { return nil }
+            let code = String(content[content.startIndex..<colonRange.lowerBound])
+                .trimmingCharacters(in: .whitespaces)
+            let name = String(content[colonRange.upperBound...])
+                .trimmingCharacters(in: .whitespaces)
+            guard !code.isEmpty, !code.contains(" ") else { return nil }
+            return StockMovementItemDraft(productCode: code, productName: name, quantity: 1)
+        }
+    }
+
+    func manualCreateMovement() {
+        openStockMovement(markAsPaidAfter: false)
+    }
+
+    func openStockMovement(markAsPaidAfter: Bool = true) {
         let bundleCodes = FirebaseService.shared.bundleCodes
 
         let regularDrafts: [InvoiceLineItemDraft] = lineItems.compactMap { item in
-            guard !item.productCode.isEmpty,
-                  !bundleCodes.contains(item.productCode) else { return nil }
+            guard !item.productCode.isEmpty, !bundleCodes.contains(item.productCode) else { return nil }
             var draft = InvoiceLineItemDraft()
             draft.name = item.productName
             draft.productCode = item.productCode
@@ -182,9 +193,11 @@ final class InvoiceDetailViewModel: ObservableObject {
             return draft
         }
 
+        let parsedComponents = parseBundleComponents(from: invoice.finalText)
+
         let bundleSections: [BundleSection] = lineItems.compactMap { item in
             guard bundleCodes.contains(item.productCode) else { return nil }
-            return BundleSection(bundleName: item.productName, bundleCode: item.productCode, components: [])
+            return BundleSection(bundleName: item.productName, bundleCode: item.productCode, components: parsedComponents)
         }
 
         pendingMovement = PendingMovement(
@@ -194,7 +207,32 @@ final class InvoiceDetailViewModel: ObservableObject {
             bundleSections: bundleSections,
             onMovementCreated: { [weak self] in
                 self?.setStockMovementDone()
-                Task { await self?.setPaymentStatus(.paid) }
+                if markAsPaidAfter {
+                    await self?.setPaymentStatus(.paid)
+                }
+            }
+        )
+        showStockMovement = true
+    }
+
+    func editStockMovement() {
+        guard let movement = stockMovement else { return }
+        let oldMovementId = movement.id
+        let editDrafts: [InvoiceLineItemDraft] = stockMovementItems.compactMap { item in
+            guard item.isValid else { return nil }
+            var draft = InvoiceLineItemDraft()
+            draft.name = item.productName
+            draft.productCode = item.productCode
+            draft.quantity = String(format: "%g", item.quantityIssued)
+            return draft
+        }
+        pendingMovement = PendingMovement(
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            items: editDrafts,
+            onMovementCreated: { [weak self] in
+                try? await FlexiBeeService.shared.deleteStockMovementById(oldMovementId)
+                await self?.load()
             }
         )
         showStockMovement = true
@@ -203,8 +241,12 @@ final class InvoiceDetailViewModel: ObservableObject {
     // MARK: - Payment status
 
     func selectPendingStatus(_ status: PaymentStatus) {
+        if status == .paid, isLoadingItems {
+            pendingPayWhenLoaded = true
+            return
+        }
         if status == .paid, needsBundleMovement {
-            openStockMovement()
+            openStockMovement(markAsPaidAfter: true)
         } else {
             pendingStatus = status
             showStatusAlert = true
@@ -214,15 +256,7 @@ final class InvoiceDetailViewModel: ObservableObject {
     func confirmStatusChange() {
         guard let s = pendingStatus else { return }
         pendingStatus = nil
-        let task = Task {
-            // Non-bundle invoices: auto-create movement as part of the payment action
-            if s == .paid, self.canManageStock, !self.hasBundles, !self.stockMovementCreated {
-                await self.autoCreateStockMovement()
-                // If auto-creation failed, the manual sheet is now open — don't proceed to payment
-                guard self.stockMovementCreated else { return }
-            }
-            await self.setPaymentStatus(s)
-        }
+        let task = Task { await self.setPaymentStatus(s) }
         tasks.append(task)
     }
 
