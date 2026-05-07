@@ -23,6 +23,7 @@ struct InvoiceDetailView: View {
             primaryActionSection
             itemsSection
             stockMovementSection
+            documentsSection
             deleteSection
         }
         .listStyle(.insetGrouped)
@@ -82,6 +83,9 @@ struct InvoiceDetailView: View {
             Button("OK") { }
         } message: {
             Text(viewModel.deleteError ?? "")
+        }
+        .sheet(item: $viewModel.pdfShareURL) { url in
+            ShareSheet(url: url)
         }
         .task {
             await viewModel.load()
@@ -283,6 +287,37 @@ struct InvoiceDetailView: View {
         }
     }
 
+    // MARK: - Documents
+
+    @ViewBuilder
+    private var documentsSection: some View {
+        Section {
+            Button {
+                Task { await viewModel.shareInvoicePDF() }
+            } label: {
+                HStack {
+                    Label(String.pdf_invoice, systemImage: "doc.fill")
+                    Spacer()
+                    if viewModel.isLoadingPDF {
+                        ProgressView().scaleEffect(0.8)
+                    }
+                }
+            }
+            .disabled(viewModel.isLoadingPDF)
+
+            if viewModel.cashReceiptId != nil {
+                Button {
+                    Task { await viewModel.shareCashReceiptPDF() }
+                } label: {
+                    Label(String.pdf_cash_receipt, systemImage: "doc.text.fill")
+                }
+                .disabled(viewModel.isLoadingPDF)
+            }
+        } header: {
+            Text(String.pdf_documents)
+        }
+    }
+
     // MARK: - Primary Action
 
     @ViewBuilder
@@ -328,4 +363,18 @@ struct InvoiceDetailView: View {
             }
         }
     }
+}
+
+// MARK: - Share Sheet
+
+private struct ShareSheet: UIViewControllerRepresentable {
+    let url: URL
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    }
+    func updateUIViewController(_ uvc: UIActivityViewController, context: Context) {}
+}
+
+extension URL: @retroactive Identifiable {
+    public var id: String { absoluteString }
 }

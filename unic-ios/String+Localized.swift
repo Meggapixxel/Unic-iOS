@@ -313,12 +313,16 @@ extension String {
     static var stock_movement_items:    String { String(localized: "stock_movement_items") }
     static var stock_movement_add_item: String { String(localized: "stock_movement_add_item") }
     static var stock_movement_code:     String { String(localized: "stock_movement_code") }
+    static var stock_movement_edit:     String { String(localized: "stock_movement_edit") }
     static var stock_required_title:    String { String(localized: "stock_required_title") }
     static var stock_required_body:     String { String(localized: "stock_required_body") }
 
     // MARK: - Invoice Detail
     static var invoice_detail_items:    String { String(localized: "invoice_detail_items") }
     static var invoice_detail_no_items: String { String(localized: "invoice_detail_no_items") }
+    static var pdf_documents:           String { String(localized: "pdf_documents") }
+    static var pdf_invoice:             String { String(localized: "pdf_invoice") }
+    static var pdf_cash_receipt:        String { String(localized: "pdf_cash_receipt") }
     static var invoice_status_change_title:  String { String(localized: "invoice_status_change_title") }
     static func invoice_status_change_to(_ s: String) -> String {
         String(format: String(localized: "invoice_status_change_to %@"), s)

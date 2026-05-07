@@ -593,3 +593,9 @@ struct CreateFirmEnvelope: Encodable {
 struct FlexiBeeCreateResult: Decodable { let id: String }
 struct FlexiBeeCreateWrapper: Decodable { let results: [FlexiBeeCreateResult] }
 struct FlexiBeeCreateResponse: Decodable { let winstrom: FlexiBeeCreateWrapper }
+
+struct CashReceiptItem: Decodable { let id: String; let popis: String? }
+struct CashReceiptListWrapper: Decodable {
+    let items: [CashReceiptItem]
+    enum CodingKeys: String, CodingKey { case items = "pokladni-pohyb" }
+}

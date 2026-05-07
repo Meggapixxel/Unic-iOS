@@ -202,6 +202,29 @@ final class FlexiBeeService: ObservableObject {
         _ = try await execute(method: "POST", urlString: baseURL + "/pokladni-pohyb.json", body: body)
     }
 
+    func fetchPDF(path: String) async throws -> Data {
+        guard let url = URL(string: baseURL + path) else { throw FlexiBeeError.apiError("Invalid URL") }
+        var request = URLRequest(url: url)
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 30
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            throw FlexiBeeError.apiError("PDF fetch failed")
+        }
+        return data
+    }
+
+    func fetchCashReceiptId(for invoiceNumber: String) async throws -> String? {
+        let encoded = invoiceNumber.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? invoiceNumber
+        let response = try await fetch(
+            FlexiBeeResponse<CashReceiptListWrapper>.self,
+            path: "/pokladni-pohyb/(\(encoded)).json",
+            fields: "id,popis",
+            limit: 10
+        )
+        return response.winstrom.items.first(where: { $0.popis?.contains(invoiceNumber) == true })?.id
+    }
+
     // Creates a STANDARD stock movement (vydej). typDokl must be "code:STANDARD".
     // Returns the FlexiBee internal ID of the created movement.
     @discardableResult

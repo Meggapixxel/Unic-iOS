@@ -40,6 +40,10 @@ final class InvoiceDetailViewModel: ObservableObject {
     @Published private(set) var stockMovement: FlexiBeeStockMovement?
     @Published private(set) var stockMovementItems: [FlexiBeeStockMovementItem] = []
 
+    @Published private(set) var cashReceiptId: String?
+    @Published private(set) var isLoadingPDF = false
+    @Published var pdfShareURL: URL?
+
     private var pendingPayWhenLoaded = false
 
     let salesViewModel: SalesViewModel
@@ -125,11 +129,40 @@ final class InvoiceDetailViewModel: ObservableObject {
             stockMovementItems = movItems
             setStockMovementDone()
         }
+        cashReceiptId = try? await FlexiBeeService.shared.fetchCashReceiptId(for: invoice.invoiceNumber)
         isLoadingItems = false
         if pendingPayWhenLoaded {
             pendingPayWhenLoaded = false
             selectPendingStatus(.paid)
         }
+    }
+
+    // MARK: - PDF
+
+    func sharePDF(path: String, filename: String) async {
+        isLoadingPDF = true
+        defer { isLoadingPDF = false }
+        do {
+            let data = try await FlexiBeeService.shared.fetchPDF(path: path)
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+            try data.write(to: url)
+            pdfShareURL = url
+        } catch { }
+    }
+
+    func shareInvoicePDF() async {
+        await sharePDF(
+            path: "/faktura-vydana/\(invoice.id).pdf",
+            filename: "\(invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
+        )
+    }
+
+    func shareCashReceiptPDF() async {
+        guard let rid = cashReceiptId else { return }
+        await sharePDF(
+            path: "/pokladni-pohyb/\(rid).pdf",
+            filename: "receipt-\(invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
+        )
     }
 
     // MARK: - Stock Movement

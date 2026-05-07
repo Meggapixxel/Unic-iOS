@@ -307,6 +307,7 @@
 "stock_movement_items" = "Items";
 "stock_movement_add_item" = "Add Item";
 "stock_movement_code" = "Product Code";
+"stock_movement_edit" = "Edit Movement";
 "stock_required_title" = "Stock Movement Required";
 "stock_required_body" = "Complete the stock movement before marking this invoice as paid.";
 "invoice_detail_items" = "Items";
@@ -334,3 +335,7 @@
 "role_admin" = "Admin";
 "role_manager" = "Manager";
 "role_sales" = "Sales";
+
+"pdf_documents" = "Documents";
+"pdf_invoice" = "Invoice PDF";
+"pdf_cash_receipt" = "Cash Receipt PDF";

@@ -307,6 +307,7 @@
 "stock_movement_items" = "Позиції";
 "stock_movement_add_item" = "Додати позицію";
 "stock_movement_code" = "Код товару";
+"stock_movement_edit" = "Редагувати рух";
 "stock_required_title" = "Потрібен рух складу";
 "stock_required_body" = "Спочатку виконайте рух складу, щоб позначити інвойс як оплачений.";
 "invoice_detail_items" = "Позиції";
@@ -334,3 +335,7 @@
 "role_admin" = "Адмін";
 "role_manager" = "Менеджер";
 "role_sales" = "Продажі";
+
+"pdf_documents" = "Documents";
+"pdf_invoice" = "Рахунок PDF";
+"pdf_cash_receipt" = "Cash Receipt PDF";

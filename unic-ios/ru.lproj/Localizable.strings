@@ -307,6 +307,7 @@
 "stock_movement_items" = "Позиции";
 "stock_movement_add_item" = "Добавить позицию";
 "stock_movement_code" = "Код товара";
+"stock_movement_edit" = "Редактировать движение";
 "stock_required_title" = "Требуется движение склада";
 "stock_required_body" = "Сначала выполните движение склада, чтобы отметить инвойс как оплаченный.";
 "invoice_detail_items" = "Позиции";
@@ -334,3 +335,7 @@
 "role_admin" = "Админ";
 "role_manager" = "Менеджер";
 "role_sales" = "Продажи";
+
+"pdf_documents" = "Documents";
+"pdf_invoice" = "Invoice PDF";
+"pdf_cash_receipt" = "Cash Receipt PDF";
