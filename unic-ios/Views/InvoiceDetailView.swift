@@ -231,7 +231,7 @@ struct InvoiceDetailView: View {
 
     @ViewBuilder
     private var primaryActionSection: some View {
-        if viewModel.invoice.paymentStatus != .paid, viewModel.canEdit {
+        if viewModel.invoice.paymentStatus != .paid {
             Section {
                 Button {
                     viewModel.selectPendingStatus(.paid)
