@@ -91,25 +91,9 @@ private struct StockSectionView: View {
 
     private var statsRow: some View {
         HStack(spacing: 12) {
-            StatCard(
-                value: "\(viewModel.stock.count)",
-                label: "SKU",
-                icon: "shippingbox",
-                color: .blue,   compact: true
-            )
-            StatCard(
-                value: "\(Int(viewModel.totalStockUnits))",
-                label: String.stock_units,
-                icon: "number.circle",
-                color: .green,
-                compact: true
-            )
-            StatCard(
-                value: "\(viewModel.lowStockCount)",
-                label: String.stock_low,   icon: "exclamationmark.triangle",
-                color: viewModel.lowStockCount > 0 ? .orange : .secondary,
-                compact: true
-            )
+            StatCard(value: "\(viewModel.stock.count)",          label: "SKU",             icon: "shippingbox",              color: .blue,                                              compact: true)
+            StatCard(value: "\(Int(viewModel.totalStockUnits))", label: String.stock_units, icon: "number.circle",            color: .green,                                             compact: true)
+            StatCard(value: "\(viewModel.lowStockCount)",        label: String.stock_low,   icon: "exclamationmark.triangle", color: viewModel.lowStockCount > 0 ? .orange : .secondary, compact: true)
         }
     }
 }
