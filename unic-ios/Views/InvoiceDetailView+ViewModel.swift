@@ -119,8 +119,11 @@ final class InvoiceDetailViewModel: ObservableObject {
         isLoadingItems = true
         loadError = nil
         do {
-            let raw = try await FlexiBeeService.shared.fetchLineItemsForInvoice(invoice.id)
-            lineItems = raw.filter { !$0.productName.isEmpty && $0.quantity > 0 }
+            async let rawItems = FlexiBeeService.shared.fetchLineItemsForInvoice(invoice.id)
+            async let movementExists = FlexiBeeService.shared.hasStockMovement(for: invoice.invoiceNumber)
+            let (items, exists) = try await (rawItems, movementExists)
+            lineItems = items.filter { !$0.productName.isEmpty && $0.quantity > 0 }
+            if exists { setStockMovementDone() }
         } catch {
             loadError = error.localizedDescription
         }

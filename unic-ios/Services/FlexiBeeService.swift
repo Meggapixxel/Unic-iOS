@@ -264,6 +264,19 @@ final class FlexiBeeService: ObservableObject {
         return result.winstrom.results.first?.id ?? ""
     }
 
+    /// Returns true when at least one `skladovy-pohyb` document has `popis` matching
+    /// "Vydej k {invoiceNumber}" — used to initialise `stockMovementCreated` from real API state.
+    func hasStockMovement(for invoiceNumber: String) async throws -> Bool {
+        let response = try await fetch(
+            FlexiBeeResponse<FlexiBeeStockMovementWrapper>.self,
+            path: "/skladovy-pohyb.json",
+            fields: "id",
+            limit: 1,
+            filterBy: "popis='Vydej k \(invoiceNumber)'"
+        )
+        return !response.winstrom.movements.isEmpty
+    }
+
     func fetchStockMovementItems() async throws -> [FlexiBeeStockMovementItem] {
         // Step 1: fetch all movement headers, keep only outflows (S- prefix)
         let headers = try await fetch(
