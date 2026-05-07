@@ -75,11 +75,14 @@ final class AuthService: ObservableObject {
     }
 
     func login(email: String, password: String) async throws {
+        AppLogger.log(.info, "Auth", "Login attempt: \(email)")
         do {
             let result = try await Auth.auth().signIn(withEmail: email, password: password)
             let uid = result.user.uid
             try await fetchAndStoreUser(uid: uid)
+            AppLogger.log(.info, "Auth", "Login success: uid=\(uid)")
         } catch let error as NSError {
+            AppLogger.log(.error, "Auth", "Login failed (\(email)): \(error.localizedDescription)")
             switch AuthErrorCode(rawValue: error.code) {
             case .userNotFound, .invalidEmail, .invalidCredential:
                 throw AuthError.userNotFound
@@ -92,6 +95,7 @@ final class AuthService: ObservableObject {
     }
 
     func logout() {
+        AppLogger.log(.info, "Auth", "Logout: \(currentUser?.id ?? "unknown")")
         do {
             try Auth.auth().signOut()
         } catch {
@@ -104,6 +108,7 @@ final class AuthService: ObservableObject {
     // MARK: - Private
 
     private func fetchAndStoreUser(uid: String) async throws {
+        AppLogger.log(.info, "Auth", "Fetching user profile: uid=\(uid)")
         let doc = try await db.collection("users").document(uid).getDocument()
         let data = doc.data() ?? [:]
         let firstName = data["first_name"] as? String ?? ""
@@ -111,6 +116,7 @@ final class AuthService: ObservableObject {
         let roleString = data["role"] as? String ?? ""
         let role = UserRole(rawValue: roleString) ?? .sales
         let user = AppUser(id: uid, firstName: firstName, lastName: lastName, role: role)
+        AppLogger.log(.info, "Auth", "User loaded: \(firstName) \(lastName), role=\(roleString)")
 
         do {
             let encoded = try JSONEncoder().encode(user)

@@ -47,6 +47,7 @@ final class FirebaseService: ObservableObject {
         let salons = snapshot.documents.compactMap { doc -> Salon? in
             do { return try doc.data(as: Salon.self) } catch { return nil }
         }
+        AppLogger.log(.debug, "Firebase", "fetchSalons → \(salons.count) records")
 
         await MainActor.run {
             self.salons = salons
@@ -155,8 +156,10 @@ final class FirebaseService: ObservableObject {
                 guard let name = doc.data()["name"] as? String else { return nil }
                 return WorksOnTag(id: doc.documentID, name: name)
             }
+            AppLogger.log(.debug, "Firebase", "loadWorksOnTags → \(tags.count) tags")
             await MainActor.run { worksOnTags = tags }
         } catch {
+            AppLogger.log(.error, "Firebase", "loadWorksOnTags failed: \(error.localizedDescription)")
             await MainActor.run { self.error = error }
         }
     }
@@ -246,7 +249,9 @@ final class FirebaseService: ObservableObject {
             data["contacts"] = contacts
         }
 
+        AppLogger.log(.info, "Firebase", "createSalon: \(name) id=\(salonId)")
         try await ref.setData(data)
+        AppLogger.log(.info, "Firebase", "createSalon written: id=\(salonId)")
 
         guard let salon = try await getSalon(id: salonId) else {
             throw NSError(domain: "AddSalon", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to fetch created salon"])
@@ -312,6 +317,7 @@ final class FirebaseService: ObservableObject {
             data["contacts.facebook"] = FieldValue.delete()
         }
 
+        AppLogger.log(.info, "Firebase", "updateSalonBasicInfo: id=\(salonId) name=\(name)")
         try await db.collection("salons").document(salonId).updateData(data)
 
         guard let salon = try await getSalon(id: salonId) else {
@@ -346,6 +352,7 @@ final class FirebaseService: ObservableObject {
     }
 
     func addStatusHistoryEntry(salonId: String, status: SalonStatus, note: String?, createdBy: String?) async throws {
+        AppLogger.log(.info, "Firebase", "addStatusEntry: salonId=\(salonId) status=\(status.rawValue)")
         let now = Timestamp(date: Date())
         let entry: [String: Any] = [
             "status": status.rawValue,
@@ -373,6 +380,7 @@ final class FirebaseService: ObservableObject {
     }
 
     func deleteStatusHistoryEntry(salonId: String, entryId: String) async throws {
+        AppLogger.log(.info, "Firebase", "deleteStatusEntry: salonId=\(salonId) entryId=\(entryId)")
         try await db.collection("salons")
             .document(salonId)
             .collection("statusHistory")
@@ -391,6 +399,7 @@ final class FirebaseService: ObservableObject {
     // MARK: - Delete Salon
 
     func deleteSalon(salonId: String) async throws {
+        AppLogger.log(.info, "Firebase", "deleteSalon: id=\(salonId)")
         try await db.collection("salons").document(salonId).delete()
     }
 
@@ -467,14 +476,17 @@ final class FirebaseService: ObservableObject {
     // MARK: - Real-time Listener
 
     func startListening() {
+        AppLogger.log(.info, "Firebase", "startListening: salons collection")
         listener = db.collection("salons")
             .order(by: "name")
             .addSnapshotListener { [weak self] snapshot, error in
                 if let error = error {
+                    AppLogger.log(.error, "Firebase", "salons listener error: \(error.localizedDescription)")
                     self?.error = error
                     return
                 }
-
+                let count = snapshot?.documents.count ?? 0
+                AppLogger.log(.debug, "Firebase", "salons snapshot: \(count) documents")
                 self?.salons = snapshot?.documents.compactMap { doc -> Salon? in
                     do { return try doc.data(as: Salon.self) } catch { return nil }
                 } ?? []
@@ -482,6 +494,7 @@ final class FirebaseService: ObservableObject {
     }
 
     func stopListening() {
+        AppLogger.log(.info, "Firebase", "stopListening: salons collection")
         listener?.remove()
         listener = nil
     }
@@ -550,9 +563,14 @@ final class FirebaseService: ObservableObject {
     func loadBundleCodes() async {
         do {
             let doc = try await db.collection("config").document("bundleCodes").getDocument()
-            guard let codes = doc.data()?["codes"] as? [String] else { return }
+            guard let codes = doc.data()?["codes"] as? [String] else {
+                AppLogger.log(.warning, "Firebase", "loadBundleCodes: document missing or has no 'codes' field")
+                return
+            }
+            AppLogger.log(.info, "Firebase", "loadBundleCodes → \(codes.count) bundle codes: \(codes.joined(separator: ", "))")
             await MainActor.run { bundleCodes = Set(codes) }
         } catch {
+            AppLogger.log(.error, "Firebase", "loadBundleCodes failed: \(error.localizedDescription)")
             await MainActor.run { self.error = error }
         }
     }

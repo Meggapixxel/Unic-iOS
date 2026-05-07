@@ -113,9 +113,27 @@ struct FlexiBeeStockWithPrice: Identifiable, Hashable {
 
 struct FlexiBeeErrorResponse: Decodable {
     let winstrom: Winstrom
+
     struct Winstrom: Decodable {
         let success: String?
         let message: String?
+        let results: [Result]?
+
+        struct Result: Decodable {
+            let message: String?
+            let errors:  [FieldError]?
+            struct FieldError: Decodable {
+                let message: String?
+            }
+        }
+    }
+
+    /// Extracts the most specific error message available in the response.
+    var errorMessage: String? {
+        if let m = winstrom.message, !m.isEmpty { return m }
+        return winstrom.results?.compactMap { r in
+            r.errors?.compactMap(\.message).first ?? r.message
+        }.first
     }
 }
 

@@ -190,25 +190,8 @@ final class FlexiBeeService: ObservableObject {
         case .overdue: return
         }
         let envelope = PaymentStatusEnvelope(winstrom: .init(fakturaVydana: [.init(id: id, stavUhrK: code)]))
-        let data = try JSONEncoder().encode(envelope)
-        guard let url = URL(string: baseURL + "/faktura-vydana/\(id).json") else {
-            throw FlexiBeeError.apiError("Invalid URL")
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.httpBody = data
-        request.timeoutInterval = 30
-        let (responseData, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
-        guard (200...201).contains(http.statusCode) else {
-            if let err = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
-                throw FlexiBeeError.apiError(err.winstrom.message ?? "HTTP \(http.statusCode)")
-            }
-            throw FlexiBeeError.httpError(http.statusCode)
-        }
+        let body = try JSONEncoder().encode(envelope)
+        _ = try await execute(method: "PUT", urlString: baseURL + "/faktura-vydana/\(id).json", body: body)
     }
 
     // Creates a STANDARD stock movement (vydej). typDokl must be "code:STANDARD".
@@ -217,26 +200,9 @@ final class FlexiBeeService: ObservableObject {
     func createStockMovement(_ movement: NewStockMovement) async throws -> String {
         try require(AuthService.shared.canCreateStockMovement)
         let envelope = CreateStockMovementEnvelope(winstrom: .init(skladovyPohyb: [movement]))
-        let data = try JSONEncoder().encode(envelope)
-        guard let url = URL(string: baseURL + "/skladovy-pohyb.json") else {
-            throw FlexiBeeError.apiError("Invalid URL")
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.httpBody = data
-        request.timeoutInterval = 30
-        let (responseData, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
-        guard (200...201).contains(http.statusCode) else {
-            if let err = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
-                throw FlexiBeeError.apiError(err.winstrom.message ?? "HTTP \(http.statusCode)")
-            }
-            throw FlexiBeeError.httpError(http.statusCode)
-        }
-        let result = try JSONDecoder().decode(FlexiBeeCreateResponse.self, from: responseData)
+        let body = try JSONEncoder().encode(envelope)
+        let data = try await execute(method: "POST", urlString: baseURL + "/skladovy-pohyb.json", body: body)
+        let result = try JSONDecoder().decode(FlexiBeeCreateResponse.self, from: data)
         guard let id = result.winstrom.results.first?.id else {
             throw FlexiBeeError.apiError("No ID in stock movement response")
         }
@@ -255,66 +221,19 @@ final class FlexiBeeService: ObservableObject {
 
     func deleteInvoice(id: String) async throws {
         try require(AuthService.shared.canDeleteInvoice)
-        guard let url = URL(string: baseURL + "/faktura-vydana/\(id).json") else {
-            throw FlexiBeeError.apiError("Invalid URL")
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 30
-        let (responseData, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
-        guard (200...204).contains(http.statusCode) else {
-            if let err = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
-                throw FlexiBeeError.apiError(err.winstrom.message ?? "HTTP \(http.statusCode)")
-            }
-            throw FlexiBeeError.httpError(http.statusCode)
-        }
+        _ = try await execute(method: "DELETE", urlString: baseURL + "/faktura-vydana/\(id).json", successRange: 200...204)
     }
 
     func deleteFirm(id: String) async throws {
         try require(AuthService.shared.canDeleteClient)
-        guard let url = URL(string: baseURL + "/adresar/\(id).json") else {
-            throw FlexiBeeError.apiError("Invalid URL")
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 30
-        let (responseData, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
-        guard (200...204).contains(http.statusCode) else {
-            if let err = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
-                throw FlexiBeeError.apiError(err.winstrom.message ?? "HTTP \(http.statusCode)")
-            }
-            throw FlexiBeeError.httpError(http.statusCode)
-        }
+        _ = try await execute(method: "DELETE", urlString: baseURL + "/adresar/\(id).json", successRange: 200...204)
     }
 
     func createFirm(_ firm: NewFirm) async throws -> FlexiBeeFirm {
         try require(AuthService.shared.canCreateClient)
         let envelope = CreateFirmEnvelope(winstrom: .init(adresar: [firm]))
-        let data = try JSONEncoder().encode(envelope)
-        guard let url = URL(string: baseURL + "/adresar.json") else {
-            throw FlexiBeeError.apiError("Invalid URL")
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.httpBody = data
-        request.timeoutInterval = 30
-        let (responseData, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
-        guard (200...201).contains(http.statusCode) else {
-            if let err = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
-                throw FlexiBeeError.apiError(err.winstrom.message ?? "HTTP \(http.statusCode)")
-            }
-            throw FlexiBeeError.httpError(http.statusCode)
-        }
+        let body = try JSONEncoder().encode(envelope)
+        let responseData = try await execute(method: "POST", urlString: baseURL + "/adresar.json", body: body)
         let result = try JSONDecoder().decode(FlexiBeeCreateResponse.self, from: responseData)
         guard let id = result.winstrom.results.first?.id else {
             throw FlexiBeeError.apiError("No ID in response")
@@ -344,30 +263,9 @@ final class FlexiBeeService: ObservableObject {
     @discardableResult
     private func postInvoice(to urlString: String, invoice: NewInvoice, method: String) async throws -> String {
         let envelope = CreateInvoiceEnvelope(winstrom: .init(fakturaVydana: [invoice]))
-        let data = try JSONEncoder().encode(envelope)
-
-        guard let url = URL(string: urlString) else {
-            throw FlexiBeeError.apiError("Invalid URL")
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.httpBody = data
-        request.timeoutInterval = 30
-
-        let (responseData, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw FlexiBeeError.httpError(0)
-        }
-        guard (200...201).contains(http.statusCode) else {
-            if let errResp = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: responseData) {
-                throw FlexiBeeError.apiError(errResp.winstrom.message ?? "HTTP \(http.statusCode)")
-            }
-            throw FlexiBeeError.httpError(http.statusCode)
-        }
-        let result = try JSONDecoder().decode(FlexiBeeCreateResponse.self, from: responseData)
+        let body = try JSONEncoder().encode(envelope)
+        let data = try await execute(method: method, urlString: urlString, body: body)
+        let result = try JSONDecoder().decode(FlexiBeeCreateResponse.self, from: data)
         return result.winstrom.results.first?.id ?? ""
     }
 
@@ -428,7 +326,59 @@ final class FlexiBeeService: ObservableObject {
         return response.winstrom.cards.map { $0.toCard() }
     }
 
-    // MARK: - HTTP
+    // MARK: - HTTP Helpers
+
+    /// Throws `FlexiBeeError.apiError` or `.httpError` when status is outside `successRange`.
+    /// Digs into `results[].errors[]` for the most specific FlexiBee message.
+    private func validateResponse(_ statusCode: Int, data: Data, successRange: ClosedRange<Int> = 200...201) throws {
+        guard successRange.contains(statusCode) else {
+            if let err = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: data) {
+                throw FlexiBeeError.apiError(err.errorMessage ?? "HTTP \(statusCode)")
+            }
+            throw FlexiBeeError.httpError(statusCode)
+        }
+    }
+
+    /// Executes a mutating request (POST / PUT / DELETE) and returns the raw response `Data`.
+    @discardableResult
+    private func execute(
+        method: String,
+        urlString: String,
+        body: Data? = nil,
+        successRange: ClosedRange<Int> = 200...201
+    ) async throws -> Data {
+        guard let url = URL(string: urlString) else {
+            throw FlexiBeeError.apiError("Invalid URL")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let body {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = body
+        }
+        request.timeoutInterval = 30
+
+        let path = url.path
+        AppLogger.log(.info, "FlexiBee", "→ \(method) \(path)")
+
+        let start = Date()
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let ms = Int(Date().timeIntervalSince(start) * 1000)
+
+        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
+
+        if successRange.contains(http.statusCode) {
+            AppLogger.log(.info, "FlexiBee", "← \(http.statusCode) \(method) \(path) (\(ms)ms, \(data.count)B)")
+        } else {
+            let preview = String(data: data, encoding: .utf8).map { String($0.prefix(500)) } ?? ""
+            AppLogger.log(.error, "FlexiBee", "← \(http.statusCode) \(method) \(path) (\(ms)ms) | \(preview)")
+        }
+
+        try validateResponse(http.statusCode, data: data, successRange: successRange)
+        return data
+    }
 
     private func fetch<T: Decodable>(
         _ type: T.Type,
@@ -457,21 +407,28 @@ final class FlexiBeeService: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.timeoutInterval = 30
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let path = url.path
+        AppLogger.log(.debug, "FlexiBee", "→ GET \(path)")
 
-        guard let http = response as? HTTPURLResponse else {
-            throw FlexiBeeError.httpError(0)
+        let start = Date()
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let ms = Int(Date().timeIntervalSince(start) * 1000)
+
+        guard let http = response as? HTTPURLResponse else { throw FlexiBeeError.httpError(0) }
+
+        if http.statusCode == 200 {
+            AppLogger.log(.debug, "FlexiBee", "← \(http.statusCode) GET \(path) (\(ms)ms, \(data.count)B)")
+        } else {
+            let preview = String(data: data, encoding: .utf8).map { String($0.prefix(500)) } ?? ""
+            AppLogger.log(.error, "FlexiBee", "← \(http.statusCode) GET \(path) (\(ms)ms) | \(preview)")
         }
-        guard http.statusCode == 200 else {
-            if let errResp = try? JSONDecoder().decode(FlexiBeeErrorResponse.self, from: data) {
-                throw FlexiBeeError.apiError(errResp.winstrom.message ?? "Unknown error")
-            }
-            throw FlexiBeeError.httpError(http.statusCode)
-        }
+
+        try validateResponse(http.statusCode, data: data, successRange: 200...200)
 
         do {
             return try JSONDecoder().decode(T.self, from: data)
         } catch {
+            AppLogger.log(.error, "FlexiBee", "Decode error for \(path): \(error)")
             throw FlexiBeeError.decodingError(error)
         }
     }
