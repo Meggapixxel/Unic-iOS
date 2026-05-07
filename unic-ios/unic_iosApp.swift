@@ -13,12 +13,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         FirebaseApp.configure()
-        Task {
-            _ = await NotificationService.shared.requestPermission()
-            async let _ = FirebaseService.shared.loadBundleCodes()
-            async let _ = FirebaseService.shared.loadTestDriveConfig()
-            _ = await ((), ())
-        }
+        Task { _ = await NotificationService.shared.requestPermission() }
         return true
     }
 }
@@ -34,56 +29,52 @@ struct unic_iosApp: App {
     }
 }
 
+// MARK: - App State
+
+private enum AppState {
+    case auth
+    case fetch
+    case main
+}
+
 // MARK: - Root View
 
 struct RootView: View {
     @ObservedObject private var auth = AuthService.shared
     @StateObject private var salesViewModel = SalesViewModel()
-    @State private var showGreeting = false
+    @State private var appState: AppState = .auth
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            if auth.isLoggedIn {
-                TabView {
-                    SalonListView()
-                        .tabItem { Label("CRM", systemImage: "person.2") }
-                    FlexiBeeView()
-                        .tabItem { Label("FlexiBee", systemImage: "chart.bar.doc.horizontal") }
-                    if auth.canViewAnalytics {
-                        AnalyticsTabView(viewModel: salesViewModel)
-                            .tabItem { Label(String.sales_analytics, systemImage: "chart.line.uptrend.xyaxis") }
-                    }
-                    if auth.canViewInvoices {
-                        InvoicesTabView(viewModel: salesViewModel)
-                            .tabItem { Label(String.sales_invoices, systemImage: "doc.text") }
-                    }
-                    if auth.canViewUsers {
-                        UsersView()
-                            .tabItem { Label(String.users_nav_title, systemImage: "person.2.fill") }
-                    }
-                }
-                .onAppear {
-                    withAnimation(.easeIn(duration: 0.3)) { showGreeting = true }
-                    Task {
-                        try? await Task.sleep(nanoseconds: 2_500_000_000)
-                        withAnimation(.easeOut(duration: 0.4)) { showGreeting = false }
-                    }
-                }
-            } else {
-                LoginView()
-            }
-
-            if showGreeting, let user = auth.currentUser {
-                Text("greeting \(user.firstName)")
-                    .font(.subheadline.bold())
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(.thinMaterial)
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
-                    .padding(.bottom, 90)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+        Group {
+            switch appState {
+            case .auth:
+                AuthScreen()
+            case .fetch:
+                FetchScreen()
+            case .main:
+                MainScreen(salesViewModel: salesViewModel)
             }
         }
+        .task(id: auth.isLoggedIn) { handleAuthChange(auth.isLoggedIn) }
+    }
+}
+
+// MARK: - State transitions
+
+extension RootView {
+    private func handleAuthChange(_ loggedIn: Bool) {
+        if loggedIn {
+            appState = .fetch
+            Task { await loadConfig() }
+        } else {
+            appState = .auth
+        }
+    }
+
+    private func loadConfig() async {
+        async let bundles   = FirebaseService.shared.loadBundleCodes()
+        async let testDrive = FirebaseService.shared.loadTestDriveConfig()
+        _ = await (bundles, testDrive)
+        appState = .main
     }
 }

@@ -25,7 +25,7 @@ struct NotLoggedInView: View {
 
 // MARK: - Login
 
-struct LoginView: View {
+struct AuthScreen: View {
     @ObservedObject private var auth = AuthService.shared
     @State private var email = ""
     @State private var password = ""

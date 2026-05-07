@@ -52,6 +52,7 @@ final class AuthService: ObservableObject {
 
     // Warehouse
     var canCreateStockMovement: Bool { canCreateInvoice }
+    var canEditStockMovement:   Bool { isAdmin }
 
     // Activity / Test drives
     var canViewAllTestDrives:  Bool { isAdmin }
