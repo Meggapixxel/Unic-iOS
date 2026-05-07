@@ -11,13 +11,14 @@ private enum PickerTarget {
 
 struct StockMovementView: View {
     @StateObject private var viewModel: StockMovementViewModel
-    @Environment(\.dismiss) private var dismiss
+    @Binding var isPresented: Bool
 
     @State private var showProductPicker = false
     @State private var pickerTarget: PickerTarget?
 
-    init(pending: PendingMovement) {
+    init(pending: PendingMovement, isPresented: Binding<Bool>) {
         _viewModel = StateObject(wrappedValue: StockMovementViewModel(pending: pending))
+        self._isPresented = isPresented
     }
 
     var body: some View {
@@ -57,12 +58,12 @@ struct StockMovementView: View {
                 }
             }
             .sheet(isPresented: $showProductPicker) {
-                ProductPickerForInvoiceView(priceList: viewModel.priceList) { item in
+                ProductPickerForInvoiceView(priceList: viewModel.priceList, onSelect: { item in
                     handleProductPicked(item)
-                }
+                }, isPresented: $showProductPicker)
             }
             .onChange(of: viewModel.didSucceed) { _, success in
-                if success { dismiss() }
+                if success { isPresented = false }
             }
         }
     }

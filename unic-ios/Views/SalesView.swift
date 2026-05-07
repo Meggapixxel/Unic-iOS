@@ -60,7 +60,7 @@ struct InvoicesTabView: View {
                         }
                     }
                 }) {
-                    InvoiceFormSheetView(salesViewModel: viewModel)
+                    InvoiceFormSheetView(salesViewModel: viewModel, onDismiss: { showCreateInvoice = false })
                 }
         }
     }

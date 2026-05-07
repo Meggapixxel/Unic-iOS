@@ -221,7 +221,7 @@ struct SalonMapView: View {
             .padding(.horizontal)
         }
         .sheet(isPresented: $viewModel.showStatusInfo) {
-            StatusInfoView()
+            StatusInfoView(isPresented: $viewModel.showStatusInfo)
         }
     }
 }

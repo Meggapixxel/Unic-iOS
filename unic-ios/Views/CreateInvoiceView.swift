@@ -24,16 +24,18 @@ struct InvoiceLineItemDraft: Identifiable {
 
 struct InvoiceFormSheetView: View {
     @StateObject private var formVM: InvoiceFormViewModel
+    var onDismiss: () -> Void
 
-    init(salesViewModel: SalesViewModel, editingInvoice: FlexiBeeInvoice? = nil) {
+    init(salesViewModel: SalesViewModel, editingInvoice: FlexiBeeInvoice? = nil, onDismiss: @escaping () -> Void) {
         _formVM = StateObject(wrappedValue: InvoiceFormViewModel(
             salesViewModel: salesViewModel,
             editingInvoice: editingInvoice
         ))
+        self.onDismiss = onDismiss
     }
 
     var body: some View {
-        InvoiceFormView(viewModel: formVM)
+        InvoiceFormView(viewModel: formVM, onDismiss: onDismiss)
     }
 }
 
@@ -41,7 +43,7 @@ struct InvoiceFormSheetView: View {
 
 struct InvoiceFormView: View {
     @ObservedObject var viewModel: InvoiceFormViewModel
-    @Environment(\.dismiss) private var dismiss
+    var onDismiss: () -> Void
 
     @State private var showFirmPicker = false
     @State private var showProductPicker = false
@@ -67,7 +69,7 @@ struct InvoiceFormView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button(String.cancel) { dismiss() }
+                Button(String.cancel) { onDismiss() }
                     .disabled(viewModel.isSubmitting)
             }
             ToolbarItem(placement: .confirmationAction) {
@@ -83,16 +85,16 @@ struct InvoiceFormView: View {
             }
         }
         .sheet(isPresented: $showFirmPicker) {
-            FirmPickerView(viewModel: viewModel)
+            FirmPickerView(viewModel: viewModel, isPresented: $showFirmPicker)
         }
         .sheet(isPresented: $showProductPicker) {
-            ProductPickerForInvoiceView(priceList: viewModel.priceList) { item in
+            ProductPickerForInvoiceView(priceList: viewModel.priceList, onSelect: { item in
                 guard let itemID = productPickerForItemID,
                       let idx = viewModel.lineItems.firstIndex(where: { $0.id == itemID }) else { return }
                 viewModel.lineItems[idx].name = item.displayName
                 viewModel.lineItems[idx].productCode = item.code
                 viewModel.lineItems[idx].unitPrice = item.unitPrice
-            }
+            }, isPresented: $showProductPicker)
         }
         .overlay {
             if viewModel.isLoadingItems || viewModel.isSearchingBarcode {
@@ -124,7 +126,7 @@ struct InvoiceFormView: View {
         }
         .task { await viewModel.prepare() }
         .onChange(of: viewModel.didSucceed) { _, success in
-            if success { dismiss() }
+            if success { onDismiss() }
         }
         } // NavigationStack
     }
@@ -261,7 +263,7 @@ private struct LineItemRow: View {
 
 struct FirmPickerView: View {
     @ObservedObject var viewModel: InvoiceFormViewModel
-    @Environment(\.dismiss) private var dismiss
+    @Binding var isPresented: Bool
     @State private var showCreateClient = false
     @State private var deleteError: String?
 
@@ -284,7 +286,7 @@ struct FirmPickerView: View {
                         ForEach(filtered) { firm in
                             Button {
                                 viewModel.selectedFirm = firm
-                                dismiss()
+                                isPresented = false
                             } label: {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
@@ -319,7 +321,7 @@ struct FirmPickerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String.cancel) { dismiss() }
+                    Button(String.cancel) { isPresented = false }
                 }
                 if viewModel.canCreateClient {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -330,7 +332,7 @@ struct FirmPickerView: View {
                 }
             }
             .sheet(isPresented: $showCreateClient) {
-                CreateClientView(formViewModel: viewModel)
+                CreateClientView(formViewModel: viewModel, isPresented: $showCreateClient)
             }
             .alert(String.error, isPresented: .init(
                 get: { deleteError != nil },
@@ -341,7 +343,7 @@ struct FirmPickerView: View {
                 Text(deleteError ?? "")
             }
             .onChange(of: viewModel.justCreatedClient) { _, _ in
-                dismiss()
+                isPresented = false
             }
         }
     }
@@ -352,7 +354,7 @@ struct FirmPickerView: View {
 struct CreateClientView: View {
     @ObservedObject var formViewModel: InvoiceFormViewModel
     @StateObject private var clientVM = CreateClientViewModel()
-    @Environment(\.dismiss) private var dismiss
+    @Binding var isPresented: Bool
 
     var body: some View {
         NavigationStack {
@@ -399,7 +401,7 @@ struct CreateClientView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String.cancel) { dismiss() }
+                    Button(String.cancel) { isPresented = false }
                         .disabled(clientVM.isSubmitting)
                 }
                 ToolbarItem(placement: .confirmationAction) {
@@ -415,7 +417,7 @@ struct CreateClientView: View {
                 }
             }
             .onChange(of: clientVM.didSucceed) { _, success in
-                if success { dismiss() }
+                if success { isPresented = false }
             }
         }
     }
@@ -426,7 +428,7 @@ struct CreateClientView: View {
 struct ProductPickerForInvoiceView: View {
     let priceList: [FlexiBeeCenikItem]
     let onSelect: (FlexiBeeCenikItem) -> Void
-    @Environment(\.dismiss) private var dismiss
+    @Binding var isPresented: Bool
     @State private var search = ""
 
     private var filtered: [FlexiBeeCenikItem] {
@@ -443,7 +445,7 @@ struct ProductPickerForInvoiceView: View {
                 ForEach(filtered) { item in
                     Button {
                         onSelect(item)
-                        dismiss()
+                        isPresented = false
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
@@ -469,7 +471,7 @@ struct ProductPickerForInvoiceView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String.cancel) { dismiss() }
+                    Button(String.cancel) { isPresented = false }
                 }
             }
         }

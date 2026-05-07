@@ -52,9 +52,10 @@ struct SalonListView: View {
     @StateObject private var viewModel = SalonsViewModel()
     @State private var showRoutePlanner = false
     @State private var showAddSalon = false
+    @State private var salonPath: [Salon] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $salonPath) {
             ZStack {
                 // Content: List or Map
                 if viewModel.isLoading {
@@ -81,18 +82,19 @@ struct SalonListView: View {
                         }
 
                         ForEach(viewModel.displayedSalons) { salon in
-                            NavigationLink {
-                                SalonDetailView(
-                                    salon: salon,
-                                    onSalonUpdated: { viewModel.updateSalon($0) },
-                                    onSalonDeleted: { viewModel.deleteSalon(salon) }
-                                )
-                            } label: {
+                            NavigationLink(value: salon) {
                                 SalonRowView(salon: salon)
                             }
                         }
                     }
                     .listStyle(.plain)
+                    .navigationDestination(for: Salon.self) { salon in
+                        SalonDetailView(
+                            salon: salon,
+                            onSalonUpdated: { viewModel.updateSalon($0) },
+                            onSalonDeleted: { viewModel.deleteSalon(salon); salonPath.removeLast() }
+                        )
+                    }
                     .refreshable {
                         await viewModel.loadSalons()
                     }
@@ -114,7 +116,7 @@ struct SalonListView: View {
                         .padding()
                     }
                     .sheet(isPresented: $viewModel.showStatusInfo) {
-                        StatusInfoView()
+                        StatusInfoView(isPresented: $viewModel.showStatusInfo)
                     }
                 }
             }
@@ -189,7 +191,7 @@ struct SalonListView: View {
                     RoutePlannerView(salons: viewModel.displayedSalons, isPresented: $showRoutePlanner)
                 }
                 .sheet(isPresented: $showAddSalon) {
-                    SalonFormView { salon in
+                    SalonFormView(onDismiss: { showAddSalon = false }) { salon in
                         viewModel.addSalon(salon)
                     }
                 }
@@ -558,7 +560,7 @@ struct ErrorView: View {
 // MARK: - Status Info View
 
 struct StatusInfoView: View {
-    @Environment(\.dismiss) private var dismiss
+    @Binding var isPresented: Bool
 
     var body: some View {
         NavigationStack {
@@ -572,7 +574,7 @@ struct StatusInfoView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    CloseButton { dismiss() }
+                    CloseButton { isPresented = false }
                 }
             }
         }

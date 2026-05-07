@@ -11,7 +11,6 @@ import IdentifiedCollections
 
 struct SalonDetailView: View {
     @StateObject private var viewModel: SalonDetailViewModel
-    @Environment(\.dismiss) private var dismiss
     @ObservedObject private var auth = AuthService.shared
 
     private let showMap: Bool
@@ -64,7 +63,7 @@ struct SalonDetailView: View {
             }
         }
         .sheet(isPresented: $viewModel.showEditSalon) {
-            SalonFormView(salon: salon) { updated in
+            SalonFormView(salon: salon, onDismiss: { viewModel.showEditSalon = false }) { updated in
                 viewModel.salon = updated
                 viewModel.onSalonUpdated(updated)
             }
@@ -75,19 +74,19 @@ struct SalonDetailView: View {
             Text(viewModel.alertMessage)
         }
         .sheet(isPresented: $viewModel.showStatusInfo) {
-            StatusInfoView()
+            StatusInfoView(isPresented: $viewModel.showStatusInfo)
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $viewModel.showLeadTempInfo) {
-            LeadTempInfoView()
+            LeadTempInfoView(isPresented: $viewModel.showLeadTempInfo)
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $viewModel.showAddStatus) {
-            AddStatusSheet(viewModel: viewModel)
+            AddStatusSheet(viewModel: viewModel, isPresented: $viewModel.showAddStatus)
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $viewModel.showStatusHistory) {
-            StatusHistorySheet(viewModel: viewModel)
+            StatusHistorySheet(viewModel: viewModel, isPresented: $viewModel.showStatusHistory)
         }
         .confirmationDialog(
             "delete_salon_question",
@@ -100,9 +99,6 @@ struct SalonDetailView: View {
             Button("cancel", role: .cancel) {}
         } message: {
             Text("delete_confirmation \(salon.displayName)")
-        }
-        .onChange(of: viewModel.shouldDismiss) { _, should in
-            if should { dismiss() }
         }
         .task {
             viewModel.loadLatestStatusEntry()
@@ -562,13 +558,14 @@ struct StatusHistoryRow: View {
 struct AddStatusSheet: View {
     @ObservedObject var viewModel: SalonDetailViewModel
     @ObservedObject private var flexiBee = FlexiBeeService.shared
+    @Binding var isPresented: Bool
     @State private var selectedStatus: SalonStatus
     @State private var note: String = ""
     @State private var selectedArticleCodes: [String] = []
-    @Environment(\.dismiss) private var dismiss
 
-    init(viewModel: SalonDetailViewModel) {
+    init(viewModel: SalonDetailViewModel, isPresented: Binding<Bool>) {
         self.viewModel = viewModel
+        self._isPresented = isPresented
         _selectedStatus = State(initialValue: viewModel.currentStatus)
     }
 
@@ -624,7 +621,7 @@ struct AddStatusSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    CloseButton { dismiss() }
+                    CloseButton { isPresented = false }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -656,7 +653,7 @@ struct AddStatusSheet: View {
 struct StatusHistorySheet: View {
     @ObservedObject var viewModel: SalonDetailViewModel
     @ObservedObject private var auth = AuthService.shared
-    @Environment(\.dismiss) private var dismiss
+    @Binding var isPresented: Bool
     @State private var editingEntry: StatusHistoryEntry?
 
     var body: some View {
@@ -700,12 +697,15 @@ struct StatusHistorySheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    CloseButton { dismiss() }
+                    CloseButton { isPresented = false }
                 }
             }
         }
         .sheet(item: $editingEntry) { entry in
-            EditNoteSheet(entry: entry) { newNote in
+            EditNoteSheet(entry: entry, isPresented: Binding(
+                get: { editingEntry != nil },
+                set: { if !$0 { editingEntry = nil } }
+            )) { newNote in
                 viewModel.updateStatusEntryNote(entry, note: newNote)
             }
         }
@@ -719,13 +719,14 @@ struct StatusHistorySheet: View {
 
 struct EditNoteSheet: View {
     let entry: StatusHistoryEntry
+    @Binding var isPresented: Bool
     let onSave: (String?) -> Void
 
-    @Environment(\.dismiss) private var dismiss
     @State private var noteText: String
 
-    init(entry: StatusHistoryEntry, onSave: @escaping (String?) -> Void) {
+    init(entry: StatusHistoryEntry, isPresented: Binding<Bool>, onSave: @escaping (String?) -> Void) {
         self.entry = entry
+        self._isPresented = isPresented
         self.onSave = onSave
         _noteText = State(initialValue: entry.note ?? "")
     }
@@ -756,12 +757,12 @@ struct EditNoteSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    CloseButton { dismiss() }
+                    CloseButton { isPresented = false }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         onSave(noteText.trimmingCharacters(in: .whitespacesAndNewlines))
-                        dismiss()
+                        isPresented = false
                     } label: {
                         Image(systemName: "checkmark")
                     }
@@ -817,7 +818,7 @@ extension LeadTemp {
 // MARK: - Lead Temp Info Sheet
 
 struct LeadTempInfoView: View {
-    @Environment(\.dismiss) private var dismiss
+    @Binding var isPresented: Bool
 
     var body: some View {
         NavigationStack {
@@ -881,7 +882,7 @@ struct LeadTempInfoView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    CloseButton { dismiss() }
+                    CloseButton { isPresented = false }
                 }
             }
         }

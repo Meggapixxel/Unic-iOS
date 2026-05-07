@@ -44,7 +44,7 @@ struct InvoiceDetailView: View {
             }
         }
         .sheet(isPresented: $viewModel.showEdit) {
-            InvoiceFormSheetView(salesViewModel: viewModel.salesViewModel, editingInvoice: viewModel.invoice)
+            InvoiceFormSheetView(salesViewModel: viewModel.salesViewModel, editingInvoice: viewModel.invoice, onDismiss: { viewModel.showEdit = false })
         }
         .confirmationDialog(
             String.payment_method,
@@ -57,7 +57,7 @@ struct InvoiceDetailView: View {
         }
         .sheet(isPresented: $viewModel.showStockMovement) {
             if let pending = viewModel.pendingMovement {
-                StockMovementView(pending: pending)
+                StockMovementView(pending: pending, isPresented: $viewModel.showStockMovement)
             }
         }
         .alert(String.invoice_status_change_title, isPresented: $viewModel.showStatusAlert) {

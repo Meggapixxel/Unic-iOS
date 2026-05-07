@@ -6,7 +6,6 @@
 import SwiftUI
 
 struct SalonFormView: View {
-    @Environment(\.dismiss) private var dismiss
     @ObservedObject private var firebaseService = FirebaseService.shared
 
     @State private var name: String
@@ -30,10 +29,12 @@ struct SalonFormView: View {
 
     private let existingSalon: Salon?
     private let service = FirebaseService.shared
+    private let onDismiss: () -> Void
     private let onSaved: (Salon) -> Void
 
-    init(salon: Salon? = nil, onSaved: @escaping (Salon) -> Void) {
+    init(salon: Salon? = nil, onDismiss: @escaping () -> Void, onSaved: @escaping (Salon) -> Void) {
         self.existingSalon = salon
+        self.onDismiss = onDismiss
         self.onSaved = onSaved
         _name      = State(initialValue: salon?.name ?? "")
         _city      = State(initialValue: salon?.city ?? "")
@@ -169,7 +170,7 @@ struct SalonFormView: View {
                         if isDirty {
                             showDiscardAlert = true
                         } else {
-                            dismiss()
+                            onDismiss()
                         }
                     }
                 }
@@ -200,11 +201,11 @@ struct SalonFormView: View {
                 Text(alertMessage)
             }
             .alert(String.discard_changes, isPresented: $showDiscardAlert) {
-                Button(String.discard, role: .destructive) { dismiss() }
+                Button(String.discard, role: .destructive) { onDismiss() }
                 Button(String.cancel, role: .cancel) {}
             }
             .sheet(isPresented: $showLeadTempInfo) {
-                LeadTempInfoView()
+                LeadTempInfoView(isPresented: $showLeadTempInfo)
             }
         }
     }
@@ -253,7 +254,7 @@ struct SalonFormView: View {
                     )
                 }
                 onSaved(result)
-                dismiss()
+                onDismiss()
             } catch {
                 alertMessage = error.localizedDescription
                 showAlert = true
