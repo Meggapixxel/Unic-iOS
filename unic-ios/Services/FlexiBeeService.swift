@@ -215,12 +215,11 @@ final class FlexiBeeService: ObservableObject {
     }
 
     func fetchCashReceiptId(for invoiceNumber: String) async throws -> String? {
-        let encoded = invoiceNumber.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? invoiceNumber
         let response = try await fetch(
             FlexiBeeResponse<CashReceiptListWrapper>.self,
-            path: "/pokladni-pohyb/(\(encoded)).json",
+            path: "/pokladni-pohyb.json",
             fields: "id,popis",
-            limit: 10
+            limit: 200
         )
         return response.winstrom.items.first(where: { $0.popis?.contains(invoiceNumber) == true })?.id
     }

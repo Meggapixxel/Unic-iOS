@@ -42,7 +42,7 @@ final class InvoiceDetailViewModel: ObservableObject {
 
     @Published private(set) var cashReceiptId: String?
     @Published private(set) var isLoadingPDF = false
-    @Published var pdfShareURL: URL?
+    @Published var pdfShareItem: PDFShareItem?
 
     private var pendingPayWhenLoaded = false
 
@@ -144,25 +144,33 @@ final class InvoiceDetailViewModel: ObservableObject {
         defer { isLoadingPDF = false }
         do {
             let data = try await FlexiBeeService.shared.fetchPDF(path: path)
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
-            try data.write(to: url)
-            pdfShareURL = url
+            pdfShareItem = PDFShareItem(data: data, filename: filename)
         } catch { }
     }
 
     func shareInvoicePDF() async {
-        await sharePDF(
-            path: "/faktura-vydana/\(invoice.id).pdf",
-            filename: "\(invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
-        )
+        let filename = "\(invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
+        await sharePDF(path: "/faktura-vydana/\(invoice.id).pdf", filename: filename)
     }
 
     func shareCashReceiptPDF() async {
         guard let rid = cashReceiptId else { return }
-        await sharePDF(
-            path: "/pokladni-pohyb/\(rid).pdf",
-            filename: "receipt-\(invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
-        )
+        let filename = "receipt-\(invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
+        await sharePDF(path: "/pokladni-pohyb/\(rid).pdf", filename: filename)
+    }
+
+    func shareBothPDFs() async {
+        guard let rid = cashReceiptId else { await shareInvoicePDF(); return }
+        isLoadingPDF = true
+        defer { isLoadingPDF = false }
+        do {
+            let invoiceName = "\(invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
+            let receiptName = "receipt-\(invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
+            async let invoiceData = FlexiBeeService.shared.fetchPDF(path: "/faktura-vydana/\(invoice.id).pdf")
+            async let receiptData = FlexiBeeService.shared.fetchPDF(path: "/pokladni-pohyb/\(rid).pdf")
+            let (inv, rec) = try await (invoiceData, receiptData)
+            pdfShareItem = PDFShareItem(files: [(inv, invoiceName), (rec, receiptName)])
+        } catch { }
     }
 
     // MARK: - Stock Movement

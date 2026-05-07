@@ -6,6 +6,8 @@ import IdentifiedCollections
 
 struct InvoiceDetailView: View {
     @StateObject private var viewModel: InvoiceDetailViewModel
+    @State private var itemsExpanded = false
+    @State private var stockExpanded = false
 
     init(invoice: FlexiBeeInvoice, salesViewModel: SalesViewModel, router: AppRouter) {
         _viewModel = StateObject(wrappedValue: InvoiceDetailViewModel(
@@ -84,8 +86,8 @@ struct InvoiceDetailView: View {
         } message: {
             Text(viewModel.deleteError ?? "")
         }
-        .sheet(item: $viewModel.pdfShareURL) { url in
-            ShareSheet(url: url)
+        .sheet(item: $viewModel.pdfShareItem) { item in
+            ShareSheet(item: item)
         }
         .task {
             await viewModel.load()
@@ -158,40 +160,44 @@ struct InvoiceDetailView: View {
 
     private var itemsSection: some View {
         Section {
-            if viewModel.isLoadingItems {
-                HStack { Spacer(); ProgressView(); Spacer() }
-                    .listRowBackground(Color.clear)
-            } else if let err = viewModel.loadError {
-                Label(err, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
-                    .font(.callout)
-            } else if viewModel.lineItems.isEmpty {
-                Text(String.invoice_detail_no_items)
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
-            } else {
-                ForEach(viewModel.lineItems) { item in
-                    let stockItem = viewModel.stockItem(for: item.cenikCode)
-                    Group {
-                        if let stockItem {
-                            NavigationLink(value: AppDestination.product(stockItem)) {
+            DisclosureGroup(isExpanded: $itemsExpanded) {
+                if viewModel.isLoadingItems {
+                    HStack { Spacer(); ProgressView(); Spacer() }
+                        .listRowBackground(Color.clear)
+                } else if let err = viewModel.loadError {
+                    Label(err, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                } else if viewModel.lineItems.isEmpty {
+                    Text(String.invoice_detail_no_items)
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(viewModel.lineItems) { item in
+                        let stockItem = viewModel.stockItem(for: item.cenikCode)
+                        Group {
+                            if let stockItem {
+                                NavigationLink(value: AppDestination.product(stockItem)) {
+                                    lineItemRow(item)
+                                }
+                            } else {
                                 lineItemRow(item)
                             }
-                        } else {
-                            lineItemRow(item)
                         }
                     }
                 }
-            }
-        } header: {
-            HStack {
-                Text(String.invoice_detail_items)
-                Spacer()
-                if !viewModel.isLoadingItems, !viewModel.lineItems.isEmpty {
-                    Text(czk(viewModel.lineItems.reduce(0) { $0 + $1.total }))
-                        .font(.caption.bold())
-                        .textCase(nil)
-                        .foregroundStyle(.primary)
+            } label: {
+                HStack {
+                    Text(String.invoice_detail_items)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                    Spacer()
+                    if !viewModel.isLoadingItems, !viewModel.lineItems.isEmpty {
+                        Text(czk(viewModel.lineItems.reduce(0) { $0 + $1.total }))
+                            .font(.caption.bold())
+                            .foregroundStyle(.primary)
+                    }
                 }
             }
         }
@@ -226,34 +232,40 @@ struct InvoiceDetailView: View {
     private var stockMovementSection: some View {
         if !viewModel.stockMovementItems.isEmpty {
             Section {
-                ForEach(viewModel.stockMovementItems) { item in
-                    HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.productName)
-                                .font(.callout)
-                            if !item.productCode.isEmpty {
-                                Text(item.productCode)
-                                    .font(.caption2)
+                DisclosureGroup(isExpanded: $stockExpanded) {
+                    ForEach(viewModel.stockMovementItems) { item in
+                        HStack(alignment: .center, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.productName)
+                                    .font(.callout)
+                                if !item.productCode.isEmpty {
+                                    Text(item.productCode)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Text("\(String.create_invoice_item_qty): \(String(format: "%g", item.quantityIssued))")
+                                    .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
-                            Text("\(String.create_invoice_item_qty): \(String(format: "%g", item.quantityIssued))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            Spacer()
                         }
-                        Spacer()
+                        .padding(.vertical, 2)
                     }
-                    .padding(.vertical, 2)
-                }
-            } header: {
-                HStack {
-                    Text(String.stock_movement_title)
-                    Spacer()
-                    if viewModel.canEditStockMovement {
-                        Button(String.stock_movement_edit) {
-                            viewModel.editStockMovement()
+                } label: {
+                    HStack {
+                        Text(String.stock_movement_title)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
+                        Spacer()
+                        if viewModel.canEditStockMovement {
+                            Button(String.stock_movement_edit) {
+                                viewModel.editStockMovement()
+                            }
+                            .font(.caption.bold())
+                            .foregroundStyle(Color.accentColor)
+                            .textCase(nil)
                         }
-                        .font(.caption.bold())
-                        .textCase(nil)
                     }
                 }
             }
@@ -291,12 +303,19 @@ struct InvoiceDetailView: View {
 
     @ViewBuilder
     private var documentsSection: some View {
+        let isCash = viewModel.invoice.paymentMethod == .hotove && viewModel.cashReceiptId != nil
         Section {
             Button {
-                Task { await viewModel.shareInvoicePDF() }
+                Task {
+                    if isCash {
+                        await viewModel.shareBothPDFs()
+                    } else {
+                        await viewModel.shareInvoicePDF()
+                    }
+                }
             } label: {
                 HStack {
-                    Label(String.pdf_invoice, systemImage: "doc.fill")
+                    Label(String.pdf_documents, systemImage: "doc.fill")
                     Spacer()
                     if viewModel.isLoadingPDF {
                         ProgressView().scaleEffect(0.8)
@@ -304,17 +323,6 @@ struct InvoiceDetailView: View {
                 }
             }
             .disabled(viewModel.isLoadingPDF)
-
-            if viewModel.cashReceiptId != nil {
-                Button {
-                    Task { await viewModel.shareCashReceiptPDF() }
-                } label: {
-                    Label(String.pdf_cash_receipt, systemImage: "doc.text.fill")
-                }
-                .disabled(viewModel.isLoadingPDF)
-            }
-        } header: {
-            Text(String.pdf_documents)
         }
     }
 
@@ -365,16 +373,33 @@ struct InvoiceDetailView: View {
     }
 }
 
-// MARK: - Share Sheet
+// MARK: - PDF Share
 
-private struct ShareSheet: UIViewControllerRepresentable {
-    let url: URL
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+struct PDFShareItem: Identifiable {
+    let id = UUID()
+    let files: [(data: Data, filename: String)]
+
+    init(data: Data, filename: String) {
+        files = [(data, filename)]
     }
-    func updateUIViewController(_ uvc: UIActivityViewController, context: Context) {}
+
+    init(files: [(data: Data, filename: String)]) {
+        self.files = files
+    }
+
+    var tempURLs: [URL] {
+        files.compactMap { file in
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(file.filename)
+            try? file.data.write(to: url)
+            return url
+        }
+    }
 }
 
-extension URL: @retroactive Identifiable {
-    public var id: String { absoluteString }
+private struct ShareSheet: UIViewControllerRepresentable {
+    let item: PDFShareItem
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: item.tempURLs, applicationActivities: nil)
+    }
+    func updateUIViewController(_ uvc: UIActivityViewController, context: Context) {}
 }
