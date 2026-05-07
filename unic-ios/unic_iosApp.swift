@@ -15,7 +15,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         FirebaseApp.configure()
         Task {
             _ = await NotificationService.shared.requestPermission()
-            await FirebaseService.shared.loadBundleCodes()
+            async let _ = FirebaseService.shared.loadBundleCodes()
+            async let _ = FirebaseService.shared.loadTestDriveConfig()
+            _ = await ((), ())
         }
         return true
     }

@@ -17,7 +17,8 @@ struct TestDriveEntry: Identifiable {
 
     var deadline: Date {
         let start = salon.testDriveStartDate ?? date
-        return Calendar.current.date(byAdding: .day, value: 7, to: start) ?? start
+        let days = FirebaseService.shared.testDriveDuration
+        return Calendar.current.date(byAdding: .day, value: days, to: start) ?? start
     }
 
     var deadlineColor: Color {

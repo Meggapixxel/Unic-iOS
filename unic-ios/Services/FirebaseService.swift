@@ -562,6 +562,24 @@ final class FirebaseService: ObservableObject {
         return parts[idx + 1]
     }
 
+    // MARK: - Test Drive Config
+
+    @Published private(set) var testDriveDuration: Int = 7
+
+    func loadTestDriveConfig() async {
+        do {
+            let doc = try await db.collection("config").document("testDrive").getDocument()
+            guard let duration = doc.data()?["duration"] as? Int else {
+                AppLogger.log(.warning, "Firebase", "loadTestDriveConfig: missing 'duration' field, using default 7")
+                return
+            }
+            AppLogger.log(.info, "Firebase", "loadTestDriveConfig → duration: \(duration)")
+            await MainActor.run { testDriveDuration = duration }
+        } catch {
+            AppLogger.log(.error, "Firebase", "loadTestDriveConfig failed: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Bundle Codes (starter kit exclusion list for stock movements)
 
     @Published private(set) var bundleCodes: Set<String> = []
