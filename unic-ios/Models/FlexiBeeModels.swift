@@ -478,6 +478,7 @@ struct NewStockMovementLine: Encodable {
 
 // typDokl must be "code:STANDARD" — FlexiBee rejects "code:VYDEJ" (invalid type identifier).
 // Line items key is "skladovePolozky", not "polozkyPohybu".
+// rada (number series) must match typDokl so FlexiBee can auto-generate the document kod.
 struct NewStockMovement: Encodable {
     let documentType: String
     let description:  String?
@@ -485,6 +486,7 @@ struct NewStockMovement: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case documentType = "typDokl"
+        case numberSeries = "rada"
         case description  = "popis"
         case lines        = "skladovePolozky"
     }
@@ -492,6 +494,7 @@ struct NewStockMovement: Encodable {
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(documentType,         forKey: .documentType)
+        try c.encode(documentType,         forKey: .numberSeries)
         try c.encodeIfPresent(description, forKey: .description)
         try c.encode(lines,                forKey: .lines)
     }

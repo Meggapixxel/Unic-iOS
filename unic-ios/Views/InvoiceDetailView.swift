@@ -232,7 +232,7 @@ struct InvoiceDetailView: View {
     @ViewBuilder
     private var primaryActionSection: some View {
         if viewModel.invoice.paymentStatus != .paid {
-            if viewModel.canManageStock && !viewModel.stockMovementCreated {
+            if viewModel.needsBundleMovement {
                 Section {
                     Button {
                         viewModel.openStockMovement()
