@@ -181,15 +181,10 @@ final class FlexiBeeService: ObservableObject {
 
     func updateInvoicePaymentStatus(id: String, status: PaymentStatus) async throws {
         try require(AuthService.shared.canEditInvoice)
-        guard status != .overdue else { return }
-        let code: String
-        switch status {
-        case .paid:    code = "code:uhrazeno"
-        case .partial: code = "code:castecneUhrazeno"
-        case .unpaid:  code = "code:neuhrazeno"
-        case .overdue: return
-        }
-        let envelope = PaymentStatusEnvelope(winstrom: .init(fakturaVydana: [.init(id: id, stavUhrK: code)]))
+        // FlexiBee only accepts "stavUhr.uhrazenoRucne" for manual payment marking;
+        // partial/unpaid/overdue cannot be set via stavUhrK in this configuration.
+        guard status == .paid else { return }
+        let envelope = PaymentStatusEnvelope(winstrom: .init(fakturaVydana: [.init(id: id, stavUhrK: "stavUhr.uhrazenoRucne")]))
         let body = try JSONEncoder().encode(envelope)
         _ = try await execute(method: "PUT", urlString: baseURL + "/faktura-vydana/\(id).json", body: body)
     }
