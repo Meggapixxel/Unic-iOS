@@ -247,6 +247,7 @@ final class InvoiceDetailViewModel: ObservableObject {
         isDeleting = true
         deleteError = nil
         do {
+            try? await FlexiBeeService.shared.deleteStockMovement(for: invoice.invoiceNumber)
             try await salesViewModel.deleteInvoice(id: invoice.id)
             router.pop()
         } catch {
