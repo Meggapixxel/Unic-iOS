@@ -31,54 +31,88 @@ struct AuthScreen: View {
     @State private var password = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @FocusState private var focused: Field?
-
-    private enum Field { case email, password }
+    @FocusState private var focused: AuthField?
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
+        ZStack {
+            backgroundGradient
+            VStack(spacing: 0) {
+                Spacer()
+                headerSection
+                    .padding(.bottom, 40)
+                loginCard
+                Spacer()
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+        }
+        .ignoresSafeArea()
+        .onAppear { focused = .email }
+    }
 
-            Image(systemName: "person.badge.key.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(Color.accentColor)
-                .padding(.bottom, 32)
+    // MARK: - Background
 
+    private var backgroundGradient: some View {
+        LinearGradient(
+            colors: [
+                Color.accentColor.opacity(0.85),
+                Color.accentColor.opacity(0.4),
+                Color(.systemGroupedBackground)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+    }
+
+    // MARK: - Header
+
+    private var headerSection: some View {
+        VStack(spacing: 12) {
+            Image("AppIcon")
+                .resizable()
+                .frame(width: 80, height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .shadow(color: .black.opacity(0.25), radius: 12, y: 6)
             Text(String.auth_login_title)
-                .font(.title2.bold())
-                .padding(.bottom, 28)
+                .font(.title.bold())
+                .foregroundStyle(.white)
+        }
+    }
 
+    // MARK: - Login Card
+
+    private var loginCard: some View {
+        VStack(spacing: 20) {
             VStack(spacing: 12) {
                 TextField(String.auth_email_placeholder, text: $email)
-                    .textFieldStyle(.roundedBorder)
                     .keyboardType(.emailAddress)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                    .focused($focused, equals: .email)
                     .submitLabel(.next)
                     .onSubmit { focused = .password }
+                    .focused($focused, equals: .email)
+                    .authFieldStyle()
 
                 SecureField(String.auth_password_placeholder, text: $password)
-                    .textFieldStyle(.roundedBorder)
-                    .focused($focused, equals: .password)
                     .submitLabel(.go)
                     .onSubmit { login() }
+                    .focused($focused, equals: .password)
+                    .authFieldStyle()
             }
-            .padding(.horizontal, 32)
 
             if let err = errorMessage {
                 Text(err)
                     .font(.caption)
                     .foregroundStyle(.red)
-                    .padding(.top, 8)
-                    .padding(.horizontal, 32)
                     .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Button(action: login) {
                 Group {
                     if isLoading {
-                        ProgressView()
+                        ProgressView().tint(.white)
                     } else {
                         Text(String.auth_login_button)
                             .fontWeight(.semibold)
@@ -89,13 +123,13 @@ struct AuthScreen: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(email.isEmpty || password.isEmpty || isLoading)
-            .padding(.horizontal, 32)
-            .padding(.top, 20)
-
-            Spacer()
         }
-        .onAppear { focused = .email }
+        .padding(24)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
+        .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
     }
+
+    // MARK: - Action
 
     private func login() {
         guard !email.isEmpty, !password.isEmpty else { return }
@@ -110,5 +144,18 @@ struct AuthScreen: View {
                 password = ""
             }
         }
+    }
+}
+
+// MARK: - Helpers
+
+private enum AuthField { case email, password }
+
+private extension View {
+    func authFieldStyle() -> some View {
+        self
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
     }
 }

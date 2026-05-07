@@ -220,6 +220,7 @@
 "barcode_not_found %@" = "Продукт для баркоду %@ не знайдено";
 "barcode_search_error %@" = "Помилка пошуку: %@";
 "barcode_searching" = "Пошук продукту...";
+"stock_nav_title" = "Склад";
 "stock_no_data" = "Немає даних по складу";
 "search_stock" = "Пошук по назві або коду";
 

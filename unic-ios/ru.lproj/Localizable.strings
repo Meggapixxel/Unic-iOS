@@ -220,6 +220,7 @@
 "barcode_not_found %@" = "Продукт для штрихкода %@ не найден";
 "barcode_search_error %@" = "Ошибка поиска: %@";
 "barcode_searching" = "Поиск продукта...";
+"stock_nav_title" = "Склад";
 "stock_no_data" = "Нет данных по складу";
 "search_stock" = "Поиск по названию или коду";
 

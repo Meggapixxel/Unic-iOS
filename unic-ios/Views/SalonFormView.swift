@@ -264,7 +264,6 @@ struct SalonFormView: View {
 
 private extension String {
     var trimmedOrNil: String? {
-        let t = trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.isEmpty ? nil : t
+        trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
     }
 }

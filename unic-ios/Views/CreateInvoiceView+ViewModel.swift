@@ -96,7 +96,7 @@ final class InvoiceFormViewModel: ObservableObject {
                 guard !name.isEmpty, item.quantity > 0 else { return nil }
                 var draft = InvoiceLineItemDraft()
                 draft.name = name
-                draft.productCode = item.productCode.isEmpty ? nil : item.productCode
+                draft.productCode = item.productCode.nilIfEmpty
                 draft.quantity = String(format: "%g", item.quantity)
                 let unit = item.total / item.quantity
                 draft.unitPrice = unit > 0 ? String(format: "%.0f", unit) : ""
@@ -170,7 +170,7 @@ final class InvoiceFormViewModel: ObservableObject {
             clientCode:    "code:\(firm.code)",
             issueDate:     fmt.string(from: issueDate),
             dueDate:       fmt.string(from: dueDate),
-            notes:         notes.isEmpty ? nil : notes,
+            notes:         notes.nilIfEmpty,
             paymentMethod: paymentMethod.rawValue,
             lineItems:     lineItems.filter { $0.isValid }.map { $0.toNewLine() }
         )
@@ -211,10 +211,10 @@ final class CreateClientViewModel: ObservableObject {
         do {
             let firm = NewFirm(
                 name:  name.trimmingCharacters(in: .whitespaces),
-                ic:    ic.isEmpty    ? nil : ic,
-                dic:   dic.isEmpty   ? nil : dic,
-                email: email.isEmpty ? nil : email,
-                phone: phone.isEmpty ? nil : phone
+                ic:    ic.nilIfEmpty,
+                dic:   dic.nilIfEmpty,
+                email: email.nilIfEmpty,
+                phone: phone.nilIfEmpty
             )
             try await formVM.createClient(firm)
             didSucceed = true

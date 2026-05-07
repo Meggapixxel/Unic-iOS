@@ -11,7 +11,7 @@ struct MainScreen: View {
                 SalonListView()
                     .tabItem { Label("Salons", systemImage: "storefront") }
                 FlexiBeeView()
-                    .tabItem { Label("FlexiBee", systemImage: "chart.bar.doc.horizontal") }
+                    .tabItem { Label(String.stock_nav_title, systemImage: "shippingbox") }
                 if auth.canViewAnalytics {
                     AnalyticsTabView(viewModel: salesViewModel)
                         .tabItem { Label(String.sales_analytics, systemImage: "chart.line.uptrend.xyaxis") }

@@ -226,6 +226,7 @@ extension String {
     static var barcode_hint:      String { String(localized: "barcode_hint") }
     static var barcode_no_camera: String { String(localized: "barcode_no_camera") }
     static var barcode_searching: String { String(localized: "barcode_searching") }
+    static var stock_nav_title:   String { String(localized: "stock_nav_title") }
     static var stock_no_data:     String { String(localized: "stock_no_data") }
     static var search_stock:      String { String(localized: "search_stock") }
     static func barcode_not_found(_ value: String) -> String {
@@ -349,4 +350,8 @@ extension String {
     static var role_admin:      String { String(localized: "role_admin") }
     static var role_manager:    String { String(localized: "role_manager") }
     static var role_sales:      String { String(localized: "role_sales") }
+
+    // MARK: - Utilities
+
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

@@ -33,14 +33,14 @@ struct TestDriveEntry: Identifiable {
         guard let note, !note.isEmpty else { return nil }
         // First line of note contains articles (comma-separated)
         let firstLine = note.components(separatedBy: "\n").first ?? note
-        return firstLine.isEmpty ? nil : firstLine
+        return firstLine.nilIfEmpty
     }
 
     var commentLine: String? {
         let lines = note?.components(separatedBy: "\n") ?? []
         guard lines.count > 1 else { return nil }
         let rest = lines.dropFirst().joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-        return rest.isEmpty ? nil : rest
+        return rest.nilIfEmpty
     }
 }
 

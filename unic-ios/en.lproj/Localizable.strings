@@ -220,6 +220,7 @@
 "barcode_not_found %@" = "Product for barcode %@ not found";
 "barcode_search_error %@" = "Search error: %@";
 "barcode_searching" = "Searching product...";
+"stock_nav_title" = "Warehouse";
 "stock_no_data" = "No warehouse data";
 "search_stock" = "Search by name or code";
 
