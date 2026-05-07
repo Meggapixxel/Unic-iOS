@@ -23,7 +23,9 @@ struct StockMovementView: View {
     var body: some View {
         NavigationStack {
             Form {
-                regularItemsSection
+                if !viewModel.items.isEmpty || viewModel.bundleSections.isEmpty {
+                    regularItemsSection
+                }
                 ForEach($viewModel.bundleSections) { $section in
                     bundleSectionView(section: $section)
                 }
