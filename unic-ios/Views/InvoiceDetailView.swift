@@ -105,7 +105,14 @@ struct InvoiceDetailView: View {
                 VStack(alignment: .trailing, spacing: 6) {
                     Text(czk(viewModel.invoice.total))
                         .font(.title3.bold())
-                    InvoiceStatusBadge(status: viewModel.invoice.paymentStatus)
+                    HStack(spacing: 4) {
+                        if let method = viewModel.invoice.paymentMethod {
+                            Image(systemName: method.icon)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        InvoiceStatusBadge(status: viewModel.invoice.paymentStatus)
+                    }
                 }
             }
             .padding(.vertical, 4)

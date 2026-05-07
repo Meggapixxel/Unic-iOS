@@ -141,7 +141,8 @@ final class FlexiBeeService: ObservableObject {
             path: "/faktura-vydana.json",
             fields: FlexiBeeInvoice.apiFields,
             limit: 1000,
-            order: "datVyst@D"
+            order: "datVyst@D",
+            detail: true
         )
         return response.winstrom.invoices
     }
@@ -262,7 +263,8 @@ final class FlexiBeeService: ObservableObject {
             FlexiBeeResponse<FlexiBeeInvoicesWrapper>.self,
             path: "/faktura-vydana/\(id).json",
             fields: FlexiBeeInvoice.apiFields,
-            limit: 1
+            limit: 1,
+            detail: true
         )
         return response.winstrom.invoices.first
     }
@@ -439,7 +441,8 @@ final class FlexiBeeService: ObservableObject {
         fields: String,
         limit: Int,
         order: String? = nil,
-        filterBy: String? = nil
+        filterBy: String? = nil,
+        detail: Bool = false
     ) async throws -> T {
         // FlexiBee FQL filter must be a URL path segment: /evidence/(filter).json
         // NOT a query parameter — the ?where= approach is silently ignored.
@@ -462,7 +465,8 @@ final class FlexiBeeService: ObservableObject {
             URLQueryItem(name: "fields", value: fields),
             URLQueryItem(name: "limit",  value: String(limit))
         ]
-        if let order { queryItems.append(URLQueryItem(name: "order", value: order)) }
+        if let order  { queryItems.append(URLQueryItem(name: "order",  value: order)) }
+        if detail     { queryItems.append(URLQueryItem(name: "detail", value: "full")) }
         components.queryItems = queryItems
 
         guard let url = components.url else {

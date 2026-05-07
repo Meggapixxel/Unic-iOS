@@ -60,7 +60,7 @@ struct InvoicesTabView: View {
                     if let id = viewModel.recentlyCreatedInvoiceId {
                         viewModel.clearRecentlyCreatedInvoice()
                         if let invoice = viewModel.invoices.first(where: { $0.id == id }) {
-                            router.push(.invoiceWithMovement(invoice))
+                            router.push(.invoice(invoice))
                         }
                     }
                 }) {
@@ -221,6 +221,11 @@ private struct InvoiceRowContent: View {
             HStack {
                 Text(invoice.invoiceNumber).font(.callout.bold())
                 Spacer()
+                if let method = invoice.paymentMethod {
+                    Image(systemName: method.icon)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
                 InvoiceStatusBadge(status: invoice.paymentStatus)
             }
             Text(invoice.clientName)
