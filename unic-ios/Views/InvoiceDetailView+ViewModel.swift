@@ -78,6 +78,11 @@ final class InvoiceDetailViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
+
+        FirebaseService.shared.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
     }
 
     // MARK: - Permissions
@@ -187,7 +192,10 @@ final class InvoiceDetailViewModel: ObservableObject {
             invoiceNumber: invoice.invoiceNumber,
             items: regularDrafts,
             bundleSections: bundleSections,
-            onMovementCreated: { [weak self] in self?.setStockMovementDone() }
+            onMovementCreated: { [weak self] in
+                self?.setStockMovementDone()
+                Task { await self?.setPaymentStatus(.paid) }
+            }
         )
         showStockMovement = true
     }
