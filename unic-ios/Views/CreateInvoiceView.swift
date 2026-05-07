@@ -51,7 +51,6 @@ struct InvoiceFormView: View {
         NavigationStack {
         Form {
             clientSection
-            paymentMethodSection
             datesSection
             lineItemsSection
             notesSection
@@ -147,17 +146,6 @@ struct InvoiceFormView: View {
                 }
             }
             .buttonStyle(.plain)
-        }
-    }
-
-    private var paymentMethodSection: some View {
-        Section(String.payment_method) {
-            Picker(String.payment_method, selection: $viewModel.paymentMethod) {
-                ForEach(PaymentMethod.allCases, id: \.self) { method in
-                    Label(method.displayName, systemImage: method.icon).tag(method)
-                }
-            }
-            .pickerStyle(.segmented)
         }
     }
 

@@ -18,9 +18,9 @@ struct InvoiceDetailView: View {
     var body: some View {
         List {
             headerSection
-            primaryActionSection
             infoSection
             notesSection
+            primaryActionSection
             itemsSection
             stockMovementSection
             deleteSection

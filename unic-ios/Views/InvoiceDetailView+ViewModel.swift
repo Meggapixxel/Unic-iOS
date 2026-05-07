@@ -68,7 +68,7 @@ final class InvoiceDetailViewModel: ObservableObject {
     // MARK: - Permissions
 
     var canEdit: Bool {
-        AuthService.shared.canEditInvoice || invoice.paymentStatus != .paid
+        AuthService.shared.canEditInvoice && invoice.paymentStatus != .paid
     }
 
     var canDelete: Bool {
