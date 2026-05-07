@@ -231,42 +231,25 @@ struct InvoiceDetailView: View {
 
     @ViewBuilder
     private var primaryActionSection: some View {
-        if viewModel.invoice.paymentStatus != .paid {
-            if viewModel.needsBundleMovement {
-                Section {
-                    Button {
-                        viewModel.openStockMovement()
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Label(String.stock_movement_title, systemImage: "shippingbox.fill")
+        if viewModel.invoice.paymentStatus != .paid, viewModel.canEdit {
+            Section {
+                Button {
+                    viewModel.selectPendingStatus(.paid)
+                } label: {
+                    HStack {
+                        Spacer()
+                        if viewModel.isUpdatingStatus {
+                            ProgressView()
+                        } else {
+                            Label(String.payment_paid, systemImage: "checkmark.circle.fill")
                                 .fontWeight(.semibold)
-                            Spacer()
                         }
+                        Spacer()
                     }
-                    .foregroundStyle(.white)
-                    .listRowBackground(Color.blue)
                 }
-            } else if viewModel.canEdit {
-                Section {
-                    Button {
-                        viewModel.selectPendingStatus(.paid)
-                    } label: {
-                        HStack {
-                            Spacer()
-                            if viewModel.isUpdatingStatus {
-                                ProgressView()
-                            } else {
-                                Label(String.payment_paid, systemImage: "checkmark.circle.fill")
-                                    .fontWeight(.semibold)
-                            }
-                            Spacer()
-                        }
-                    }
-                    .foregroundStyle(.white)
-                    .listRowBackground(Color.green)
-                    .disabled(viewModel.isUpdatingStatus)
-                }
+                .foregroundStyle(.white)
+                .listRowBackground(Color.green)
+                .disabled(viewModel.isUpdatingStatus)
             }
         }
     }

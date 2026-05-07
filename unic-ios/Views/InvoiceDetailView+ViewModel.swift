@@ -203,8 +203,12 @@ final class InvoiceDetailViewModel: ObservableObject {
     // MARK: - Payment status
 
     func selectPendingStatus(_ status: PaymentStatus) {
-        pendingStatus = status
-        showStatusAlert = true
+        if status == .paid, needsBundleMovement {
+            openStockMovement()
+        } else {
+            pendingStatus = status
+            showStatusAlert = true
+        }
     }
 
     func confirmStatusChange() {
