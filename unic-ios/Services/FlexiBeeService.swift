@@ -38,14 +38,20 @@ final class FlexiBeeService: ObservableObject {
 
     @Published var stock: [FlexiBeeStockCard] = []
     @Published var priceList: [FlexiBeeCenikItem] = []
+    @Published private(set) var invoices: [FlexiBeeInvoice] = []
+    @Published private(set) var invoiceItems: [FlexiBeeInvoiceItem] = []
+    @Published private(set) var salesMovementItems: [FlexiBeeStockMovementItem] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
 
     @Published private(set) var lastSyncDate: Date? = UserDefaults.standard.object(forKey: "flexibee_lastSync") as? Date
 
     private static let cacheTTL: TimeInterval = 60 * 60
-    private static let stockKey  = "flexibee_cache_stock"
-    private static let pricesKey = "flexibee_cache_prices"
+    private static let stockKey        = "flexibee_cache_stock"
+    private static let pricesKey       = "flexibee_cache_prices"
+    private static let invoicesKey     = "flexibee_cache_invoices"
+    private static let invoiceItemsKey = "flexibee_cache_invoice_items"
+    private static let movementsKey    = "flexibee_cache_movements"
 
     private init() {
         restoreFromDisk()
@@ -78,24 +84,29 @@ final class FlexiBeeService: ObservableObject {
 
     private func restoreFromDisk() {
         let decoder = JSONDecoder()
-        if let data = UserDefaults.standard.data(forKey: Self.stockKey),
-           let saved = try? decoder.decode([FlexiBeeStockCard].self, from: data) {
-            stock = saved
-        }
-        if let data = UserDefaults.standard.data(forKey: Self.pricesKey),
-           let saved = try? decoder.decode([FlexiBeeCenikItem].self, from: data) {
-            priceList = saved
-        }
+        decode(decoder, [FlexiBeeStockCard].self,         key: Self.stockKey)        { stock = $0 }
+        decode(decoder, [FlexiBeeCenikItem].self,         key: Self.pricesKey)       { priceList = $0 }
+        decode(decoder, [FlexiBeeInvoice].self,           key: Self.invoicesKey)     { invoices = $0 }
+        decode(decoder, [FlexiBeeInvoiceItem].self,       key: Self.invoiceItemsKey) { invoiceItems = $0 }
+        decode(decoder, [FlexiBeeStockMovementItem].self, key: Self.movementsKey)    { salesMovementItems = $0 }
+    }
+
+    private func decode<T: Decodable>(_ decoder: JSONDecoder, _ type: T.Type, key: String, assign: (T) -> Void) {
+        if let data = UserDefaults.standard.data(forKey: key),
+           let saved = try? decoder.decode(type, from: data) { assign(saved) }
     }
 
     private func saveToDisk() {
         let encoder = JSONEncoder()
-        if let data = try? encoder.encode(stock) {
-            UserDefaults.standard.set(data, forKey: Self.stockKey)
-        }
-        if let data = try? encoder.encode(priceList) {
-            UserDefaults.standard.set(data, forKey: Self.pricesKey)
-        }
+        encode(encoder, stock,              key: Self.stockKey)
+        encode(encoder, priceList,          key: Self.pricesKey)
+        encode(encoder, invoices,           key: Self.invoicesKey)
+        encode(encoder, invoiceItems,       key: Self.invoiceItemsKey)
+        encode(encoder, salesMovementItems, key: Self.movementsKey)
+    }
+
+    private func encode<T: Encodable>(_ encoder: JSONEncoder, _ value: T, key: String) {
+        if let data = try? encoder.encode(value) { UserDefaults.standard.set(data, forKey: key) }
     }
 
     // MARK: - Network
@@ -104,23 +115,36 @@ final class FlexiBeeService: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        async let stockTask = fetchStock()
-        async let pricesTask = fetchPriceList()
+        async let stockTask         = fetchStock()
+        async let pricesTask        = fetchPriceList()
+        async let invoicesTask      = fetchInvoices()
+        async let itemsTask         = fetchInvoiceItems()
+        async let movementsTask     = fetchStockMovementItems()
 
         var errors: [String] = []
 
-        do { stock = try await stockTask } catch { errors.append(String.error_fetch_stock) }
-        do { priceList = try await pricesTask } catch { errors.append(String.error_fetch_prices) }
+        do { stock               = try await stockTask     } catch { errors.append(String.error_fetch_stock) }
+        do { priceList           = try await pricesTask    } catch { errors.append(String.error_fetch_prices) }
+        do { invoices            = try await invoicesTask  } catch { }
+        do { invoiceItems        = try await itemsTask     } catch { }
+        do { salesMovementItems  = try await movementsTask } catch { }
 
         if errors.isEmpty {
             let now = Date()
             lastSyncDate = now
             UserDefaults.standard.set(now, forKey: "flexibee_lastSync")
-            saveToDisk()
         } else {
             errorMessage = "Не вдалося завантажити: \(errors.joined(separator: ", "))"
         }
+        saveToDisk()
+        isLoading = false
+    }
 
+    func fetchInvoicesOnly() async {
+        guard !isLoading else { return }
+        isLoading = true
+        do { invoices = try await fetchInvoices() } catch { }
+        saveToDisk()
         isLoading = false
     }
 

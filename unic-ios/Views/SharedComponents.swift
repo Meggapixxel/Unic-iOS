@@ -2,13 +2,19 @@ import SwiftUI
 
 // MARK: - CZK Formatter
 
+private extension NumberFormatter {
+    static let czk: NumberFormatter = {
+        let fmt = NumberFormatter()
+        fmt.numberStyle = .currency
+        fmt.currencyCode = "CZK"
+        fmt.maximumFractionDigits = 0
+        return fmt
+    }()
+}
+
 func czk(_ amount: Double) -> String {
     guard amount > 0 else { return "—" }
-    let fmt = NumberFormatter()
-    fmt.numberStyle = .currency
-    fmt.currencyCode = "CZK"
-    fmt.maximumFractionDigits = 0
-    return fmt.string(from: NSNumber(value: amount)) ?? "\(Int(amount)) Kč"
+    return NumberFormatter.czk.string(from: NSNumber(value: amount)) ?? "\(Int(amount)) Kč"
 }
 
 // MARK: - Sync Date Label
@@ -27,6 +33,7 @@ struct SyncDateLabel: View {
                 Text(lastSyncDate.map { $0.formatted(date: .omitted, time: .shortened) } ?? "")
                     .font(.caption2).foregroundStyle(.secondary)
             }
+            .padding(.horizontal)
         }
     }
 }
@@ -101,7 +108,7 @@ struct StockWithPriceRow: View {
 
     private var quantityBadge: some View {
         let color: Color = item.quantity <= 0 ? .red : item.quantity <= 2 ? .orange : .green
-        return Text("\(Int(item.quantity)) шт")
+        return Text(String.sales_quantity(Int(item.quantity)))
             .font(.subheadline.bold())
             .foregroundStyle(color)
             .padding(.horizontal, 10)

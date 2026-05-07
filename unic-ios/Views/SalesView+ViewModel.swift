@@ -63,96 +63,53 @@ struct ProductSales: Identifiable {
 /// detail and trigger the stock movement flow.
 @MainActor
 final class SalesViewModel: ObservableObject {
-    @Published private(set) var invoices: [FlexiBeeInvoice] = []
-    @Published private(set) var invoiceItems: [FlexiBeeInvoiceItem] = []
-    @Published private(set) var stockMovementItems: [FlexiBeeStockMovementItem] = []
     @Published private(set) var firms: [FlexiBeeFirm] = []
-    @Published private(set) var isLoading = false
     @Published private(set) var isFirmsLoading = false
-    @Published private(set) var error: String?
-    @Published private(set) var lastSyncDate: Date? = UserDefaults.standard.object(forKey: "sales_lastSync") as? Date
     @Published var period: SalesPeriod = .year
     @Published var searchText = ""
     @Published var searchTextTopProducts = ""
     @Published var searchTextTopClients = ""
     @Published var statusFilter: PaymentStatus? = nil
     @Published private(set) var recentlyCreatedInvoiceId: String?
+    @Published var error: String?
 
     private let service = FlexiBeeService.shared
-    private static let cacheTTL: TimeInterval = 60 * 60
     private static let monthFormatter: DateFormatter = {
         let fmt = DateFormatter()
         fmt.locale = Locale.current
         fmt.dateFormat = "MMM"
         return fmt
     }()
-    private static let invoicesKey         = "sales_cache_invoices"
-    private static let invoiceItemsKey     = "sales_cache_invoice_items"
-    private static let stockMovementsKey   = "sales_cache_stock_movements"
+    private var cancellables = Set<AnyCancellable>()
+
+    var invoices:           [FlexiBeeInvoice]           { service.invoices }
+    var invoiceItems:       [FlexiBeeInvoiceItem]       { service.invoiceItems }
+    var stockMovementItems: [FlexiBeeStockMovementItem] { service.salesMovementItems }
+    var isLoading:          Bool                        { service.isLoading }
+    var lastSyncDate:       Date?                       { service.lastSyncDate }
 
     init() {
-        restoreFromDisk()
-    }
-
-    // MARK: - Cache
-
-    var isCacheValid: Bool {
-        guard let last = lastSyncDate else { return false }
-        return Date().timeIntervalSince(last) < Self.cacheTTL
-    }
-
-    private func restoreFromDisk() {
-        let decoder = JSONDecoder()
-        if let data = UserDefaults.standard.data(forKey: Self.invoicesKey),
-           let saved = try? decoder.decode([FlexiBeeInvoice].self, from: data) {
-            invoices = saved
-        }
-        if let data = UserDefaults.standard.data(forKey: Self.invoiceItemsKey),
-           let saved = try? decoder.decode([FlexiBeeInvoiceItem].self, from: data) {
-            invoiceItems = saved
-        }
-        if let data = UserDefaults.standard.data(forKey: Self.stockMovementsKey),
-           let saved = try? decoder.decode([FlexiBeeStockMovementItem].self, from: data) {
-            stockMovementItems = saved
-        }
-    }
-
-    private func saveToDisk() {
-        let encoder = JSONEncoder()
-        if let data = try? encoder.encode(invoices) {
-            UserDefaults.standard.set(data, forKey: Self.invoicesKey)
-        }
-        if let data = try? encoder.encode(invoiceItems) {
-            UserDefaults.standard.set(data, forKey: Self.invoiceItemsKey)
-        }
-        if let data = try? encoder.encode(stockMovementItems) {
-            UserDefaults.standard.set(data, forKey: Self.stockMovementsKey)
-        }
+        service.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
     }
 
     // MARK: - Load
 
     func loadIfNeeded() async {
-        guard !isCacheValid else { return }
-        await fetchData()
+        await service.loadIfNeeded()
     }
 
     func forceSync() async {
-        await fetchData()
+        await service.forceSync()
     }
 
     func refreshInvoices() async {
         if AuthService.shared.canViewAnalytics {
-            await fetchData()
+            await service.forceSync()
         } else {
-            guard !isLoading else { return }
-            isLoading = true
-            do {
-                invoices = try await service.fetchInvoices()
-            } catch {
-                self.error = error.localizedDescription
-            }
-            isLoading = false
+            await service.fetchInvoicesOnly()
         }
     }
 
@@ -185,7 +142,7 @@ final class SalesViewModel: ObservableObject {
     @discardableResult
     func createInvoice(_ invoice: NewInvoice) async throws -> String {
         let id = try await service.createInvoice(invoice)
-        await fetchData()
+        await service.forceSync()
         recentlyCreatedInvoiceId = id
         return id
     }
@@ -196,33 +153,12 @@ final class SalesViewModel: ObservableObject {
 
     func updateInvoice(id: String, invoice: NewInvoice) async throws {
         try await service.updateInvoice(id: id, invoice: invoice)
-        await fetchData()
+        await service.forceSync()
     }
 
     func deleteInvoice(id: String) async throws {
         try await service.deleteInvoice(id: id)
-        await fetchData()
-    }
-
-    private func fetchData() async {
-        guard !isLoading else { return }
-        isLoading = true
-        error = nil
-        do {
-            async let inv       = service.fetchInvoices()
-            async let items     = service.fetchInvoiceItems()
-            async let movements = service.fetchStockMovementItems()
-            invoices           = try await inv
-            invoiceItems       = try await items
-            stockMovementItems = try await movements
-            let now = Date()
-            lastSyncDate = now
-            UserDefaults.standard.set(now, forKey: "sales_lastSync")
-            saveToDisk()
-        } catch {
-            self.error = error.localizedDescription
-        }
-        isLoading = false
+        await service.forceSync()
     }
 
     // MARK: - Period-scoped
