@@ -252,7 +252,9 @@ struct AllTopProductsView: View {
                 let stockItem = FlexiBeeService.shared.stockWithPrices[id: p.code]
                 if let stockItem {
                     Button { router.push(.product(stockItem)) } label: {
-                        StockWithPriceRow(item: stockItem).contentShape(Rectangle())
+                        StockWithPriceRow(item: stockItem)
+                            .id("\(stockItem.code)-\(stockItem.quantity)")
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 } else {

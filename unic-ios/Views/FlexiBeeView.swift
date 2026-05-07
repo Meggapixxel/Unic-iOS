@@ -77,6 +77,7 @@ private struct StockSectionView: View {
                 ForEach(viewModel.filteredStock) { item in
                     NavigationLink(value: AppDestination.product(item)) {
                         StockWithPriceRow(item: item)
+                            .id("\(item.code)-\(item.quantity)")
                     }
                 }
             }
