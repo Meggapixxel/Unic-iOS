@@ -11,30 +11,23 @@ func czk(_ amount: Double) -> String {
     return fmt.string(from: NSNumber(value: amount)) ?? "\(Int(amount)) Kč"
 }
 
-// MARK: - Sync Button
+// MARK: - Sync Date Label
 
-struct SyncButton: View {
+struct SyncDateLabel: View {
     let isLoading: Bool
     let lastSyncDate: Date?
-    let action: () -> Void
 
     var body: some View {
-        Button { action() } label: {
-            if isLoading {
-                ProgressView().scaleEffect(0.8)
-            } else {
-                HStack(spacing: 6) {
-                    VStack(alignment: .trailing, spacing: 1) {
-                        Text(lastSyncDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? String.never)
-                            .font(.caption2).foregroundStyle(.secondary)
-                        Text(lastSyncDate.map { $0.formatted(date: .omitted, time: .shortened) } ?? "")
-                            .font(.caption2).foregroundStyle(.secondary)
-                    }
-                    Image(systemName: "arrow.clockwise").font(.caption)
-                }
+        if isLoading {
+            ProgressView().scaleEffect(0.8)
+        } else {
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(lastSyncDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? String.never)
+                    .font(.caption2).foregroundStyle(.secondary)
+                Text(lastSyncDate.map { $0.formatted(date: .omitted, time: .shortened) } ?? "")
+                    .font(.caption2).foregroundStyle(.secondary)
             }
         }
-        .disabled(isLoading)
     }
 }
 

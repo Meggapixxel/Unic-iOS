@@ -56,9 +56,7 @@ struct FlexiBeeView: View {
             }
         }
         ToolbarItem(placement: .topBarTrailing) {
-            SyncButton(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate) {
-                Task { await viewModel.forceSync() }
-            }
+            SyncDateLabel(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate)
         }
     }
 }
@@ -83,6 +81,7 @@ private struct StockSectionView: View {
             }
         }
         .listStyle(.plain)
+        .refreshable { await viewModel.forceSync() }
         .overlay {
             if viewModel.stock.isEmpty && !viewModel.isLoading {
                 ContentUnavailableView(String.stock_no_data, systemImage: "tray")

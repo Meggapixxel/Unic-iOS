@@ -141,6 +141,24 @@ final class SalesViewModel: ObservableObject {
         await fetchData()
     }
 
+    func refreshInvoices() async {
+        if AuthService.shared.canViewAnalytics {
+            await fetchData()
+        } else {
+            guard !isLoading else { return }
+            isLoading = true
+            do {
+                invoices = try await service.fetchInvoices()
+                let now = Date()
+                lastSyncDate = now
+                UserDefaults.standard.set(now, forKey: "sales_lastSync")
+            } catch {
+                self.error = error.localizedDescription
+            }
+            isLoading = false
+        }
+    }
+
     func loadFirms() async {
         guard firms.isEmpty else { return }
         isFirmsLoading = true

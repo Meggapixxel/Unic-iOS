@@ -14,9 +14,7 @@ struct AnalyticsTabView: View {
                 .navigationTitle(String.sales_analytics)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        SyncButton(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate) {
-                            Task { await viewModel.forceSync() }
-                        }
+                        SyncDateLabel(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate)
                     }
                 }
                 .overlay {
@@ -47,9 +45,7 @@ struct InvoicesTabView: View {
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        SyncButton(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate) {
-                            Task { await viewModel.forceSync() }
-                        }
+                        SyncDateLabel(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate)
                     }
                 }
                 .overlay {
@@ -167,6 +163,7 @@ private struct AnalyticsSectionView: View {
             }
             .padding(.bottom, 24)
         }
+        .refreshable { await viewModel.forceSync() }
         .background(Color(.systemGroupedBackground))
     }
 }
@@ -185,6 +182,7 @@ private struct InvoicesSectionView: View {
             }
         }
         .listStyle(.plain)
+        .refreshable { await viewModel.refreshInvoices() }
         .searchable(text: $viewModel.searchText, prompt: String.sales_search_prompt)
         .overlay {
             if viewModel.filteredInvoices.isEmpty && !viewModel.isLoading {
