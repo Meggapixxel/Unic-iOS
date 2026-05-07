@@ -284,7 +284,12 @@ final class FlexiBeeService: ObservableObject {
             filterBy: "popis='Vydej k \(invoiceNumber)'"
         )
         guard let id = response.winstrom.movements.first?.id else { return }
-        _ = try await execute(method: "DELETE", urlString: baseURL + "/skladovy-pohyb/\(id).json", successRange: 200...204)
+        do {
+            _ = try await execute(method: "DELETE", urlString: baseURL + "/skladovy-pohyb/\(id).json", successRange: 200...204)
+        } catch {
+            // FIFO references block DELETE — storno creates a reverse document instead
+            _ = try await execute(method: "GET", urlString: baseURL + "/skladovy-pohyb/\(id).json?action=storno", successRange: 200...201)
+        }
     }
 
     func fetchStockMovementItems() async throws -> [FlexiBeeStockMovementItem] {
