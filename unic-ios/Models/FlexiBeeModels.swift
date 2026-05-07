@@ -402,26 +402,39 @@ struct FlexiBeeFirmWrapper: Decodable {
 // MARK: - Create Invoice Request
 
 struct NewInvoiceLine: Encodable {
-    let name:      String
-    let quantity:  Double
-    let unitPrice: Double
-    let vatRate:   Double
-    let priceType: String
+    let name:        String
+    let productCode: String?
+    let quantity:    Double
+    let unitPrice:   Double
+    let vatRate:     Double
+    let priceType:   String
 
     enum CodingKeys: String, CodingKey {
-        case name      = "nazev"
-        case quantity  = "mnozMj"
-        case unitPrice = "cenaMj"
-        case vatRate   = "sazDph"
-        case priceType = "typCenyDphK"
+        case name        = "nazev"
+        case productCode = "cenik"
+        case quantity    = "mnozMj"
+        case unitPrice   = "cenaMj"
+        case vatRate     = "sazDph"
+        case priceType   = "typCenyDphK"
     }
 
-    init(name: String, quantity: Double, unitPrice: Double, vatRate: Double = 21.0) {
-        self.name      = name
-        self.quantity  = quantity
-        self.unitPrice = unitPrice
-        self.vatRate   = vatRate
-        self.priceType = "typCeny.sDph"
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(name,             forKey: .name)
+        try c.encodeIfPresent(productCode.map { "code:\($0)" }, forKey: .productCode)
+        try c.encode(quantity,         forKey: .quantity)
+        try c.encode(unitPrice,        forKey: .unitPrice)
+        try c.encode(vatRate,          forKey: .vatRate)
+        try c.encode(priceType,        forKey: .priceType)
+    }
+
+    init(name: String, productCode: String? = nil, quantity: Double, unitPrice: Double, vatRate: Double = 21.0) {
+        self.name        = name
+        self.productCode = productCode
+        self.quantity    = quantity
+        self.unitPrice   = unitPrice
+        self.vatRate     = vatRate
+        self.priceType   = "typCeny.sDph"
     }
 }
 

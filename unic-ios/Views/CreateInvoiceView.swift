@@ -16,7 +16,7 @@ struct InvoiceLineItemDraft: Identifiable {
     var total: Double { quantityDouble * unitPriceDouble }
 
     func toNewLine() -> NewInvoiceLine {
-        NewInvoiceLine(name: name, quantity: quantityDouble, unitPrice: unitPriceDouble)
+        NewInvoiceLine(name: name, productCode: productCode, quantity: quantityDouble, unitPrice: unitPriceDouble)
     }
 }
 
