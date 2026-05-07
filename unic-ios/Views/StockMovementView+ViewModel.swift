@@ -145,7 +145,6 @@ final class StockMovementViewModel: ObservableObject {
             return
         }
         let movement = NewStockMovement(
-            documentType: "code:STANDARD",
             description: "Vydej k \(invoiceNumber)",
             lines: lines
         )

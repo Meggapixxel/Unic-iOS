@@ -151,7 +151,6 @@ final class InvoiceDetailViewModel: ObservableObject {
         guard !lines.isEmpty else { setStockMovementDone(); return }
 
         let movement = NewStockMovement(
-            documentType: "code:STANDARD",
             description: "Vydej k \(invoice.invoiceNumber)",
             lines: lines
         )
