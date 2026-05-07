@@ -43,6 +43,15 @@ struct InvoiceDetailView: View {
         .sheet(isPresented: $viewModel.showEdit) {
             InvoiceFormSheetView(salesViewModel: viewModel.salesViewModel, editingInvoice: viewModel.invoice)
         }
+        .confirmationDialog(
+            String.payment_method,
+            isPresented: $viewModel.showPaymentMethodPicker,
+            titleVisibility: .visible
+        ) {
+            Button(PaymentMethod.prevod.displayName) { viewModel.selectPaymentMethod(.prevod) }
+            Button(PaymentMethod.hotove.displayName) { viewModel.selectPaymentMethod(.hotove) }
+            Button(String.cancel, role: .cancel) { }
+        }
         .sheet(isPresented: $viewModel.showStockMovement) {
             if let pending = viewModel.pendingMovement {
                 StockMovementView(pending: pending)

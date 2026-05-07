@@ -34,6 +34,8 @@ final class InvoiceDetailViewModel: ObservableObject {
     @Published private(set) var pendingStatus: PaymentStatus?
     @Published var showStockMovement = false
     @Published private(set) var pendingMovement: PendingMovement?
+    @Published var showPaymentMethodPicker = false
+    @Published private(set) var pendingPaymentMethod: PaymentMethod?
     @Published private(set) var stockMovementCreated = false
     @Published private(set) var stockMovement: FlexiBeeStockMovement?
     @Published private(set) var stockMovementItems: [FlexiBeeStockMovementItem] = []
@@ -245,10 +247,20 @@ final class InvoiceDetailViewModel: ObservableObject {
             pendingPayWhenLoaded = true
             return
         }
-        if status == .paid, needsBundleMovement {
+        if status == .paid {
+            showPaymentMethodPicker = true
+            return
+        }
+        pendingStatus = status
+        showStatusAlert = true
+    }
+
+    func selectPaymentMethod(_ method: PaymentMethod) {
+        pendingPaymentMethod = method
+        if needsBundleMovement {
             openStockMovement(markAsPaidAfter: true)
         } else {
-            pendingStatus = status
+            pendingStatus = .paid
             showStatusAlert = true
         }
     }
@@ -272,15 +284,18 @@ final class InvoiceDetailViewModel: ObservableObject {
     func setPaymentStatus(_ status: PaymentStatus) async {
         isUpdatingStatus = true
         statusUpdateError = nil
+        let method = pendingPaymentMethod ?? .prevod
+        pendingPaymentMethod = nil
         do {
-            try await FlexiBeeService.shared.updateInvoicePaymentStatus(id: invoice.id, status: status)
+            if status == .paid, method == .hotove {
+                try await FlexiBeeService.shared.createCashReceipt(for: invoice)
+            }
+            try await FlexiBeeService.shared.updateInvoicePaymentStatus(id: invoice.id, status: status, method: method)
             do {
                 if let updated = try await FlexiBeeService.shared.fetchSingleInvoice(id: invoice.id) {
                     invoice = updated
                 }
-            } catch {
-                // Non-critical: invoice will refresh via forceSync below
-            }
+            } catch { }
             await salesViewModel.forceSync()
         } catch {
             statusUpdateError = error.localizedDescription

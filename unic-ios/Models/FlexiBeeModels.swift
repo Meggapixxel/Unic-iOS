@@ -170,23 +170,26 @@ struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
     let id:                String
     let code:              String?
     let notes:             String?
+    let finalText:         String?
     private let issueDateRaw:      String?
     private let dueDateRaw:        String?
     private let totalRaw:          String?
     private let paymentStatusCode: String?
     private let clientRef:         String?
     private let paymentMethodCode: String?
-
+    let varSym:                    String?
     enum CodingKeys: String, CodingKey, CaseIterable {
         case id
         case code              = "kod"
         case notes             = "popis"
+        case finalText         = "zavTxt"
         case issueDateRaw      = "datVyst"
         case dueDateRaw        = "datSplat"
         case totalRaw          = "sumCelkem"
         case paymentStatusCode = "stavUhrK"
         case clientRef         = "firma@showAs"
         case paymentMethodCode = "formaUhradyCis"
+        case varSym            = "varSym"
     }
 
     static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
@@ -240,7 +243,6 @@ struct FlexiBeeInvoiceItem: Identifiable, Codable {
     private let quantityRaw:   String?
     private let totalRaw:      String?
     private let cenikRef:      String?  // "code:CFB/220" — canonical price list code
-
     enum CodingKeys: String, CodingKey, CaseIterable {
         case id
         case codeRaw      = "kod"
@@ -416,6 +418,7 @@ struct NewInvoiceLine: Encodable {
         case unitPrice   = "cenaMj"
         case vatRate     = "sazDph"
         case priceType   = "typCenyDphK"
+        case zdrojProSkl
     }
 
     func encode(to encoder: Encoder) throws {
@@ -426,6 +429,7 @@ struct NewInvoiceLine: Encodable {
         try c.encode(unitPrice,        forKey: .unitPrice)
         try c.encode(vatRate,          forKey: .vatRate)
         try c.encode(priceType,        forKey: .priceType)
+        try c.encode(false,            forKey: .zdrojProSkl)
     }
 
     init(name: String, productCode: String? = nil, quantity: Double, unitPrice: Double, vatRate: Double = 21.0) {
@@ -455,6 +459,7 @@ struct NewInvoice: Encodable {
         case notes         = "popis"
         case paymentMethod = "formaUhradyCis"
         case lineItems     = "polozkyFaktury"
+        case zdrojProSkl
     }
 
     func encode(to encoder: Encoder) throws {
@@ -466,6 +471,7 @@ struct NewInvoice: Encodable {
         try c.encodeIfPresent(notes,     forKey: .notes)
         try c.encode(paymentMethod,      forKey: .paymentMethod)
         try c.encode(lineItems,          forKey: .lineItems)
+        try c.encode(false,              forKey: .zdrojProSkl)
     }
 }
 
@@ -518,6 +524,46 @@ struct CreateStockMovementEnvelope: Encodable {
     struct Winstrom: Encodable {
         let skladovyPohyb: [NewStockMovement]
         enum CodingKeys: String, CodingKey { case skladovyPohyb = "skladovy-pohyb" }
+    }
+}
+
+// MARK: - Create Cash Receipt Request
+
+struct NewCashReceipt: Encodable {
+    let clientCode:  String  // raw code, e.g. "BULANAVA" — "code:" prefix added in encode
+    let description: String
+    let varSym:      String
+    let total:       Double
+
+    enum CodingKeys: String, CodingKey {
+        case documentType = "typDokl"
+        case movementType = "typPohybuK"
+        case cashRegister = "pokladna"
+        case clientCode   = "firma"
+        case description  = "popis"
+        case varSym       = "varSym"
+        case noLineItems  = "bezPolozek"
+        case taxExempt    = "sumOsv"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode("code:STANDARD",         forKey: .documentType)
+        try c.encode("typPohybu.prijem",      forKey: .movementType)
+        try c.encode("code:CASH-CZK",         forKey: .cashRegister)
+        try c.encode("code:\(clientCode)",    forKey: .clientCode)
+        try c.encode(description,             forKey: .description)
+        try c.encode(varSym,                  forKey: .varSym)
+        try c.encode(true,                    forKey: .noLineItems)
+        try c.encode(total,                   forKey: .taxExempt)
+    }
+}
+
+struct CreateCashReceiptEnvelope: Encodable {
+    let winstrom: Winstrom
+    struct Winstrom: Encodable {
+        let pokladniPohyb: [NewCashReceipt]
+        enum CodingKeys: String, CodingKey { case pokladniPohyb = "pokladni-pohyb" }
     }
 }
 

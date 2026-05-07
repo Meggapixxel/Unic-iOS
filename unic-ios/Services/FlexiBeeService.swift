@@ -179,14 +179,26 @@ final class FlexiBeeService: ObservableObject {
         try await postInvoice(to: baseURL + "/faktura-vydana/\(id).json", invoice: invoice, method: "PUT")
     }
 
-    func updateInvoicePaymentStatus(id: String, status: PaymentStatus) async throws {
+    func updateInvoicePaymentStatus(id: String, status: PaymentStatus, method: PaymentMethod = .prevod) async throws {
         try require(AuthService.shared.canEditInvoice)
-        // FlexiBee only accepts "stavUhr.uhrazenoRucne" for manual payment marking;
-        // partial/unpaid/overdue cannot be set via stavUhrK in this configuration.
         guard status == .paid else { return }
-        let envelope = PaymentStatusEnvelope(winstrom: .init(fakturaVydana: [.init(id: id, stavUhrK: "stavUhr.uhrazenoRucne")]))
+        let item = PaymentStatusItem(id: id, stavUhrK: "stavUhr.uhrazenoRucne", formaUhradyCis: method.rawValue)
+        let envelope = PaymentStatusEnvelope(winstrom: .init(fakturaVydana: [item]))
         let body = try JSONEncoder().encode(envelope)
         _ = try await execute(method: "PUT", urlString: baseURL + "/faktura-vydana/\(id).json", body: body)
+    }
+
+    func createCashReceipt(for invoice: FlexiBeeInvoice) async throws {
+        guard let clientCode = invoice.clientCode else { return }
+        let receipt = NewCashReceipt(
+            clientCode:  clientCode,
+            description: "Platba za \(invoice.invoiceNumber)",
+            varSym:      invoice.varSym ?? "",
+            total:       invoice.total
+        )
+        let envelope = CreateCashReceiptEnvelope(winstrom: .init(pokladniPohyb: [receipt]))
+        let body = try JSONEncoder().encode(envelope)
+        _ = try await execute(method: "POST", urlString: baseURL + "/pokladni-pohyb.json", body: body)
     }
 
     // Creates a STANDARD stock movement (vydej). typDokl must be "code:STANDARD".
@@ -264,15 +276,25 @@ final class FlexiBeeService: ObservableObject {
         return result.winstrom.results.first?.id ?? ""
     }
 
-    func hasStockMovement(for invoiceNumber: String) async throws -> Bool {
+    /// Fetches the stock movement for an invoice by description, plus its line items.
+    /// Returns nil when no movement exists yet (e.g. before "Paid" is pressed).
+    func fetchStockMovement(for invoiceNumber: String) async throws -> (movement: FlexiBeeStockMovement, items: [FlexiBeeStockMovementItem])? {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeStockMovementWrapper>.self,
             path: "/skladovy-pohyb.json",
-            fields: "id",
+            fields: "id,kod",
             limit: 1,
             filterBy: "popis='Vydej k \(invoiceNumber)'"
         )
-        return !response.winstrom.movements.isEmpty
+        guard let header = response.winstrom.movements.first else { return nil }
+        let itemsResponse = try await fetch(
+            FlexiBeeResponse<FlexiBeeStockMovementItemsWrapper>.self,
+            path: "/skladovy-pohyb/\(header.id)/skladovy-pohyb-polozka.json",
+            fields: FlexiBeeStockMovementItem.apiFields,
+            limit: 500
+        )
+        let items = itemsResponse.winstrom.items.filter { $0.isValid }
+        return (header, items)
     }
 
     func deleteStockMovement(for invoiceNumber: String) async throws {
@@ -284,6 +306,14 @@ final class FlexiBeeService: ObservableObject {
             filterBy: "popis='Vydej k \(invoiceNumber)'"
         )
         guard let id = response.winstrom.movements.first?.id else { return }
+        try await deleteOrStornoMovement(id: id)
+    }
+
+    func deleteStockMovementById(_ id: String) async throws {
+        try await deleteOrStornoMovement(id: id)
+    }
+
+    private func deleteOrStornoMovement(id: String) async throws {
         do {
             _ = try await execute(method: "DELETE", urlString: baseURL + "/skladovy-pohyb/\(id).json", successRange: 200...204)
         } catch {
@@ -411,15 +441,28 @@ final class FlexiBeeService: ObservableObject {
         order: String? = nil,
         filterBy: String? = nil
     ) async throws -> T {
-        guard var components = URLComponents(string: baseURL + path) else {
-            throw FlexiBeeError.apiError("Invalid URL path: \(path)")
+        // FlexiBee FQL filter must be a URL path segment: /evidence/(filter).json
+        // NOT a query parameter — the ?where= approach is silently ignored.
+        let basePath: String
+        if let filter = filterBy {
+            let stripped = path.hasSuffix(".json") ? String(path.dropLast(5)) : path
+            // Encode filter for safe embedding in a URL path segment.
+            // '/' must be encoded as %2F so it isn't treated as a path separator.
+            var allowed = CharacterSet.urlPathAllowed
+            allowed.remove(charactersIn: "/")
+            let encoded = filter.addingPercentEncoding(withAllowedCharacters: allowed) ?? filter
+            basePath = "\(stripped)/(\(encoded)).json"
+        } else {
+            basePath = path
+        }
+        guard var components = URLComponents(string: baseURL + basePath) else {
+            throw FlexiBeeError.apiError("Invalid URL path: \(basePath)")
         }
         var queryItems = [
             URLQueryItem(name: "fields", value: fields),
             URLQueryItem(name: "limit",  value: String(limit))
         ]
         if let order { queryItems.append(URLQueryItem(name: "order", value: order)) }
-        if let filter = filterBy { queryItems.append(URLQueryItem(name: "where", value: filter)) }
         components.queryItems = queryItems
 
         guard let url = components.url else {
@@ -460,8 +503,9 @@ final class FlexiBeeService: ObservableObject {
 // MARK: - Private types for payment status update
 
 private struct PaymentStatusItem: Encodable {
-    let id: String
-    let stavUhrK: String
+    let id:             String
+    let stavUhrK:       String
+    let formaUhradyCis: String
 }
 
 private struct PaymentStatusEnvelope: Encodable {
