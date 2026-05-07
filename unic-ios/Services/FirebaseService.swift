@@ -351,7 +351,7 @@ final class FirebaseService: ObservableObject {
         }
     }
 
-    func addStatusHistoryEntry(salonId: String, status: SalonStatus, note: String?, createdBy: String?) async throws {
+    func addStatusHistoryEntry(salonId: String, status: SalonStatus, currentStatus: SalonStatus?, note: String?, createdBy: String?) async throws {
         AppLogger.log(.info, "Firebase", "addStatusEntry: salonId=\(salonId) status=\(status.rawValue)")
         let now = Timestamp(date: Date())
         let entry: [String: Any] = [
@@ -361,14 +361,12 @@ final class FirebaseService: ObservableObject {
             "createdBy": createdBy as Any
         ]
 
-        // Add to history subcollection
         try await db.collection("salons")
             .document(salonId)
             .collection("statusHistory")
             .addDocument(data: entry)
 
-        // Update salon: status + denormalized latest entry (single write)
-        try await db.collection("salons").document(salonId).updateData([
+        var salonUpdate: [String: Any] = [
             "status": status.rawValue,
             "latestStatusEntry": [
                 "status": status.rawValue,
@@ -376,7 +374,15 @@ final class FirebaseService: ObservableObject {
                 "timestamp": now,
                 "createdBy": createdBy as Any
             ] as [String: Any]
-        ])
+        ]
+
+        if status == .testDrive && currentStatus != .testDrive {
+            salonUpdate["testDriveStartDate"] = now
+        } else if status != .testDrive {
+            salonUpdate["testDriveStartDate"] = FieldValue.delete()
+        }
+
+        try await db.collection("salons").document(salonId).updateData(salonUpdate)
     }
 
     func deleteStatusHistoryEntry(salonId: String, entryId: String) async throws {

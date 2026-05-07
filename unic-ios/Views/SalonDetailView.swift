@@ -937,7 +937,8 @@ struct ScoringRow: View {
                 enrichmentBatch: "001",
                 googlePlacesTypes: ["hair_care", "beauty_salon", "establishment"],
                 createdBy: nil,
-                latestStatusEntry: nil
+                latestStatusEntry: nil,
+                testDriveStartDate: nil
             ),
             onSalonUpdated: { _ in },
             onSalonDeleted: { }

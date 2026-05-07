@@ -89,6 +89,7 @@ struct Salon: Codable, Identifiable, Hashable {
     let googlePlacesTypes: [String]?
     let createdBy: String?
     let latestStatusEntry: StatusHistoryEntry?
+    let testDriveStartDate: Date?
 
     // Computed properties
     var displayName: String {

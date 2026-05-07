@@ -16,7 +16,8 @@ struct TestDriveEntry: Identifiable {
     let createdBy: String?
 
     var deadline: Date {
-        Calendar.current.date(byAdding: .day, value: 7, to: date) ?? date
+        let start = salon.testDriveStartDate ?? date
+        return Calendar.current.date(byAdding: .day, value: 7, to: start) ?? start
     }
 
     var deadlineColor: Color {
