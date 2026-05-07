@@ -118,7 +118,7 @@ struct SalonListView: View {
                     }
                 }
             }
-                .navigationTitle("UNIC CRM")
+                .navigationTitle("Salons")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
                     if !viewModel.showMap {

@@ -177,7 +177,21 @@ private struct InvoicesSectionView: View {
     @ObservedObject var viewModel: SalesViewModel
 
     var body: some View {
-        VStack(spacing: 0) {
+        List {
+            ForEach(viewModel.filteredInvoices) { invoice in
+                NavigationLink(value: AppDestination.invoice(invoice)) {
+                    InvoiceRowContent(invoice: invoice)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .searchable(text: $viewModel.searchText, prompt: String.sales_search_prompt)
+        .overlay {
+            if viewModel.filteredInvoices.isEmpty && !viewModel.isLoading {
+                ContentUnavailableView(String.sales_invoices_empty, systemImage: "doc.text")
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     SalesFilterChip(title: String.filter_all, isSelected: viewModel.statusFilter == nil) {
@@ -189,24 +203,12 @@ private struct InvoicesSectionView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 4)
             }
-
-            List {
-                ForEach(viewModel.filteredInvoices) { invoice in
-                    NavigationLink(value: AppDestination.invoice(invoice)) {
-                        InvoiceRowContent(invoice: invoice)
-                    }
-                }
-            }
-            .listStyle(.plain)
-            .searchable(text: $viewModel.searchText, prompt: String.sales_search_prompt)
-            .overlay {
-                if viewModel.filteredInvoices.isEmpty && !viewModel.isLoading {
-                    ContentUnavailableView(String.sales_invoices_empty, systemImage: "doc.text")
-                }
-            }
+            .padding()
+            .glassBackgroundRectangle(cornerRadius: 20)
+            .padding()
         }
     }
 }
