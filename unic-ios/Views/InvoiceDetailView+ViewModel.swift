@@ -157,6 +157,7 @@ final class InvoiceDetailViewModel: ObservableObject {
         do {
             try await FlexiBeeService.shared.createStockMovement(movement)
             setStockMovementDone()
+            await FlexiBeeService.shared.forceSync()
         } catch {
             // Fall back to manual sheet so the user can retry
             openStockMovement()

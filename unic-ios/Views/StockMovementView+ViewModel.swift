@@ -151,6 +151,7 @@ final class StockMovementViewModel: ObservableObject {
         do {
             try await FlexiBeeService.shared.createStockMovement(movement)
             onMovementCreated?()
+            await FlexiBeeService.shared.forceSync()
             didSucceed = true
         } catch {
             submitError = error.localizedDescription
