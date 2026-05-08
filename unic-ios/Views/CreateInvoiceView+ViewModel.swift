@@ -18,7 +18,7 @@ final class InvoiceFormViewModel: ObservableObject {
     @Published var dueDate = Calendar.current.date(byAdding: .day, value: 14, to: Date()) ?? Date()
     @Published var paymentMethod: PaymentMethod = .prevod
     @Published var notes = ""
-    @Published var lineItems: [InvoiceLineItemDraft] = [InvoiceLineItemDraft()]
+    @Published var lineItems: [InvoiceLineItemDraft] = []
     @Published var firmPickerSearch = ""
 
     @Published private(set) var firms: [FlexiBeeFirm] = []
@@ -34,8 +34,17 @@ final class InvoiceFormViewModel: ObservableObject {
     @Published private(set) var isSearchingBarcode = false
     @Published private(set) var barcodeError: String?
 
+    @Published var showFirmPicker = false
+    @Published var showProductPicker = false
+    @Published var productPickerForItemID: UUID?
+
     let editingInvoice: FlexiBeeInvoice?
-    private let salesViewModel: SalesViewModel
+    private var isPrepared = false
+
+    private let fetchFirmsAction: () async -> [FlexiBeeFirm]
+    private let reloadFirmsAction: () async -> [FlexiBeeFirm]
+    private let submitAction: (NewInvoice) async throws -> Void
+    private let deleteClientAction: (String) async throws -> Void
 
     var isEditing: Bool { editingInvoice != nil }
     var title: String { isEditing ? String.edit_invoice_title : String.create_invoice_title }
@@ -52,9 +61,18 @@ final class InvoiceFormViewModel: ObservableObject {
         lineItems.reduce(0) { $0 + $1.total }
     }
 
-    init(salesViewModel: SalesViewModel, editingInvoice: FlexiBeeInvoice? = nil) {
-        self.salesViewModel = salesViewModel
+    init(
+        editingInvoice: FlexiBeeInvoice? = nil,
+        fetchFirms: @escaping () async -> [FlexiBeeFirm],
+        reloadFirms: @escaping () async -> [FlexiBeeFirm],
+        onSubmit: @escaping (NewInvoice) async throws -> Void,
+        onDeleteClient: @escaping (String) async throws -> Void
+    ) {
         self.editingInvoice = editingInvoice
+        self.fetchFirmsAction = fetchFirms
+        self.reloadFirmsAction = reloadFirms
+        self.submitAction = onSubmit
+        self.deleteClientAction = onDeleteClient
 
         if let invoice = editingInvoice {
             issueDate     = invoice.issueDate ?? Date()
@@ -65,19 +83,15 @@ final class InvoiceFormViewModel: ObservableObject {
     }
 
     func prepare() async {
-        // Load firms
+        guard !isPrepared else { return }
+        isPrepared = true
         isFirmsLoading = true
-        if salesViewModel.firms.isEmpty {
-            await salesViewModel.loadFirms()
-        }
-        firms = salesViewModel.firms
+        firms = await fetchFirmsAction()
         isFirmsLoading = false
 
-        // Load price list
         await FlexiBeeService.shared.loadIfNeeded()
         priceList = FlexiBeeService.shared.priceList
 
-        // Pre-fill for edit mode
         if let invoice = editingInvoice {
             if let clientCode = invoice.clientCode {
                 selectedFirm = firms.first { $0.code == clientCode }
@@ -97,6 +111,7 @@ final class InvoiceFormViewModel: ObservableObject {
                 var draft = InvoiceLineItemDraft()
                 draft.name = name
                 draft.productCode = item.productCode.nilIfEmpty
+                draft.isOther = draft.productCode == nil
                 draft.quantity = String(format: "%g", item.quantity)
                 let unit = item.total / item.quantity
                 draft.unitPrice = unit > 0 ? String(format: "%.0f", unit) : ""
@@ -145,14 +160,13 @@ final class InvoiceFormViewModel: ObservableObject {
 
     func createClient(_ firm: NewFirm) async throws {
         let created = try await FlexiBeeService.shared.createFirm(firm)
-        await salesViewModel.reloadFirms()
-        firms = salesViewModel.firms
+        firms = await reloadFirmsAction()
         selectedFirm = created
         justCreatedClient = created
     }
 
     func deleteClient(_ firm: FlexiBeeFirm) async throws {
-        try await salesViewModel.deleteClient(id: firm.id)
+        try await deleteClientAction(firm.id)
         firms.removeAll { $0.id == firm.id }
         if selectedFirm?.id == firm.id { selectedFirm = nil }
     }
@@ -176,11 +190,7 @@ final class InvoiceFormViewModel: ObservableObject {
         )
 
         do {
-            if let invoiceId = editingInvoice?.id {
-                try await salesViewModel.updateInvoice(id: invoiceId, invoice: invoice)
-            } else {
-                try await salesViewModel.createInvoice(invoice)
-            }
+            try await submitAction(invoice)
             didSucceed = true
         } catch {
             submitError = error.localizedDescription

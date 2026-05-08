@@ -9,33 +9,17 @@ struct InvoiceLineItemDraft: Identifiable {
     var productCode: String? = nil
     var quantity: String = "1"
     var unitPrice: String = ""
+    var isOther: Bool = false
 
     var quantityDouble: Double { Double(quantity.replacingOccurrences(of: ",", with: ".")) ?? 0 }
     var unitPriceDouble: Double { Double(unitPrice.replacingOccurrences(of: ",", with: ".")) ?? 0 }
-    var isValid: Bool { !name.isEmpty && quantityDouble > 0 && unitPriceDouble > 0 }
+    var isValid: Bool {
+        !name.isEmpty && unitPriceDouble > 0 && (isOther || quantityDouble > 0)
+    }
     var total: Double { quantityDouble * unitPriceDouble }
 
     func toNewLine() -> NewInvoiceLine {
-        NewInvoiceLine(name: name, productCode: productCode, quantity: quantityDouble, unitPrice: unitPriceDouble)
-    }
-}
-
-// MARK: - Sheet Wrapper
-
-struct InvoiceFormSheetView: View {
-    @StateObject private var formVM: InvoiceFormViewModel
-    var onDismiss: () -> Void
-
-    init(salesViewModel: SalesViewModel, editingInvoice: FlexiBeeInvoice? = nil, onDismiss: @escaping () -> Void) {
-        _formVM = StateObject(wrappedValue: InvoiceFormViewModel(
-            salesViewModel: salesViewModel,
-            editingInvoice: editingInvoice
-        ))
-        self.onDismiss = onDismiss
-    }
-
-    var body: some View {
-        InvoiceFormView(viewModel: formVM, onDismiss: onDismiss)
+        NewInvoiceLine(name: name, productCode: productCode, quantity: isOther ? 1 : quantityDouble, unitPrice: unitPriceDouble)
     }
 }
 
@@ -44,10 +28,6 @@ struct InvoiceFormSheetView: View {
 struct InvoiceFormView: View {
     @ObservedObject var viewModel: InvoiceFormViewModel
     var onDismiss: () -> Void
-
-    @State private var showFirmPicker = false
-    @State private var showProductPicker = false
-    @State private var productPickerForItemID: UUID?
 
     var body: some View {
         NavigationStack {
@@ -84,17 +64,24 @@ struct InvoiceFormView: View {
                 }
             }
         }
-        .sheet(isPresented: $showFirmPicker) {
-            FirmPickerView(viewModel: viewModel, isPresented: $showFirmPicker)
+        .sheet(isPresented: $viewModel.showFirmPicker) {
+            FirmPickerView(viewModel: viewModel, isPresented: $viewModel.showFirmPicker)
         }
-        .sheet(isPresented: $showProductPicker) {
+        .sheet(isPresented: $viewModel.showProductPicker) {
             ProductPickerForInvoiceView(priceList: viewModel.priceList, onSelect: { item in
-                guard let itemID = productPickerForItemID,
-                      let idx = viewModel.lineItems.firstIndex(where: { $0.id == itemID }) else { return }
-                viewModel.lineItems[idx].name = item.displayName
-                viewModel.lineItems[idx].productCode = item.code
-                viewModel.lineItems[idx].unitPrice = item.unitPrice
-            }, isPresented: $showProductPicker)
+                if let itemID = viewModel.productPickerForItemID,
+                   let idx = viewModel.lineItems.firstIndex(where: { $0.id == itemID }) {
+                    viewModel.lineItems[idx].name = item.displayName
+                    viewModel.lineItems[idx].productCode = item.code
+                    viewModel.lineItems[idx].unitPrice = item.unitPrice
+                } else {
+                    var draft = InvoiceLineItemDraft()
+                    draft.name = item.displayName
+                    draft.productCode = item.code
+                    draft.unitPrice = item.unitPrice
+                    viewModel.lineItems.append(draft)
+                }
+            }, isPresented: $viewModel.showProductPicker)
         }
         .overlay {
             if viewModel.isLoadingItems || viewModel.isSearchingBarcode {
@@ -136,7 +123,7 @@ struct InvoiceFormView: View {
     private var clientSection: some View {
         Section(String.create_invoice_client) {
             Button {
-                showFirmPicker = true
+                viewModel.showFirmPicker = true
             } label: {
                 HStack {
                     Text(viewModel.selectedFirm?.displayName ?? String.create_invoice_client_placeholder)
@@ -146,6 +133,7 @@ struct InvoiceFormView: View {
                         .foregroundStyle(.secondary)
                         .font(.caption)
                 }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
@@ -161,23 +149,28 @@ struct InvoiceFormView: View {
     private var lineItemsSection: some View {
         Section {
             ForEach($viewModel.lineItems) { $item in
-                LineItemRow(item: $item) {
-                    productPickerForItemID = item.id
-                    showProductPicker = true
-                }
+                LineItemRow(item: $item)
             }
             .onDelete { viewModel.lineItems.remove(atOffsets: $0) }
 
             Menu {
                 Button {
-                    viewModel.lineItems.append(InvoiceLineItemDraft())
+                    viewModel.productPickerForItemID = nil
+                    viewModel.showProductPicker = true
                 } label: {
-                    Label(String.create_invoice_add_item_manual, systemImage: "plus")
+                    Label(String.create_invoice_add_item_from_stock, systemImage: "shippingbox")
                 }
                 Button {
                     viewModel.showBarcodeScanner = true
                 } label: {
                     Label(String.create_invoice_add_item_scan, systemImage: "barcode.viewfinder")
+                }
+                Button {
+                    var draft = InvoiceLineItemDraft()
+                    draft.isOther = true
+                    viewModel.lineItems.append(draft)
+                } label: {
+                    Label(String.create_invoice_add_item_manual, systemImage: "pencil")
                 }
             } label: {
                 Label(String.create_invoice_add_item, systemImage: "plus.circle.fill")
@@ -208,29 +201,47 @@ struct InvoiceFormView: View {
 
 private struct LineItemRow: View {
     @Binding var item: InvoiceLineItemDraft
-    let onPickProduct: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                TextField(String.create_invoice_item_name, text: $item.name)
-                Button(action: onPickProduct) {
-                    Image(systemName: "text.badge.plus")
-                        .foregroundStyle(Color.accentColor)
+            VStack(alignment: .leading, spacing: 2) {
+                if item.isOther {
+                    TextField(String.create_invoice_item_name, text: $item.name)
+                } else {
+                    Text(item.name)
+                    if let code = item.productCode {
+                        Text(code)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                .buttonStyle(.plain)
             }
 
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 6) {
                         Text(String.create_invoice_item_qty + ":")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        Button {
+                            let val = item.quantityDouble
+                            if val > 1 { item.quantity = String(format: "%g", val - 1) }
+                        } label: {
+                            Image(systemName: "minus.circle").foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
                         TextField("1", text: $item.quantity)
                             .keyboardType(.decimalPad)
-                            .font(.subheadline)
-                            .frame(width: 48)
+                            .font(.body)
+                            .multilineTextAlignment(.center)
+                            .frame(width: 44)
+                        Button {
+                            let val = item.quantityDouble
+                            item.quantity = String(format: "%g", val + 1)
+                        } label: {
+                            Image(systemName: "plus.circle").foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
                     }
                     HStack(spacing: 4) {
                         Text(String.create_invoice_item_price + ":")
@@ -245,9 +256,7 @@ private struct LineItemRow: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-
                 Spacer()
-
                 if item.total > 0 {
                     Text(czk(item.total))
                         .font(.title3.bold())

@@ -290,8 +290,9 @@
 "create_invoice_due_date" = "Срок оплаты";
 "create_invoice_items" = "Позиции";
 "create_invoice_add_item" = "Добавить позицию";
-"create_invoice_add_item_manual" = "Добавить вручную";
-"create_invoice_add_item_scan" = "Сканировать штрихкод";
+"create_invoice_add_item_from_stock" = "Товар со склада";
+"create_invoice_add_item_scan" = "Сканер";
+"create_invoice_add_item_manual" = "Другое";
 "create_invoice_item_name" = "Название товара или услуги";
 "create_invoice_item_qty" = "Кол-во";
 "create_invoice_item_price" = "Цена";

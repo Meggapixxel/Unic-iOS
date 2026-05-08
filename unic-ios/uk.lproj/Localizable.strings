@@ -290,8 +290,9 @@
 "create_invoice_due_date" = "Термін оплати";
 "create_invoice_items" = "Позиції";
 "create_invoice_add_item" = "Додати позицію";
-"create_invoice_add_item_manual" = "Додати вручну";
-"create_invoice_add_item_scan" = "Сканувати штрихкод";
+"create_invoice_add_item_from_stock" = "Товар зі складу";
+"create_invoice_add_item_scan" = "Сканер";
+"create_invoice_add_item_manual" = "Інше";
 "create_invoice_item_name" = "Назва товару або послуги";
 "create_invoice_item_qty" = "К-сть";
 "create_invoice_item_price" = "Ціна";

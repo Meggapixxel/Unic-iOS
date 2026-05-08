@@ -290,8 +290,9 @@
 "create_invoice_due_date" = "Due date";
 "create_invoice_items" = "Line items";
 "create_invoice_add_item" = "Add item";
-"create_invoice_add_item_manual" = "Add manually";
-"create_invoice_add_item_scan" = "Scan barcode";
+"create_invoice_add_item_from_stock" = "From stock";
+"create_invoice_add_item_scan" = "Scanner";
+"create_invoice_add_item_manual" = "Other";
 "create_invoice_item_name" = "Product or service name";
 "create_invoice_item_qty" = "Qty";
 "create_invoice_item_price" = "Price";

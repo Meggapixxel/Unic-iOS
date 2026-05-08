@@ -293,9 +293,10 @@ extension String {
     static var create_invoice_issue_date:       String { String(localized: "create_invoice_issue_date") }
     static var create_invoice_due_date:         String { String(localized: "create_invoice_due_date") }
     static var create_invoice_items:            String { String(localized: "create_invoice_items") }
-    static var create_invoice_add_item:          String { String(localized: "create_invoice_add_item") }
-    static var create_invoice_add_item_manual:   String { String(localized: "create_invoice_add_item_manual") }
-    static var create_invoice_add_item_scan:     String { String(localized: "create_invoice_add_item_scan") }
+    static var create_invoice_add_item:            String { String(localized: "create_invoice_add_item") }
+    static var create_invoice_add_item_from_stock: String { String(localized: "create_invoice_add_item_from_stock") }
+    static var create_invoice_add_item_scan:       String { String(localized: "create_invoice_add_item_scan") }
+    static var create_invoice_add_item_manual:     String { String(localized: "create_invoice_add_item_manual") }
     static var create_invoice_item_name:        String { String(localized: "create_invoice_item_name") }
     static var create_invoice_item_qty:         String { String(localized: "create_invoice_item_qty") }
     static var create_invoice_item_price:       String { String(localized: "create_invoice_item_price") }
