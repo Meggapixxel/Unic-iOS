@@ -25,6 +25,8 @@ struct AppNavigationStack<Content: View>: View {
                         if let vm = salesViewModel {
                             AllTopClientsView(viewModel: vm)
                         }
+                    case .userActivity(let user):
+                        UserActivityView(user: user)
                     }
                 }
         }

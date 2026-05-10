@@ -2,68 +2,55 @@ import SwiftUI
 
 struct ProfileView: View {
     @ObservedObject private var auth = AuthService.shared
+    @State private var router = AppRouter()
     @State private var showLogoutConfirm = false
-    @State private var showHistory = false
 
     var body: some View {
-        List {
-            if let user = auth.currentUser {
+        AppNavigationStack(router: router) {
+            List {
+                if let user = auth.currentUser {
+                    Section {
+                        HStack(spacing: 14) {
+                            Circle()
+                                .fill(roleColor(user.role).opacity(0.15))
+                                .frame(width: 56, height: 56)
+                                .overlay {
+                                    Text(initials(user))
+                                        .font(.title3.bold())
+                                        .foregroundStyle(roleColor(user.role))
+                                }
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(user.fullName)
+                                    .font(.headline)
+                                Text(user.role.displayName)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 6)
+                    }
+
+                    Section(String.profile_activity) {
+                        NavigationLink(value: AppDestination.userActivity(user)) {
+                            Label(String.profile_activity_history, systemImage: "clock.arrow.circlepath")
+                        }
+                    }
+                }
+
                 Section {
-                    HStack(spacing: 14) {
-                        Circle()
-                            .fill(roleColor(user.role).opacity(0.15))
-                            .frame(width: 56, height: 56)
-                            .overlay {
-                                Text(initials(user))
-                                    .font(.title3.bold())
-                                    .foregroundStyle(roleColor(user.role))
-                            }
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(user.fullName)
-                                .font(.headline)
-                            Text(user.role.displayName)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 6)
-                }
-
-                Section(String.profile_activity) {
-                    Button {
-                        showHistory = true
+                    Button(role: .destructive) {
+                        showLogoutConfirm = true
                     } label: {
-                        Label(String.profile_activity_history, systemImage: "clock.arrow.circlepath")
-                            .foregroundStyle(.primary)
+                        Label(String.profile_logout, systemImage: "rectangle.portrait.and.arrow.right")
                     }
                 }
             }
-
-            Section {
-                Button(role: .destructive) {
-                    showLogoutConfirm = true
-                } label: {
-                    Label(String.profile_logout, systemImage: "rectangle.portrait.and.arrow.right")
-                }
+            .navigationTitle(String.profile_nav_title)
+            .navigationBarTitleDisplayMode(.large)
+            .confirmationDialog(String.profile_logout_confirm, isPresented: $showLogoutConfirm, titleVisibility: .visible) {
+                Button(String.profile_logout, role: .destructive) { auth.logout() }
+                Button(String.cancel, role: .cancel) {}
             }
-        }
-        .navigationTitle(String.profile_nav_title)
-        .navigationBarTitleDisplayMode(.large)
-        .sheet(isPresented: $showHistory) {
-            if let user = auth.currentUser {
-                NavigationStack {
-                    UserActivityView(user: user)
-                        .toolbar {
-                            ToolbarItem(placement: .topBarTrailing) {
-                                CloseButton { showHistory = false }
-                            }
-                        }
-                }
-            }
-        }
-        .confirmationDialog(String.profile_logout_confirm, isPresented: $showLogoutConfirm, titleVisibility: .visible) {
-            Button(String.profile_logout, role: .destructive) { auth.logout() }
-            Button(String.cancel, role: .cancel) {}
         }
     }
 

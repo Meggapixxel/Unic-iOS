@@ -14,7 +14,7 @@ enum UserRole: String, Codable {
     }
 }
 
-struct AppUser: Codable, Equatable, Identifiable {
+struct AppUser: Codable, Equatable, Hashable, Identifiable {
     let id: String
     let firstName: String
     let lastName: String
