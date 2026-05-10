@@ -26,13 +26,13 @@ struct MainScreen: View {
                 }
             }
 
-            if showGreeting, let user = auth.currentUser {
-                Text("greeting \(user.firstName)")
-                    .font(.subheadline.bold())
+            if showGreeting {
+                Text(localeFlag)
+                    .font(.system(size: 48))
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
                     .background(.thinMaterial)
-                    .cornerRadius(12)
+                    .cornerRadius(16)
                     .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
                     .padding(.top, 60)
                     .transition(.move(edge: .top).combined(with: .opacity))
@@ -45,5 +45,20 @@ struct MainScreen: View {
                 withAnimation(.easeOut(duration: 0.4)) { showGreeting = false }
             }
         }
+    }
+
+    private var localeFlag: String {
+        let lang = Bundle.main.preferredLocalizations.first ?? "en"
+        let regionCode: String
+        switch lang.prefix(2) {
+        case "uk": regionCode = "UA"
+        case "ru": regionCode = "RU"
+        case "cs": regionCode = "CZ"
+        default:   regionCode = Locale(identifier: lang).region?.identifier ?? "US"
+        }
+        let base: UInt32 = 127397
+        return regionCode.unicodeScalars
+            .compactMap { Unicode.Scalar(base + $0.value).map(String.init) }
+            .joined()
     }
 }
