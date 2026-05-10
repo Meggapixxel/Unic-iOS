@@ -1,6 +1,13 @@
 import Foundation
 import SwiftUI
 
+private let _flexiBeeDateFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.locale = Locale(identifier: "en_US_POSIX")
+    f.dateFormat = "yyyy-MM-dd"
+    return f
+}()
+
 // MARK: - Price List
 
 struct FlexiBeeCenikItem: Identifiable, Codable {
@@ -211,10 +218,7 @@ struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
 
     private static func parseDate(_ string: String?) -> Date? {
         guard let s = string else { return nil }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"
-        return f.date(from: String(s.prefix(10)))
+        return _flexiBeeDateFormatter.date(from: String(s.prefix(10)))
     }
 
     var paymentMethod: PaymentMethod? { PaymentMethod(rawValue: paymentMethodCode ?? "") }
@@ -275,10 +279,7 @@ struct FlexiBeeInvoiceItem: Identifiable, Codable {
 
     var date: Date? {
         guard let s = issueDateRaw else { return nil }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"
-        return f.date(from: String(s.prefix(10)))
+        return _flexiBeeDateFormatter.date(from: String(s.prefix(10)))
     }
 }
 
@@ -337,10 +338,7 @@ struct FlexiBeeStockMovementItem: Identifiable, Codable {
 
     var date: Date? {
         guard let s = dateRaw else { return nil }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"
-        return f.date(from: String(s.prefix(10)))
+        return _flexiBeeDateFormatter.date(from: String(s.prefix(10)))
     }
 
     var isValid: Bool { !productCode.isEmpty && quantityIssued > 0 }

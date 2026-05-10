@@ -91,10 +91,10 @@ struct SalonNativeMapView: UIViewRepresentable {
             if annotation is MKUserLocation { return nil }
 
             if let cluster = annotation as? MKClusterAnnotation {
-                let view = mapView.dequeueReusableAnnotationView(
+                guard let view = mapView.dequeueReusableAnnotationView(
                     withIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier,
                     for: cluster
-                ) as! MKMarkerAnnotationView
+                ) as? MKMarkerAnnotationView else { return nil }
                 view.markerTintColor = .systemGray
                 view.titleVisibility = .adaptive
                 view.canShowCallout = false
@@ -102,10 +102,10 @@ struct SalonNativeMapView: UIViewRepresentable {
             }
 
             guard let salonAnnotation = annotation as? SalonAnnotation else { return nil }
-            let view = mapView.dequeueReusableAnnotationView(
+            guard let view = mapView.dequeueReusableAnnotationView(
                 withIdentifier: SalonNativeMapView.annotationId,
                 for: salonAnnotation
-            ) as! MKMarkerAnnotationView
+            ) as? MKMarkerAnnotationView else { return nil }
 
             let uiColor = UIColor(salonAnnotation.salon.statusEnum.color)
             view.markerTintColor = uiColor

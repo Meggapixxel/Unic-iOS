@@ -124,6 +124,13 @@ private struct WeekHeader: View {
     let weekStart: Date
     let count: Int
 
+    private static let weekRangeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale.current
+        f.dateFormat = "d MMM"
+        return f
+    }()
+
     var body: some View {
         HStack {
             Text(label)
@@ -149,10 +156,7 @@ private struct WeekHeader: View {
             return String.activity_last_week
         }
 
-        let fmt = DateFormatter()
-        fmt.locale = Locale.current
-        fmt.dateFormat = "d MMM"
-        return "\(fmt.string(from: weekStart)) – \(fmt.string(from: weekEnd))"
+        return "\(Self.weekRangeFormatter.string(from: weekStart)) – \(Self.weekRangeFormatter.string(from: weekEnd))"
     }
 }
 

@@ -13,6 +13,11 @@ import Combine
 /// by the parent view reacting to `SalesViewModel.recentlyCreatedInvoiceId`.
 @MainActor
 final class InvoiceFormViewModel: ObservableObject {
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
     @Published var selectedFirm: FlexiBeeFirm?
     @Published var issueDate = Date()
     @Published var dueDate = Calendar.current.date(byAdding: .day, value: 14, to: Date()) ?? Date()
@@ -176,14 +181,11 @@ final class InvoiceFormViewModel: ObservableObject {
         isSubmitting = true
         submitError = nil
 
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd"
-
         let invoice = NewInvoice(
             documentType:  "code:FAKTURA",
             clientCode:    "code:\(firm.code)",
-            issueDate:     fmt.string(from: issueDate),
-            dueDate:       fmt.string(from: dueDate),
+            issueDate:     Self.dateFormatter.string(from: issueDate),
+            dueDate:       Self.dateFormatter.string(from: dueDate),
             notes:         notes.nilIfEmpty,
             paymentMethod: paymentMethod.rawValue,
             lineItems:     lineItems.filter { $0.isValid }.map { $0.toNewLine() }

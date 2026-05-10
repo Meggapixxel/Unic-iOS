@@ -140,16 +140,13 @@ private struct AnalyticsSectionView: View {
                     .padding(.horizontal, 16)
                 }
 
-                let clients = viewModel.topClients
+                let clients = viewModel.topClients.prefix(5)
                 if !clients.isEmpty {
-                    RankingSection(
-                        title: String.sales_top_clients,
-                        seeAllDestination: clients.count > pageSize ? .allTopClients : nil
-                    ) {
-                        ForEach(Array(clients.prefix(pageSize).enumerated()), id: \.offset) { idx, client in
+                    RankingSection(title: String.sales_top_clients, seeAllDestination: nil) {
+                        ForEach(Array(clients.enumerated()), id: \.offset) { idx, client in
                             RankingRow(rank: idx + 1, title: client.name, subtitle: nil,
                                        value: czk(client.revenue), subvalue: nil,
-                                       isLast: idx == min(clients.count, pageSize) - 1)
+                                       isLast: idx == clients.count - 1)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -260,7 +257,7 @@ struct AllTopProductsView: View {
             ForEach(Array(viewModel.filteredTopProducts.enumerated()), id: \.offset) { idx, p in
                 let stockItem = FlexiBeeService.shared.stockWithPrices[id: p.code]
                 let row = RankingRow(rank: idx + 1, title: p.name, subtitle: p.code,
-                                    value: czk(p.revenue), subvalue: String.sales_quantity(Int(p.quantity)),
+                                    value: String.sales_quantity(Int(p.quantity)), subvalue: nil,
                                     isLast: true)
                 if let stockItem {
                     Button { router.push(.product(stockItem)) } label: {
@@ -433,8 +430,8 @@ private struct TopProductsCard: View {
                 let stockItem = FlexiBeeService.shared.stockWithPrices[id: p.code]
                 let row = RankingRow(
                     rank: idx + 1, title: p.name, subtitle: p.code,
-                    value: czk(p.revenue),
-                    subvalue: String.sales_quantity(Int(p.quantity)),
+                    value: String.sales_quantity(Int(p.quantity)),
+                    subvalue: nil,
                     isLast: idx == min(viewModel.productAnalytics.count, pageSize) - 1
                 )
                 if let stockItem {

@@ -62,11 +62,11 @@ final class SalonsViewModel: ObservableObject {
 
     /// Full filter + sort pipeline applied in-memory.
     var displayedSalons: IdentifiedArrayOf<Salon> {
-        IdentifiedArrayOf(uniqueElements: applyFiltersAndSort(Array(salons), includeStatus: true))
+        IdentifiedArrayOf(uniqueElements: applyFiltersAndSort(salons, includeStatus: true))
     }
 
-    private func applyFiltersAndSort(_ input: [Salon], includeStatus: Bool) -> [Salon] {
-        var result = input
+    private func applyFiltersAndSort(_ input: some Collection<Salon>, includeStatus: Bool) -> [Salon] {
+        var result: [Salon] = Array(input)
 
         if includeStatus, statusOptions.hasSelection {
             result = result.filter { statusOptions.selected.contains($0.statusEnum.id) }
@@ -136,14 +136,14 @@ final class SalonsViewModel: ObservableObject {
     // MARK: - Stats
     // Intentionally omits the status filter so the header always shows counts across all statuses.
     private var salonsForStats: [Salon] {
-        applyFiltersAndSort(Array(salons), includeStatus: false)
+        applyFiltersAndSort(salons, includeStatus: false)
     }
 
     var totalCount: Int { salonsForStats.count }
     var newCount: Int { salonsForStats.filter { $0.statusEnum == .new }.count }
     var contactedCount: Int { salonsForStats.filter { $0.statusEnum == .contacted }.count }
     var orderedCount: Int { salonsForStats.filter { $0.statusEnum == .ordered }.count }
-    var testDriveCount: Int { Array(salons).filter { $0.statusEnum == .testDrive }.count }
+    var testDriveCount: Int { salons.filter { $0.statusEnum == .testDrive }.count }
 
     // MARK: - Actions
 

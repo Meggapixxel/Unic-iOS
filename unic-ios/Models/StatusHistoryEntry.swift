@@ -20,11 +20,15 @@ struct StatusHistoryEntry: Codable, Identifiable, Hashable {
         SalonStatus(rawValue: status) ?? .new
     }
 
+    private static let timestampFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        f.locale = Locale.current
+        return f
+    }()
+
     var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        formatter.locale = Locale.current
-        return formatter.string(from: timestamp)
+        Self.timestampFormatter.string(from: timestamp)
     }
 }
