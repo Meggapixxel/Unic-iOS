@@ -124,29 +124,16 @@ struct SalonListView: View {
                 .toolbar {
                     if !viewModel.showMap {
                         ToolbarItem(placement: .topBarLeading) {
-                            HStack(spacing: 16) {
-                                Button {
-                                    viewModel.showSortPopover = true
-                                } label: {
-                                    Image(systemName: "arrow.up.arrow.down")
-                                        .imageScale(.large)
-                                }
-                                .popover(isPresented: $viewModel.showSortPopover) {
-                                    SortPopoverView(viewModel: viewModel)
-                                        .presentationCompactAdaptation(.popover)
-                                }
-
-                                Button {
-                                    viewModel.showFilterPopover = true
-                                } label: {
-                                    Image(systemName: "line.3.horizontal.decrease.circle")
-                                        .symbolVariant(viewModel.hasAnyFilter ? .fill : .none)
-                                        .imageScale(.large)
-                                }
-                                .popover(isPresented: $viewModel.showFilterPopover) {
-                                    TypeFilterPopoverView(viewModel: viewModel)
-                                        .presentationCompactAdaptation(.popover)
-                                }
+                            Button {
+                                viewModel.showFilterPopover = true
+                            } label: {
+                                Image(systemName: "line.3.horizontal.decrease.circle")
+                                    .symbolVariant(viewModel.hasAnyFilter ? .fill : .none)
+                                    .imageScale(.large)
+                            }
+                            .popover(isPresented: $viewModel.showFilterPopover) {
+                                FilterSortPopoverView(viewModel: viewModel)
+                                    .presentationCompactAdaptation(.popover)
                             }
                         }
                     }
@@ -395,75 +382,9 @@ struct StatusBadge: View {
 
 // MARK: - Sort Popover
 
-struct SortPopoverView: View {
-    @ObservedObject var viewModel: SalonsViewModel
+// MARK: - Combined Filter + Sort Popover
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Sort options
-            VStack(alignment: .leading, spacing: 4) {
-                Text("sorting")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-
-                ForEach(SalonSortOption.allCases) { option in
-                    Button {
-                        viewModel.sortOption = option
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(option.displayName)
-                                .font(.subheadline)
-                            Spacer()
-                            if viewModel.sortOption == option {
-                                Image(systemName: "checkmark")
-                                    .font(.caption)
-                                    .foregroundColor(.accentColor)
-                            }
-                        }
-                        .padding(.vertical, 4)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-
-            Divider()
-
-            // Direction
-            HStack(spacing: 8) {
-                Button {
-                    viewModel.sortAscending = true
-                } label: {
-                    Image(systemName: "arrow.up")
-                        .font(.subheadline)
-                        .frame(width: 28, height: 28)
-                        .background(viewModel.sortAscending ? Color.accentColor : Color(.systemGray5))
-                        .foregroundColor(viewModel.sortAscending ? .white : .primary)
-                        .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    viewModel.sortAscending = false
-                } label: {
-                    Image(systemName: "arrow.down")
-                        .font(.subheadline)
-                        .frame(width: 28, height: 28)
-                        .background(!viewModel.sortAscending ? Color.accentColor : Color(.systemGray5))
-                        .foregroundColor(!viewModel.sortAscending ? .white : .primary)
-                        .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(20)
-        .frame(width: 200)
-    }
-}
-
-// MARK: - Type Filter Popover
-
-struct TypeFilterPopoverView: View {
+struct FilterSortPopoverView: View {
     @ObservedObject var viewModel: SalonsViewModel
 
     var body: some View {
@@ -471,9 +392,6 @@ struct TypeFilterPopoverView: View {
             VStack(alignment: .leading, spacing: 16) {
                 // Header
                 HStack {
-                    Text("filter_date_added")
-                        .font(.caption2.uppercaseSmallCaps())
-                        .foregroundColor(.secondary)
                     Spacer()
                     if viewModel.hasAnyFilter {
                         Button(String.reset) {
@@ -482,6 +400,42 @@ struct TypeFilterPopoverView: View {
                         }
                         .font(.caption)
                     }
+                }
+
+                // Sort
+                FilterSection(title: String.sorting) {
+                    ForEach(SalonSortOption.allCases) { option in
+                        FilterRow(
+                            title: option.displayName,
+                            isSelected: viewModel.sortOption == option
+                        ) { viewModel.sortOption = option }
+                    }
+                    HStack(spacing: 8) {
+                        Button {
+                            viewModel.sortAscending = true
+                        } label: {
+                            Image(systemName: "arrow.up")
+                                .font(.subheadline)
+                                .frame(width: 28, height: 28)
+                                .background(viewModel.sortAscending ? Color.accentColor : Color(.systemGray5))
+                                .foregroundColor(viewModel.sortAscending ? .white : .primary)
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            viewModel.sortAscending = false
+                        } label: {
+                            Image(systemName: "arrow.down")
+                                .font(.subheadline)
+                                .frame(width: 28, height: 28)
+                                .background(!viewModel.sortAscending ? Color.accentColor : Color(.systemGray5))
+                                .foregroundColor(!viewModel.sortAscending ? .white : .primary)
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.top, 4)
                 }
 
                 // Date Added
@@ -505,7 +459,6 @@ struct TypeFilterPopoverView: View {
                         }
                     }
                 }
-
             }
             .padding(20)
         }

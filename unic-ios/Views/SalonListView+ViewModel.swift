@@ -43,7 +43,6 @@ final class SalonsViewModel: ObservableObject {
         all: IdentifiedArrayOf(uniqueElements: DateRangeOption.allCases), selected: []
     )
     @Published var showMap = false
-    @Published var showSortPopover = false
     @Published var showFilterPopover = false
     @Published var showStatusInfo = false
     @Published var errorMessage: String?
