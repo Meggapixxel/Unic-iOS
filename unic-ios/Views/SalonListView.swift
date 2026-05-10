@@ -359,19 +359,34 @@ struct SalonRowView: View {
                         .foregroundColor(.orange)
                 }
 
-                if let lang = salon.language,
-                   let name = Locale.current.localizedString(forLanguageCode: lang) {
-                    Text(name)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color(.systemGray5), in: Capsule())
+                if let lang = salon.language, !lang.isEmpty {
+                    Text(flagEmoji(for: lang))
+                        .font(.caption)
                 }
             }
         }
         .padding(.vertical, 4)
     }
+}
+
+private func flagEmoji(for languageCode: String) -> String {
+    let regionCode: String
+    switch languageCode.prefix(2).lowercased() {
+    case "uk": regionCode = "UA"
+    case "ru": regionCode = "RU"
+    case "cs": regionCode = "CZ"
+    case "sk": regionCode = "SK"
+    case "pl": regionCode = "PL"
+    case "de": regionCode = "DE"
+    case "fr": regionCode = "FR"
+    case "it": regionCode = "IT"
+    case "es": regionCode = "ES"
+    default:   regionCode = Locale(identifier: languageCode).region?.identifier ?? "UN"
+    }
+    let base: UInt32 = 127397
+    return regionCode.uppercased().unicodeScalars
+        .compactMap { Unicode.Scalar(base + $0.value).map(String.init) }
+        .joined()
 }
 
 struct StatusBadge: View {
