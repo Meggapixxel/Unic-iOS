@@ -139,8 +139,7 @@ private struct AnalyticsSectionView: View {
                     .padding(.horizontal, 16)
                 }
 
-                let products = viewModel.productAnalytics
-                if !products.isEmpty || !viewModel.allTimeProductSales.isEmpty {
+                if !viewModel.productAnalytics.isEmpty {
                     TopProductsCard(viewModel: viewModel, router: router, pageSize: pageSize)
                         .padding(.horizontal, 16)
                 }
