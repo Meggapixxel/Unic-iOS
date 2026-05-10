@@ -19,7 +19,7 @@ enum SalesSection: String, CaseIterable {
 struct SalesTabView: View {
     @ObservedObject var viewModel: SalesViewModel
     @State private var router = AppRouter()
-    @State private var section: SalesSection = .analytics
+    @State private var section: SalesSection = .invoices
 
     var body: some View {
         AppNavigationStack(router: router, salesViewModel: viewModel) {
