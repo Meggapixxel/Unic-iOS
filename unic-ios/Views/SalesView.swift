@@ -31,8 +31,7 @@ struct SalesTabView: View {
                     InvoicesSectionView(viewModel: viewModel)
                 }
             }
-            .navigationTitle(String.sales_nav_title)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Picker("", selection: $section) {
