@@ -12,7 +12,7 @@ struct MainScreen: View {
                     .tabItem { Label("Salons", systemImage: "storefront") }
                 FlexiBeeView()
                     .tabItem { Label(String.stock_nav_title, systemImage: "shippingbox") }
-                if auth.canViewAnalytics || auth.canViewInvoices {
+                if auth.canViewSales {
                     SalesTabView(viewModel: salesViewModel)
                         .tabItem { Label(String.sales_nav_title, systemImage: "chart.line.uptrend.xyaxis") }
                 }

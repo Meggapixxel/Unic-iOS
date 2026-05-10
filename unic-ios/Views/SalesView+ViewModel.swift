@@ -161,7 +161,7 @@ final class SalesViewModel: ObservableObject {
     }
 
     func refreshInvoices() async {
-        if AuthService.shared.canViewAnalytics {
+        if AuthService.shared.canViewSales {
             await service.forceSync()
         } else {
             await service.fetchInvoicesOnly()

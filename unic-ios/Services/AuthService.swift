@@ -31,8 +31,7 @@ final class AuthService: ObservableObject {
     // MARK: - Permissions
 
     // Tabs
-    var canViewAnalytics:      Bool { isAdmin || isManager }
-    var canViewInvoices:       Bool { isAdmin || isManager }
+    var canViewSales:          Bool { isAdmin || isManager }
     var canViewUsers:          Bool { isAdmin }
 
     // Clients
