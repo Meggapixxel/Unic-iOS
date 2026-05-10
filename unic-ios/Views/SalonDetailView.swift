@@ -581,7 +581,7 @@ struct AddStatusSheet: View {
 
     private var effectiveNote: String {
         let articleText = selectedArticleCodes.isEmpty ? "" : selectedArticleCodes.joined(separator: ", ")
-        return [articleText, note].filter { !$0.isEmpty }.joined(separator: "\n")
+        return [articleText, note].compactMap { $0.nilIfEmpty }.joined(separator: "\n")
     }
 
     var body: some View {
