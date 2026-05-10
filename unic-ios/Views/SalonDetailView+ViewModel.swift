@@ -111,7 +111,7 @@ class SalonDetailViewModel: ObservableObject {
         tasks.append(task)
     }
 
-    func addStatusEntry(status: SalonStatus, note: String?, createdBy: String?, date: Date? = nil) {
+    func addStatusEntry(status: SalonStatus, note: String, createdBy: String?, date: Date? = nil) {
         let task = Task {
             isSaving = true
             defer { isSaving = false }
@@ -119,7 +119,7 @@ class SalonDetailViewModel: ObservableObject {
                 try await service.addStatusHistoryEntry(
                     salonId: salon.salonId,
                     status: status,
-                    note: note?.nilIfEmpty,
+                    note: note.nilIfEmpty,
                     createdBy: createdBy,
                     date: date
                 )

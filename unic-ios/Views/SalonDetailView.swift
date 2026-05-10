@@ -579,10 +579,9 @@ struct AddStatusSheet: View {
         }
     }
 
-    private var effectiveNote: String? {
+    private var effectiveNote: String {
         let articleText = selectedArticleCodes.isEmpty ? "" : selectedArticleCodes.joined(separator: ", ")
-        let parts = [articleText, note].filter { !$0.isEmpty }
-        return parts.isEmpty ? nil : parts.joined(separator: "\n")
+        return [articleText, note].filter { !$0.isEmpty }.joined(separator: "\n")
     }
 
     var body: some View {
