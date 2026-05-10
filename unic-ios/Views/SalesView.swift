@@ -205,20 +205,18 @@ private struct InvoicesSectionView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if AuthService.shared.canCreateInvoice {
-                HStack {
-                    Spacer()
-                    Button { viewModel.openCreateInvoice() } label: {
-                        Image(systemName: "square.and.pencil")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: 56, height: 56)
-                            .background(Color.accentColor, in: Circle())
-                            .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
-                    }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 8)
+            HStack {
+                Spacer()
+                Button { viewModel.openCreateInvoice() } label: {
+                    Image(systemName: "square.and.pencil")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 56, height: 56)
+                        .background(Color.accentColor, in: Circle())
+                        .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
                 }
+                .padding(.trailing, 20)
+                .padding(.bottom, 8)
             }
         }
     }
