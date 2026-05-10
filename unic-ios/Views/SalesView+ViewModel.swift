@@ -261,6 +261,8 @@ final class SalesViewModel: ObservableObject {
 
     // MARK: - KPIs
 
+    var hasPeriodData: Bool { !periodInvoices.isEmpty || !productAnalytics.isEmpty }
+
     var totalRevenue:  Double { periodInvoices.reduce(0) { $0 + $1.total } }
     var paidRevenue:   Double { periodInvoices.filter { $0.paymentStatus == .paid }.reduce(0) { $0 + $1.total } }
     var unpaidRevenue: Double { periodInvoices.filter { $0.paymentStatus == .unpaid || $0.paymentStatus == .overdue }.reduce(0) { $0 + $1.total } }

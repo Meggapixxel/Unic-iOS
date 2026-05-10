@@ -105,6 +105,7 @@ private struct AnalyticsSectionView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.accentColor)
 
+                if viewModel.hasPeriodData {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     StatCard(value: czk(viewModel.totalRevenue),  label: String.sales_kpi_revenue, icon: "banknote",              color: .blue)
                     StatCard(value: czk(viewModel.paidRevenue),   label: String.sales_kpi_paid,    icon: "checkmark.circle.fill", color: .green)
@@ -157,6 +158,11 @@ private struct AnalyticsSectionView: View {
                 if !viewModel.productAnalytics.isEmpty {
                     TopProductsCard(viewModel: viewModel, router: router, pageSize: pageSize)
                         .padding(.horizontal, 16)
+                }
+                } else {
+                    ContentUnavailableView(String.no_data, systemImage: "chart.bar")
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
                 }
             }
             .padding(.bottom, 24)
