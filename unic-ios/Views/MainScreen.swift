@@ -24,6 +24,8 @@ struct MainScreen: View {
                     UsersView()
                         .tabItem { Label(String.users_nav_title, systemImage: "person.2.fill") }
                 }
+                ProfileView()
+                    .tabItem { Label(String.profile_nav_title, systemImage: "person.circle") }
             }
 
             if showGreeting, let user = auth.currentUser {

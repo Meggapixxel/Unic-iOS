@@ -344,3 +344,9 @@
 "pdf_invoice" = "Рахунок PDF";
 "pdf_cash_receipt" = "Cash Receipt PDF";
 "demo_date_label" = "Дата демо";
+
+"profile_nav_title" = "Профіль";
+"profile_logout" = "Вийти";
+"profile_logout_confirm" = "Ви впевнені, що хочете вийти?";
+"profile_activity" = "Активність";
+"profile_activity_history" = "Історія";

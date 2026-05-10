@@ -353,6 +353,13 @@ extension String {
     static var role_manager:    String { String(localized: "role_manager") }
     static var role_sales:      String { String(localized: "role_sales") }
 
+    // MARK: - Profile
+    static var profile_nav_title:       String { String(localized: "profile_nav_title") }
+    static var profile_logout:          String { String(localized: "profile_logout") }
+    static var profile_logout_confirm:  String { String(localized: "profile_logout_confirm") }
+    static var profile_activity:        String { String(localized: "profile_activity") }
+    static var profile_activity_history:String { String(localized: "profile_activity_history") }
+
     // MARK: - Utilities
 
     var nilIfEmpty: String? { isEmpty ? nil : self }

@@ -344,3 +344,9 @@
 "pdf_invoice" = "Invoice PDF";
 "pdf_cash_receipt" = "Cash Receipt PDF";
 "demo_date_label" = "Demo date";
+
+"profile_nav_title" = "Profile";
+"profile_logout" = "Log Out";
+"profile_logout_confirm" = "Are you sure you want to log out?";
+"profile_activity" = "Activity";
+"profile_activity_history" = "History";
