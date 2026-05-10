@@ -48,6 +48,26 @@ struct ProductSales: Identifiable {
     let revenue:  Double
 }
 
+enum TopSalesMode: String, CaseIterable {
+    case allTime = "allTime"
+    case byMonth = "byMonth"
+
+    var displayName: String {
+        switch self {
+        case .allTime: return String.top_sales_all_time
+        case .byMonth: return String.top_sales_by_month
+        }
+    }
+}
+
+struct MonthlyProductSales: Identifiable {
+    let id         = UUID()
+    let label:      String
+    let month:      Date
+    let products:   [ProductSales]
+    var totalRevenue: Double { products.reduce(0) { $0 + $1.revenue } }
+}
+
 /// Central ViewModel for the Sales tab.
 ///
 /// Cache strategy: invoices, invoice items, and stock movement items are persisted to
@@ -66,6 +86,7 @@ final class SalesViewModel: ObservableObject {
     @Published private(set) var firms: [FlexiBeeFirm] = []
     @Published private(set) var isFirmsLoading = false
     @Published var period: SalesPeriod = .year
+    @Published var topSalesMode: TopSalesMode = .allTime
     @Published var searchText = ""
     @Published var searchTextTopProducts = ""
     @Published var searchTextTopClients = ""
@@ -79,6 +100,12 @@ final class SalesViewModel: ObservableObject {
         let fmt = DateFormatter()
         fmt.locale = Locale.current
         fmt.dateFormat = "MMM"
+        return fmt
+    }()
+    private static let monthYearFormatter: DateFormatter = {
+        let fmt = DateFormatter()
+        fmt.locale = Locale.current
+        fmt.dateFormat = "LLLL yyyy"
         return fmt
     }()
     private var cancellables = Set<AnyCancellable>()
@@ -291,5 +318,57 @@ final class SalesViewModel: ObservableObject {
         return productAnalytics.filter {
             $0.name.lowercased().contains(q) || $0.code.lowercased().contains(q)
         }
+    }
+
+    // MARK: - All-time & monthly product sales
+
+    var allTimeProductSales: [ProductSales] {
+        let grouped = Dictionary(grouping: stockMovementItems) { $0.cenikCode }
+        return grouped
+            .map { code, items in
+                ProductSales(
+                    code: code,
+                    name: items.first?.productName ?? code,
+                    quantity: items.reduce(0) { $0 + $1.quantityIssued },
+                    revenue: items.reduce(0) { $0 + $1.total }
+                )
+            }
+            .sorted { $0.quantity > $1.quantity }
+    }
+
+    var filteredAllTimeTopProducts: [ProductSales] {
+        guard !searchTextTopProducts.isEmpty else { return allTimeProductSales }
+        let q = searchTextTopProducts.lowercased()
+        return allTimeProductSales.filter {
+            $0.name.lowercased().contains(q) || $0.code.lowercased().contains(q)
+        }
+    }
+
+    var productSalesByMonth: [MonthlyProductSales] {
+        let cal = Calendar.current
+        let grouped = Dictionary(grouping: stockMovementItems) { item -> Date in
+            guard let d = item.date else { return .distantPast }
+            return cal.date(from: cal.dateComponents([.year, .month], from: d)) ?? .distantPast
+        }
+        return grouped
+            .compactMap { month, items -> MonthlyProductSales? in
+                guard month != .distantPast else { return nil }
+                let products = Dictionary(grouping: items) { $0.cenikCode }
+                    .map { code, items in
+                        ProductSales(
+                            code: code,
+                            name: items.first?.productName ?? code,
+                            quantity: items.reduce(0) { $0 + $1.quantityIssued },
+                            revenue: items.reduce(0) { $0 + $1.total }
+                        )
+                    }
+                    .sorted { $0.quantity > $1.quantity }
+                return MonthlyProductSales(
+                    label: Self.monthYearFormatter.string(from: month),
+                    month: month,
+                    products: products
+                )
+            }
+            .sorted { $0.month > $1.month }
     }
 }

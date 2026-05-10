@@ -140,32 +140,9 @@ private struct AnalyticsSectionView: View {
                 }
 
                 let products = viewModel.productAnalytics
-                if !products.isEmpty {
-                    RankingSection(
-                        title: String.sales_top_products,
-                        seeAllDestination: products.count > pageSize ? .allTopProducts : nil
-                    ) {
-                        ForEach(Array(products.prefix(pageSize).enumerated()), id: \.offset) { idx, p in
-                            let stockItem = FlexiBeeService.shared.stockWithPrices[id: p.code]
-                            let row = RankingRow(
-                                rank: idx + 1,
-                                title: p.name,
-                                subtitle: p.code,
-                                value: czk(p.revenue),
-                                subvalue: String.sales_quantity(Int(p.quantity)),
-                                isLast: idx == min(products.count, pageSize) - 1
-                            )
-                            if let stockItem {
-                                Button { router.push(.product(stockItem)) } label: {
-                                    row.contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                            } else {
-                                row
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
+                if !products.isEmpty || !viewModel.allTimeProductSales.isEmpty {
+                    TopProductsCard(viewModel: viewModel, router: router, pageSize: pageSize)
+                        .padding(.horizontal, 16)
                 }
             }
             .padding(.bottom, 24)
@@ -314,16 +291,30 @@ struct AllTopClientsView: View {
 
 // MARK: - Ranking Section
 
-private struct RankingSection<Content: View>: View {
+private struct RankingSection<Content: View, Accessory: View>: View {
     let title: String
+    var accessory: Accessory
     var seeAllDestination: AppDestination? = nil
     @ViewBuilder let content: Content
+
+    init(
+        title: String,
+        @ViewBuilder picker: () -> Accessory = { EmptyView() },
+        seeAllDestination: AppDestination? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.accessory = picker()
+        self.seeAllDestination = seeAllDestination
+        self.content = content()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(title).font(.subheadline.weight(.semibold))
                 Spacer()
+                accessory
                 if let dest = seeAllDestination {
                     NavigationLink(value: dest) {
                         Text(String.see_all).font(.caption).foregroundStyle(Color.accentColor)
@@ -404,5 +395,138 @@ private struct SalesFilterChip: View {
                 .background(isSelected ? color : color.opacity(0.12), in: Capsule())
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Top Products Card (analytics inline)
+
+private struct TopProductsCard: View {
+    @ObservedObject var viewModel: SalesViewModel
+    var router: AppRouter
+    let pageSize: Int
+
+    private var products: [ProductSales] {
+        viewModel.topSalesMode == .allTime
+            ? viewModel.allTimeProductSales
+            : viewModel.productAnalytics
+    }
+
+    var body: some View {
+        RankingSection(
+            title: String.sales_top_products,
+            picker: {
+                Picker("", selection: $viewModel.topSalesMode) {
+                    ForEach(TopSalesMode.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .fixedSize()
+            },
+            seeAllDestination: products.count > pageSize ? .topSales : nil
+        ) {
+            ForEach(Array(products.prefix(pageSize).enumerated()), id: \.offset) { idx, p in
+                let stockItem = FlexiBeeService.shared.stockWithPrices[id: p.code]
+                let row = RankingRow(
+                    rank: idx + 1, title: p.name, subtitle: p.code,
+                    value: czk(p.revenue),
+                    subvalue: String.sales_quantity(Int(p.quantity)),
+                    isLast: idx == min(products.count, pageSize) - 1
+                )
+                if let stockItem {
+                    Button { router.push(.product(stockItem)) } label: { row.contentShape(Rectangle()) }
+                        .buttonStyle(.plain)
+                } else {
+                    row
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Top Sales View (dedicated screen)
+
+struct TopSalesView: View {
+    @ObservedObject var viewModel: SalesViewModel
+    var router: AppRouter
+
+    var body: some View {
+        Group {
+            if viewModel.topSalesMode == .allTime {
+                allTimeList
+            } else {
+                byMonthList
+            }
+        }
+        .navigationTitle(String.top_sales_title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("", selection: $viewModel.topSalesMode) {
+                    ForEach(TopSalesMode.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 200)
+            }
+        }
+    }
+
+    private var allTimeList: some View {
+        List {
+            ForEach(Array(viewModel.filteredAllTimeTopProducts.enumerated()), id: \.offset) { idx, p in
+                let stockItem = FlexiBeeService.shared.stockWithPrices[id: p.code]
+                if let stockItem {
+                    Button { router.push(.product(stockItem)) } label: {
+                        StockWithPriceRow(item: stockItem).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    RankingRow(rank: idx + 1, title: p.name, subtitle: p.code,
+                               value: czk(p.revenue), subvalue: String.sales_quantity(Int(p.quantity)),
+                               isLast: true)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .searchable(text: $viewModel.searchTextTopProducts, prompt: String.sales_search_prompt)
+        .overlay {
+            if viewModel.filteredAllTimeTopProducts.isEmpty {
+                ContentUnavailableView(String.no_data, systemImage: "shippingbox")
+            }
+        }
+    }
+
+    private var byMonthList: some View {
+        List {
+            ForEach(viewModel.productSalesByMonth) { month in
+                Section {
+                    ForEach(Array(month.products.prefix(10).enumerated()), id: \.offset) { idx, p in
+                        let stockItem = FlexiBeeService.shared.stockWithPrices[id: p.code]
+                        let row = RankingRow(
+                            rank: idx + 1, title: p.name, subtitle: p.code,
+                            value: czk(p.revenue), subvalue: String.sales_quantity(Int(p.quantity)),
+                            isLast: idx == min(month.products.count, 10) - 1
+                        )
+                        if let stockItem {
+                            Button { router.push(.product(stockItem)) } label: { row.contentShape(Rectangle()) }
+                                .buttonStyle(.plain)
+                        } else {
+                            row
+                        }
+                    }
+                } header: {
+                    HStack {
+                        Text(month.label).font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Text("\(String.top_sales_month_total) \(czk(month.totalRevenue))")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .overlay {
+            if viewModel.productSalesByMonth.isEmpty {
+                ContentUnavailableView(String.no_data, systemImage: "shippingbox")
+            }
+        }
     }
 }

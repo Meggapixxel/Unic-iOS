@@ -5,4 +5,5 @@ enum AppDestination: Hashable {
     case invoice(FlexiBeeInvoice)
     case allTopProducts
     case allTopClients
+    case topSales
 }

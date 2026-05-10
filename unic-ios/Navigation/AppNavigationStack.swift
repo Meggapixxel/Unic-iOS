@@ -25,6 +25,10 @@ struct AppNavigationStack<Content: View>: View {
                         if let vm = salesViewModel {
                             AllTopClientsView(viewModel: vm)
                         }
+                    case .topSales:
+                        if let vm = salesViewModel {
+                            TopSalesView(viewModel: vm, router: router)
+                        }
                     }
                 }
         }

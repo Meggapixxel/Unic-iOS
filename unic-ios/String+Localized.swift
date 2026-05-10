@@ -265,8 +265,12 @@ extension String {
     static var sales_chart_monthly_revenue: String { String(localized: "sales_chart_monthly_revenue") }
     static var sales_chart_month:           String { String(localized: "sales_chart_month") }
     static var sales_chart_revenue:         String { String(localized: "sales_chart_revenue") }
-    static var sales_top_clients:           String { String(localized: "sales_top_clients") }
-    static var sales_top_products:          String { String(localized: "sales_top_products") }
+    static var sales_top_clients:       String { String(localized: "sales_top_clients") }
+    static var sales_top_products:      String { String(localized: "sales_top_products") }
+    static var top_sales_all_time:      String { String(localized: "top_sales_all_time") }
+    static var top_sales_by_month:      String { String(localized: "top_sales_by_month") }
+    static var top_sales_title:         String { String(localized: "top_sales_title") }
+    static var top_sales_month_total:   String { String(localized: "top_sales_month_total") }
     static var sales_search_prompt:         String { String(localized: "sales_search_prompt") }
     static var sales_invoices_empty:        String { String(localized: "sales_invoices_empty") }
     static func sales_quantity(_ n: Int)  -> String { String(localized: "sales_quantity \(n)") }
