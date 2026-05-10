@@ -2,73 +2,80 @@ import SwiftUI
 import Charts
 import IdentifiedCollections
 
-// MARK: - Analytics Tab
+// MARK: - Sales Tab (Analytics + Invoices combined)
 
-struct AnalyticsTabView: View {
-    @ObservedObject var viewModel: SalesViewModel
-    @State private var router = AppRouter()
+enum SalesSection: String, CaseIterable {
+    case analytics
+    case invoices
 
-    var body: some View {
-        AppNavigationStack(router: router, salesViewModel: viewModel) {
-            AnalyticsSectionView(viewModel: viewModel, router: router)
-                .navigationTitle(String.sales_analytics)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        SyncDateLabel(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate)
-                    }
-                }
-                .overlay {
-                    if viewModel.isLoading && viewModel.invoices.isEmpty { LoadingOverlay() }
-                }
-                .task { await viewModel.loadIfNeeded() }
+    var label: String {
+        switch self {
+        case .analytics: return String.sales_analytics
+        case .invoices:  return String.sales_invoices
         }
     }
 }
 
-// MARK: - Invoices Tab
-
-struct InvoicesTabView: View {
+struct SalesTabView: View {
     @ObservedObject var viewModel: SalesViewModel
     @State private var router = AppRouter()
+    @State private var section: SalesSection = .analytics
 
     var body: some View {
         AppNavigationStack(router: router, salesViewModel: viewModel) {
-            InvoicesSectionView(viewModel: viewModel)
-                .navigationTitle(String.sales_invoices)
-                .toolbar {
-                    if AuthService.shared.canCreateInvoice {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button { viewModel.openCreateInvoice() } label: {
-                                Image(systemName: "square.and.pencil").fontWeight(.semibold)
-                            }
+            Group {
+                switch section {
+                case .analytics:
+                    AnalyticsSectionView(viewModel: viewModel, router: router)
+                case .invoices:
+                    InvoicesSectionView(viewModel: viewModel)
+                }
+            }
+            .navigationTitle(String.sales_nav_title)
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Picker("", selection: $section) {
+                        ForEach(SalesSection.allCases, id: \.self) {
+                            Text($0.label).tag($0)
                         }
                     }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        SyncDateLabel(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate)
-                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 220)
                 }
-                .overlay {
-                    if viewModel.isLoading && viewModel.invoices.isEmpty { LoadingOverlay() }
-                }
-                .task { await viewModel.loadIfNeeded() }
-                .sheet(
-                    isPresented: Binding(
-                        get: { viewModel.invoiceFormVM != nil },
-                        set: { if !$0 { viewModel.closeCreateInvoice() } }
-                    ),
-                    onDismiss: {
-                        if let id = viewModel.recentlyCreatedInvoiceId {
-                            viewModel.clearRecentlyCreatedInvoice()
-                            if let invoice = viewModel.invoices.first(where: { $0.id == id }) {
-                                router.push(.invoice(invoice))
-                            }
+                if section == .invoices, AuthService.shared.canCreateInvoice {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button { viewModel.openCreateInvoice() } label: {
+                            Image(systemName: "square.and.pencil").fontWeight(.semibold)
                         }
                     }
-                ) {
-                    if let formVM = viewModel.invoiceFormVM {
-                        InvoiceFormView(viewModel: formVM, onDismiss: { viewModel.closeCreateInvoice() })
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    SyncDateLabel(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate)
+                }
+            }
+            .overlay {
+                if viewModel.isLoading && viewModel.invoices.isEmpty { LoadingOverlay() }
+            }
+            .task { await viewModel.loadIfNeeded() }
+            .sheet(
+                isPresented: Binding(
+                    get: { viewModel.invoiceFormVM != nil },
+                    set: { if !$0 { viewModel.closeCreateInvoice() } }
+                ),
+                onDismiss: {
+                    if let id = viewModel.recentlyCreatedInvoiceId {
+                        viewModel.clearRecentlyCreatedInvoice()
+                        if let invoice = viewModel.invoices.first(where: { $0.id == id }) {
+                            router.push(.invoice(invoice))
+                        }
                     }
                 }
+            ) {
+                if let formVM = viewModel.invoiceFormVM {
+                    InvoiceFormView(viewModel: formVM, onDismiss: { viewModel.closeCreateInvoice() })
+                }
+            }
         }
     }
 }
