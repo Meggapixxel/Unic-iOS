@@ -65,6 +65,7 @@ extension String {
     static var status_contacted:  String { String(localized: "status_contacted") }
     static var status_test_drive: String { String(localized: "status_test_drive") }
     static var status_demo:       String { String(localized: "status_demo") }
+    static var demo_date_label:   String { String(localized: "demo_date_label") }
     static var status_ordered:    String { String(localized: "status_ordered") }
     static var status_other:      String { String(localized: "status_other") }
 

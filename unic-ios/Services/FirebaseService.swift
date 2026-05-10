@@ -352,15 +352,16 @@ final class FirebaseService: ObservableObject {
         }
     }
 
-    func addStatusHistoryEntry(salonId: String, status: SalonStatus, currentStatus: SalonStatus?, note: String?, createdBy: String?) async throws {
+    func addStatusHistoryEntry(salonId: String, status: SalonStatus, currentStatus: SalonStatus?, note: String?, createdBy: String?, date: Date? = nil) async throws {
         AppLogger.log(.info, "Firebase", "addStatusEntry: salonId=\(salonId) status=\(status.rawValue)")
         let now = Timestamp(date: Date())
-        let entry: [String: Any] = [
+        var entry: [String: Any] = [
             "status": status.rawValue,
             "note": note as Any,
             "timestamp": now,
             "createdBy": createdBy as Any
         ]
+        if let date { entry["date"] = Timestamp(date: date) }
 
         try await db.collection("salons")
             .document(salonId)
@@ -369,18 +370,19 @@ final class FirebaseService: ObservableObject {
 
         var salonUpdate: [String: Any] = [
             "status": status.rawValue,
-            "latestStatusEntry": [
-                "status": status.rawValue,
-                "note": note as Any,
-                "timestamp": now,
-                "createdBy": createdBy as Any
-            ] as [String: Any]
+            "latestStatusEntry": entry
         ]
 
         if status == .testDrive && currentStatus != .testDrive {
             salonUpdate["testDriveStartDate"] = now
         } else if status != .testDrive {
             salonUpdate["testDriveStartDate"] = FieldValue.delete()
+        }
+
+        if status == .demoScheduled, let date {
+            salonUpdate["demoDate"] = Timestamp(date: date)
+        } else if status != .demoScheduled {
+            salonUpdate["demoDate"] = FieldValue.delete()
         }
 
         try await db.collection("salons").document(salonId).updateData(salonUpdate)

@@ -565,6 +565,7 @@ struct AddStatusSheet: View {
     @State private var selectedStatus: SalonStatus
     @State private var note: String = ""
     @State private var selectedArticleCodes: [String] = []
+    @State private var selectedDate: Date = Calendar.current.date(byAdding: .day, value: 1, to: Date())!
 
     init(viewModel: SalonDetailViewModel, isPresented: Binding<Bool>) {
         self.viewModel = viewModel
@@ -615,6 +616,18 @@ struct AddStatusSheet: View {
                     }
                 }
 
+                if selectedStatus == .demoScheduled {
+                    Section(String.demo_date_label) {
+                        DatePicker(
+                            "",
+                            selection: $selectedDate,
+                            in: Calendar.current.date(byAdding: .day, value: 1, to: Date())!...,
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                        .labelsHidden()
+                    }
+                }
+
                 Section("note_optional") {
                     TextField(String.add_comment, text: $note, axis: .vertical)
                         .lineLimit(3...6)
@@ -629,7 +642,12 @@ struct AddStatusSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         let createdBy = AuthService.shared.currentUser?.id
-                        viewModel.addStatusEntry(status: selectedStatus, note: effectiveNote, createdBy: createdBy)
+                        viewModel.addStatusEntry(
+                            status: selectedStatus,
+                            note: effectiveNote,
+                            createdBy: createdBy,
+                            date: selectedStatus == .demoScheduled ? selectedDate : nil
+                        )
                     } label: {
                         Image(systemName: "checkmark")
                     }
@@ -942,7 +960,8 @@ struct ScoringRow: View {
                 googlePlacesTypes: ["hair_care", "beauty_salon", "establishment"],
                 createdBy: nil,
                 latestStatusEntry: nil,
-                testDriveStartDate: nil
+                testDriveStartDate: nil,
+                demoDate: nil
             ),
             onSalonUpdated: { _ in },
             onSalonDeleted: { }

@@ -14,6 +14,7 @@ struct StatusHistoryEntry: Codable, Identifiable, Hashable {
     let note: String?
     let timestamp: Date
     let createdBy: String?
+    let date: Date?
 
     var statusEnum: SalonStatus {
         SalonStatus(rawValue: status) ?? .new

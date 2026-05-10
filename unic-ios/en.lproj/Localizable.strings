@@ -343,3 +343,4 @@
 "pdf_documents" = "Documents";
 "pdf_invoice" = "Invoice PDF";
 "pdf_cash_receipt" = "Cash Receipt PDF";
+"demo_date_label" = "Demo date";

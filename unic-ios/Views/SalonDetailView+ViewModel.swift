@@ -111,7 +111,7 @@ class SalonDetailViewModel: ObservableObject {
         tasks.append(task)
     }
 
-    func addStatusEntry(status: SalonStatus, note: String?, createdBy: String?) {
+    func addStatusEntry(status: SalonStatus, note: String?, createdBy: String?, date: Date? = nil) {
         let task = Task {
             isSaving = true
             defer { isSaving = false }
@@ -121,7 +121,8 @@ class SalonDetailViewModel: ObservableObject {
                     status: status,
                     currentStatus: salon.statusEnum,
                     note: note?.isEmpty == true ? nil : note,
-                    createdBy: createdBy
+                    createdBy: createdBy,
+                    date: date
                 )
                 if let updatedSalon = try await service.getSalon(id: salon.salonId) {
                     salon = updatedSalon

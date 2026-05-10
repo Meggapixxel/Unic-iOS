@@ -90,6 +90,7 @@ struct Salon: Codable, Identifiable, Hashable {
     let createdBy: String?
     let latestStatusEntry: StatusHistoryEntry?
     let testDriveStartDate: Date?
+    let demoDate: Date?
     var createdAt: Date?
 
     // Computed properties
