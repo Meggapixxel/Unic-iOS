@@ -6,7 +6,7 @@ struct MainScreen: View {
     @State private var showGreeting = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack(alignment: .top) {
             TabView {
                 SalonListView()
                     .tabItem { Label("Salons", systemImage: "storefront") }
@@ -34,8 +34,8 @@ struct MainScreen: View {
                     .background(.thinMaterial)
                     .cornerRadius(12)
                     .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
-                    .padding(.bottom, 90)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .padding(.top, 60)
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .onAppear {
