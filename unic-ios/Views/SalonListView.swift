@@ -358,6 +358,16 @@ struct SalonRowView: View {
                         .font(.caption)
                         .foregroundColor(.orange)
                 }
+
+                if let lang = salon.language,
+                   let name = Locale.current.localizedString(forLanguageCode: lang) {
+                    Text(name)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color(.systemGray5), in: Capsule())
+                }
             }
         }
         .padding(.vertical, 4)
