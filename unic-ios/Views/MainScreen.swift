@@ -27,7 +27,7 @@ struct MainScreen: View {
             }
 
             if showGreeting, let user = auth.currentUser {
-                Text("greeting \(user.firstName)")
+                Text("👋 \(user.firstName)")
                     .font(.subheadline.bold())
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)

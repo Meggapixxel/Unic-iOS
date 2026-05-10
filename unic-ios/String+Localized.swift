@@ -26,9 +26,6 @@ extension String {
     static var city:         String { String(localized: "city") }
     static var discard:      String { String(localized: "discard") }
 
-    // MARK: - Greeting (with interpolation)
-    static func greeting(_ firstName: String) -> String { String(localized: "greeting \(firstName)") }
-
     // MARK: - Auth
     static var auth_no_access_title:       String { String(localized: "auth_no_access_title") }
     static var auth_no_access_body:        String { String(localized: "auth_no_access_body") }

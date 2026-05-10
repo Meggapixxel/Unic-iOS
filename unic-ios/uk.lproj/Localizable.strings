@@ -241,7 +241,6 @@
 "NSLocationWhenInUseUsageDescription" = "Для відображення вашої локації на карті";
 
 /* Greeting */
-"greeting %@" = "👋 %@";
 
 /* FlexiBee */
 "never" = "Ніколи";
