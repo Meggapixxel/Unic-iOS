@@ -23,19 +23,15 @@ struct LanguageOption: Identifiable, Hashable {
 }
 
 enum DateRangeOption: String, CaseIterable, Identifiable {
-    case thisWeek    = "thisWeek"
-    case thisMonth   = "thisMonth"
-    case last3Months = "last3Months"
-    case thisYear    = "thisYear"
+    case thisMonth = "thisMonth"
+    case thisYear  = "thisYear"
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .thisWeek:    return String.filter_date_this_week
-        case .thisMonth:   return String.filter_date_this_month
-        case .last3Months: return String.filter_date_last_3_months
-        case .thisYear:    return String.filter_date_this_year
+        case .thisMonth: return String.filter_date_this_month
+        case .thisYear:  return String.filter_date_this_year
         }
     }
 
@@ -43,12 +39,8 @@ enum DateRangeOption: String, CaseIterable, Identifiable {
         let now = Date()
         let cal = Calendar.current
         switch self {
-        case .thisWeek:
-            return cal.date(byAdding: .day, value: -7, to: now)! <= date
         case .thisMonth:
             return date >= cal.date(from: cal.dateComponents([.year, .month], from: now))!
-        case .last3Months:
-            return cal.date(byAdding: .month, value: -3, to: now)! <= date
         case .thisYear:
             let start = cal.date(from: DateComponents(year: cal.component(.year, from: now), month: 1, day: 1))!
             return date >= start

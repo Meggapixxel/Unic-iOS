@@ -60,9 +60,7 @@ extension String {
     static var sort_by_date:                String { String(localized: "sort_by_date") }
     static var filter_language:             String { String(localized: "filter_language") }
     static var filter_date_added:           String { String(localized: "filter_date_added") }
-    static var filter_date_this_week:       String { String(localized: "filter_date_this_week") }
     static var filter_date_this_month:      String { String(localized: "filter_date_this_month") }
-    static var filter_date_last_3_months:   String { String(localized: "filter_date_last_3_months") }
     static var filter_date_this_year:       String { String(localized: "filter_date_this_year") }
 
     // MARK: - Status (short)

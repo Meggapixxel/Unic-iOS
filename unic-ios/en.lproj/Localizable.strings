@@ -64,9 +64,7 @@
 "sort_by_date" = "By date added";
 "filter_language" = "Language";
 "filter_date_added" = "Date added";
-"filter_date_this_week" = "This week";
 "filter_date_this_month" = "This month";
-"filter_date_last_3_months" = "Last 3 months";
 "filter_date_this_year" = "This year";
 
 /* Salon Detail */
