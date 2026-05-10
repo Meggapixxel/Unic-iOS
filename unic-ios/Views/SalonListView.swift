@@ -477,7 +477,6 @@ struct TypeFilterPopoverView: View {
                     Spacer()
                     if viewModel.hasAnyFilter {
                         Button(String.reset) {
-                            viewModel.typeOptions.clear()
                             viewModel.languageOptions.clear()
                             viewModel.dateRangeOptions.clear()
                         }
@@ -507,17 +506,6 @@ struct TypeFilterPopoverView: View {
                     }
                 }
 
-                // Category (Business Type)
-                if !viewModel.typeOptions.all.isEmpty {
-                    FilterSection(title: String.category) {
-                        ForEach(viewModel.typeOptions.all) { type in
-                            FilterRow(
-                                title: type.displayName,
-                                isSelected: viewModel.typeOptions.isSelected(type)
-                            ) { viewModel.typeOptions.toggle(type) }
-                        }
-                    }
-                }
             }
             .padding(20)
         }

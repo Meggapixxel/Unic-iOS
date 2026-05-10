@@ -38,7 +38,6 @@ final class SalonsViewModel: ObservableObject {
     @Published var statusOptions = Options<SalonStatus>(all: IdentifiedArrayOf(uniqueElements: SalonStatus.allCases), selected: [])
     @Published var sortOption: SalonSortOption = .name
     @Published var sortAscending: Bool = true
-    @Published var typeOptions = Options<BusinessType>()
     @Published var languageOptions = Options<LanguageOption>()
     @Published var dateRangeOptions = Options<DateRangeOption>(
         all: IdentifiedArrayOf(uniqueElements: DateRangeOption.allCases), selected: []
@@ -59,7 +58,7 @@ final class SalonsViewModel: ObservableObject {
     private var tasks: [Task<Void, Never>] = []
 
     var hasAnyFilter: Bool {
-        typeOptions.hasSelection || languageOptions.hasSelection || dateRangeOptions.hasSelection
+        languageOptions.hasSelection || dateRangeOptions.hasSelection
     }
 
     /// Full filter + sort pipeline applied in-memory.
@@ -79,13 +78,6 @@ final class SalonsViewModel: ObservableObject {
             result = result.filter {
                 $0.name.lowercased().contains(query) ||
                 ($0.address?.lowercased().contains(query) ?? false)
-            }
-        }
-
-        if typeOptions.hasSelection {
-            result = result.filter { salon in
-                guard let types = salon.googlePlacesTypes else { return false }
-                return !typeOptions.selected.isDisjoint(with: types)
             }
         }
 
@@ -170,20 +162,12 @@ final class SalonsViewModel: ObservableObject {
             async let fetchedSalons = service.fetchAllSalons()
             async let _ = service.loadWorksOnTags()
             salons = IdentifiedArrayOf(uniqueElements: try await fetchedSalons)
-            buildTypeOptions()
             buildLanguageOptions()
         } catch {
             errorMessage = error.localizedDescription
         }
 
         isLoading = false
-    }
-
-    private func buildTypeOptions() {
-        let ignoredTypes: Set<String> = ["establishment", "point_of_interest", "health", "store"]
-        let types = Set(salons.compactMap(\.googlePlacesTypes).flatMap { $0 })
-        let businessTypes = types.subtracting(ignoredTypes).sorted().map { BusinessType(id: $0) }
-        typeOptions.setAll(IdentifiedArrayOf(uniqueElements: businessTypes))
     }
 
     private func buildLanguageOptions() {
@@ -220,7 +204,6 @@ final class SalonsViewModel: ObservableObject {
 
     func addSalon(_ salon: Salon) {
         salons.append(salon)
-        buildTypeOptions()
     }
 
     func updateSalon(_ updatedSalon: Salon) {
