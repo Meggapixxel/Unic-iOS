@@ -64,7 +64,7 @@ struct UserActivityView: View {
         }
         .listStyle(.insetGrouped)
         .navigationTitle(user.fullName)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .top, spacing: 0) {
             Picker("", selection: $viewModel.groupMode) {
                 ForEach(ActivityGroupMode.allCases, id: \.self) {
