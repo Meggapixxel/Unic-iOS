@@ -90,6 +90,21 @@ private struct AnalyticsSectionView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 16)
 
+                HStack(spacing: 20) {
+                    Button { viewModel.goToPrevPeriod() } label: {
+                        Image(systemName: "chevron.left").fontWeight(.semibold)
+                    }
+                    Text(viewModel.periodLabel)
+                        .font(.subheadline.weight(.semibold))
+                        .frame(minWidth: 140)
+                    Button { viewModel.goToNextPeriod() } label: {
+                        Image(systemName: "chevron.right").fontWeight(.semibold)
+                    }
+                    .disabled(!viewModel.canGoNext)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
+
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     StatCard(value: czk(viewModel.totalRevenue),  label: String.sales_kpi_revenue, icon: "banknote",              color: .blue)
                     StatCard(value: czk(viewModel.paidRevenue),   label: String.sales_kpi_paid,    icon: "checkmark.circle.fill", color: .green)

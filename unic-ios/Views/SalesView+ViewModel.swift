@@ -13,14 +13,19 @@ enum SalesPeriod: String, CaseIterable {
         }
     }
 
-    var dateRange: (from: Date, to: Date) {
+    func dateRange(for date: Date) -> (from: Date, to: Date) {
         let cal = Calendar.current
         let now = Date()
         switch self {
         case .month:
-            return (cal.date(from: cal.dateComponents([.year, .month], from: now))!, now)
+            let start = cal.date(from: cal.dateComponents([.year, .month], from: date))!
+            let nextStart = cal.date(byAdding: .month, value: 1, to: start)!
+            return (start, min(nextStart.addingTimeInterval(-1), now))
         case .year:
-            return (cal.date(from: DateComponents(year: cal.component(.year, from: now), month: 1, day: 1))!, now)
+            let year = cal.component(.year, from: date)
+            let start = cal.date(from: DateComponents(year: year, month: 1, day: 1))!
+            let nextStart = cal.date(from: DateComponents(year: year + 1, month: 1, day: 1))!
+            return (start, min(nextStart.addingTimeInterval(-1), now))
         }
     }
 }
@@ -59,6 +64,7 @@ final class SalesViewModel: ObservableObject {
     @Published private(set) var firms: [FlexiBeeFirm] = []
     @Published private(set) var isFirmsLoading = false
     @Published var period: SalesPeriod = .year
+    @Published var selectedDate: Date = Date()
     @Published var searchText = ""
     @Published var searchTextTopProducts = ""
     @Published var searchTextTopClients = ""
@@ -69,12 +75,38 @@ final class SalesViewModel: ObservableObject {
 
     private let service = FlexiBeeService.shared
     private static let monthFormatter: DateFormatter = {
-        let fmt = DateFormatter()
-        fmt.locale = Locale.current
-        fmt.dateFormat = "MMM"
-        return fmt
+        let fmt = DateFormatter(); fmt.locale = Locale.current; fmt.dateFormat = "MMM"; return fmt
+    }()
+    private static let monthYearFormatter: DateFormatter = {
+        let fmt = DateFormatter(); fmt.locale = Locale.current; fmt.dateFormat = "LLLL yyyy"; return fmt
     }()
     private var cancellables = Set<AnyCancellable>()
+
+    var periodLabel: String {
+        switch period {
+        case .month: return Self.monthYearFormatter.string(from: selectedDate)
+        case .year:  return String(Calendar.current.component(.year, from: selectedDate))
+        }
+    }
+
+    var canGoNext: Bool {
+        let cal = Calendar.current
+        let gran: Calendar.Component = period == .month ? .month : .year
+        return !cal.isDate(selectedDate, equalTo: Date(), toGranularity: gran)
+    }
+
+    func goToPrevPeriod() {
+        let component: Calendar.Component = period == .month ? .month : .year
+        selectedDate = Calendar.current.date(byAdding: component, value: -1, to: selectedDate)!
+    }
+
+    func goToNextPeriod() {
+        guard canGoNext else { return }
+        let cal = Calendar.current
+        let component: Calendar.Component = period == .month ? .month : .year
+        let next = cal.date(byAdding: component, value: 1, to: selectedDate)!
+        selectedDate = cal.isDate(next, equalTo: Date(), toGranularity: component) ? Date() : next
+    }
 
     var invoices:           [FlexiBeeInvoice]           { service.invoices }
     var invoiceItems:       [FlexiBeeInvoiceItem]       { service.invoiceItems }
@@ -187,7 +219,7 @@ final class SalesViewModel: ObservableObject {
     // MARK: - Period-scoped
 
     var periodInvoices: [FlexiBeeInvoice] {
-        let (from, to) = period.dateRange
+        let (from, to) = period.dateRange(for: selectedDate)
         return invoices.filter {
             guard let d = $0.issueDate else { return false }
             return d >= from && d <= to
@@ -195,7 +227,7 @@ final class SalesViewModel: ObservableObject {
     }
 
     var periodItems: [FlexiBeeInvoiceItem] {
-        let (from, to) = period.dateRange
+        let (from, to) = period.dateRange(for: selectedDate)
         return invoiceItems.filter {
             guard let d = $0.date else { return false }
             return d >= from && d <= to
@@ -203,7 +235,7 @@ final class SalesViewModel: ObservableObject {
     }
 
     var periodMovements: [FlexiBeeStockMovementItem] {
-        let (from, to) = period.dateRange
+        let (from, to) = period.dateRange(for: selectedDate)
         return stockMovementItems.filter {
             guard let d = $0.date else { return false }
             return d >= from && d <= to
@@ -238,8 +270,8 @@ final class SalesViewModel: ObservableObject {
 
     var monthlyRevenue: [MonthlyRevenue] {
         let cal = Calendar.current
-        let (from, _) = period.dateRange
-        let grouped = Dictionary(grouping: periodInvoices) { inv -> Date in
+        let (from, _) = period.dateRange(for: selectedDate)
+        let grouped = Dictionary(grouping: periodInvoices) { (inv: FlexiBeeInvoice) -> Date in
             guard let d = inv.issueDate else { return from }
             return cal.date(from: cal.dateComponents([.year, .month], from: d)) ?? from
         }
