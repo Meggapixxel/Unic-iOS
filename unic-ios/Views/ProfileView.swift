@@ -37,16 +37,6 @@ struct ProfileView: View {
                             .foregroundStyle(.primary)
                     }
                 }
-                .sheet(isPresented: $showHistory) {
-                    NavigationStack {
-                        UserActivityView(user: user)
-                            .toolbar {
-                                ToolbarItem(placement: .topBarTrailing) {
-                                    CloseButton { showHistory = false }
-                                }
-                            }
-                    }
-                }
             }
 
             Section {
@@ -59,6 +49,18 @@ struct ProfileView: View {
         }
         .navigationTitle(String.profile_nav_title)
         .navigationBarTitleDisplayMode(.large)
+        .sheet(isPresented: $showHistory) {
+            if let user = auth.currentUser {
+                NavigationStack {
+                    UserActivityView(user: user)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                CloseButton { showHistory = false }
+                            }
+                        }
+                }
+            }
+        }
         .confirmationDialog(String.profile_logout_confirm, isPresented: $showLogoutConfirm, titleVisibility: .visible) {
             Button(String.profile_logout, role: .destructive) { auth.logout() }
             Button(String.cancel, role: .cancel) {}
