@@ -119,7 +119,7 @@ class SalonDetailViewModel: ObservableObject {
                 try await service.addStatusHistoryEntry(
                     salonId: salon.salonId,
                     status: status,
-                    note: note?.isEmpty == true ? nil : note,
+                    note: note?.nilIfEmpty,
                     createdBy: createdBy,
                     date: date
                 )
