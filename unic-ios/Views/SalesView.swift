@@ -42,13 +42,6 @@ struct SalesTabView: View {
                     .pickerStyle(.segmented)
                     .frame(width: 220)
                 }
-                if section == .invoices, AuthService.shared.canCreateInvoice {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button { viewModel.openCreateInvoice() } label: {
-                            Image(systemName: "square.and.pencil").fontWeight(.semibold)
-                        }
-                    }
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     SyncDateLabel(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate)
                 }
@@ -182,21 +175,6 @@ private struct InvoicesSectionView: View {
 
     var body: some View {
         List {
-            ForEach(viewModel.filteredInvoices) { invoice in
-                NavigationLink(value: AppDestination.invoice(invoice)) {
-                    InvoiceRowContent(invoice: invoice)
-                }
-            }
-        }
-        .listStyle(.plain)
-        .refreshable { await viewModel.refreshInvoices() }
-        .searchable(text: $viewModel.searchText, prompt: String.sales_search_prompt)
-        .overlay {
-            if viewModel.filteredInvoices.isEmpty && !viewModel.isLoading {
-                ContentUnavailableView(String.sales_invoices_empty, systemImage: "doc.text")
-            }
-        }
-        .safeAreaInset(edge: .top, spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     SalesFilterChip(title: String.filter_all, isSelected: viewModel.statusFilter == nil) {
@@ -211,7 +189,37 @@ private struct InvoicesSectionView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
             }
-            .background(.bar)
+            
+            ForEach(viewModel.filteredInvoices) { invoice in
+                NavigationLink(value: AppDestination.invoice(invoice)) {
+                    InvoiceRowContent(invoice: invoice)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .refreshable { await viewModel.refreshInvoices() }
+        .searchable(text: $viewModel.searchText, prompt: String.sales_search_prompt)
+        .overlay {
+            if viewModel.filteredInvoices.isEmpty && !viewModel.isLoading {
+                ContentUnavailableView(String.sales_invoices_empty, systemImage: "doc.text")
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if AuthService.shared.canCreateInvoice {
+                HStack {
+                    Spacer()
+                    Button { viewModel.openCreateInvoice() } label: {
+                        Image(systemName: "square.and.pencil")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 56, height: 56)
+                            .background(Color.accentColor, in: Circle())
+                            .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 8)
+                }
+            }
         }
     }
 }
