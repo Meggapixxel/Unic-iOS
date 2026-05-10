@@ -239,17 +239,16 @@ struct AllTopProductsView: View {
         List {
             ForEach(Array(viewModel.filteredTopProducts.enumerated()), id: \.offset) { idx, p in
                 let stockItem = FlexiBeeService.shared.stockWithPrices[id: p.code]
+                let row = RankingRow(rank: idx + 1, title: p.name, subtitle: p.code,
+                                    value: czk(p.revenue), subvalue: String.sales_quantity(Int(p.quantity)),
+                                    isLast: true)
                 if let stockItem {
                     Button { router.push(.product(stockItem)) } label: {
-                        StockWithPriceRow(item: stockItem)
-                            .id("\(stockItem.code)-\(stockItem.quantity)")
-                            .contentShape(Rectangle())
+                        row.contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 } else {
-                    RankingRow(rank: idx + 1, title: p.name, subtitle: p.code,
-                               value: czk(p.revenue), subvalue: String.sales_quantity(Int(p.quantity)),
-                               isLast: true)
+                    row
                 }
             }
         }
@@ -473,15 +472,14 @@ struct TopSalesView: View {
         List {
             ForEach(Array(viewModel.filteredAllTimeTopProducts.enumerated()), id: \.offset) { idx, p in
                 let stockItem = FlexiBeeService.shared.stockWithPrices[id: p.code]
+                let row = RankingRow(rank: idx + 1, title: p.name, subtitle: p.code,
+                                     value: czk(p.revenue), subvalue: String.sales_quantity(Int(p.quantity)),
+                                     isLast: true)
                 if let stockItem {
-                    Button { router.push(.product(stockItem)) } label: {
-                        StockWithPriceRow(item: stockItem).contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+                    Button { router.push(.product(stockItem)) } label: { row.contentShape(Rectangle()) }
+                        .buttonStyle(.plain)
                 } else {
-                    RankingRow(rank: idx + 1, title: p.name, subtitle: p.code,
-                               value: czk(p.revenue), subvalue: String.sales_quantity(Int(p.quantity)),
-                               isLast: true)
+                    row
                 }
             }
         }
