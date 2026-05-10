@@ -140,7 +140,7 @@ struct SalonListView: View {
                                     viewModel.showFilterPopover = true
                                 } label: {
                                     Image(systemName: "line.3.horizontal.decrease.circle")
-                                        .symbolVariant(viewModel.typeOptions.hasSelection ? .fill : .none)
+                                        .symbolVariant(viewModel.hasAnyFilter ? .fill : .none)
                                         .imageScale(.large)
                                 }
                                 .popover(isPresented: $viewModel.showFilterPopover) {
@@ -466,60 +466,98 @@ struct SortPopoverView: View {
 struct TypeFilterPopoverView: View {
     @ObservedObject var viewModel: SalonsViewModel
 
-    private var hasAnySelection: Bool {
-        viewModel.typeOptions.hasSelection
-    }
-
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
                 // Header
                 HStack {
-                    Text("category")
-                        .font(.caption2)
+                    Text("filter_date_added")
+                        .font(.caption2.uppercaseSmallCaps())
                         .foregroundColor(.secondary)
                     Spacer()
-                    if hasAnySelection {
+                    if viewModel.hasAnyFilter {
                         Button(String.reset) {
                             viewModel.typeOptions.clear()
+                            viewModel.languageOptions.clear()
+                            viewModel.dateRangeOptions.clear()
                         }
                         .font(.caption)
                     }
                 }
 
-                // Business Types
-                if !viewModel.typeOptions.all.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        ForEach(viewModel.typeOptions.all) { type in
-                            Button {
-                                viewModel.typeOptions.toggle(type)
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: viewModel.typeOptions.isSelected(type) ? "checkmark.circle.fill" : "circle")
-                                        .foregroundColor(viewModel.typeOptions.isSelected(type) ? .accentColor : .secondary)
-                                        .font(.subheadline)
-                                    Text(type.displayName)
-                                        .font(.subheadline)
-                                    Spacer()
-                                }
-                                .padding(.vertical, 4)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
+                // Date Added
+                FilterSection(title: String.filter_date_added) {
+                    ForEach(viewModel.dateRangeOptions.all) { range in
+                        FilterRow(
+                            title: range.displayName,
+                            isSelected: viewModel.dateRangeOptions.isSelected(range)
+                        ) { viewModel.dateRangeOptions.toggle(range) }
+                    }
+                }
+
+                // Language
+                if !viewModel.languageOptions.all.isEmpty {
+                    FilterSection(title: String.filter_language) {
+                        ForEach(viewModel.languageOptions.all) { lang in
+                            FilterRow(
+                                title: lang.displayName,
+                                isSelected: viewModel.languageOptions.isSelected(lang)
+                            ) { viewModel.languageOptions.toggle(lang) }
                         }
                     }
                 }
 
-                // Empty state
-                if viewModel.typeOptions.all.isEmpty {
-                    Text("no_data")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                // Category (Business Type)
+                if !viewModel.typeOptions.all.isEmpty {
+                    FilterSection(title: String.category) {
+                        ForEach(viewModel.typeOptions.all) { type in
+                            FilterRow(
+                                title: type.displayName,
+                                isSelected: viewModel.typeOptions.isSelected(type)
+                            ) { viewModel.typeOptions.toggle(type) }
+                        }
+                    }
                 }
             }
             .padding(20)
         }
-        .frame(width: 220)
+        .frame(width: 240)
+    }
+}
+
+struct FilterSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2.uppercaseSmallCaps())
+                .foregroundColor(.secondary)
+            content
+        }
+    }
+}
+
+struct FilterRow: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(isSelected ? .accentColor : .secondary)
+                    .font(.subheadline)
+                Text(title)
+                    .font(.subheadline)
+                Spacer()
+            }
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

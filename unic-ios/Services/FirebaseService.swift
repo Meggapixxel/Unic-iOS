@@ -35,6 +35,10 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Fetch Salons
 
+    private func decodeSalon(_ doc: DocumentSnapshot) -> Salon? {
+        try? doc.data(as: Salon.self)
+    }
+
     func fetchSalons(limit: Int = 50) async throws -> [Salon] {
         isLoading = true
         defer { isLoading = false }
@@ -44,9 +48,7 @@ final class FirebaseService: ObservableObject {
             .limit(to: limit)
             .getDocuments()
 
-        let salons = snapshot.documents.compactMap { doc -> Salon? in
-            do { return try doc.data(as: Salon.self) } catch { return nil }
-        }
+        let salons = snapshot.documents.compactMap { decodeSalon($0) }
         AppLogger.log(.debug, "Firebase", "fetchSalons → \(salons.count) records")
 
         await MainActor.run {
@@ -64,9 +66,7 @@ final class FirebaseService: ObservableObject {
             .order(by: "name")
             .getDocuments()
 
-        let salons = snapshot.documents.compactMap { doc -> Salon? in
-            do { return try doc.data(as: Salon.self) } catch { return nil }
-        }
+        let salons = snapshot.documents.compactMap { decodeSalon($0) }
 
         await MainActor.run {
             self.salons = salons
@@ -206,10 +206,11 @@ final class FirebaseService: ObservableObject {
         let salonId = ref.documentID
 
         var data: [String: Any] = [
-            "salonId": salonId,
-            "name": name,
-            "status": SalonStatus.new.rawValue,
-            "language": language
+            "salonId":   salonId,
+            "name":      name,
+            "status":    SalonStatus.new.rawValue,
+            "language":  language,
+            "createdAt": Timestamp(date: Date())
         ]
         if let createdBy { data["createdBy"] = createdBy }
 

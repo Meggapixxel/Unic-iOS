@@ -11,17 +11,19 @@ import Combine
 import IdentifiedCollections
 
 enum SalonSortOption: String, CaseIterable, Identifiable {
-    case name = "name"
-    case leadTemp = "leadTemp"
-    case status = "status"
+    case name      = "name"
+    case leadTemp  = "leadTemp"
+    case status    = "status"
+    case dateAdded = "dateAdded"
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .name: return String.sort_by_name
-        case .leadTemp: return String.sort_by_lead_temp
-        case .status: return String.sort_by_status
+        case .name:      return String.sort_by_name
+        case .leadTemp:  return String.sort_by_lead_temp
+        case .status:    return String.sort_by_status
+        case .dateAdded: return String.sort_by_date
         }
     }
 }
@@ -37,6 +39,10 @@ final class SalonsViewModel: ObservableObject {
     @Published var sortOption: SalonSortOption = .name
     @Published var sortAscending: Bool = true
     @Published var typeOptions = Options<BusinessType>()
+    @Published var languageOptions = Options<LanguageOption>()
+    @Published var dateRangeOptions = Options<DateRangeOption>(
+        all: IdentifiedArrayOf(uniqueElements: DateRangeOption.allCases), selected: []
+    )
     @Published var showMap = false
     @Published var showSortPopover = false
     @Published var showFilterPopover = false
@@ -52,26 +58,30 @@ final class SalonsViewModel: ObservableObject {
     private let service = FirebaseService.shared
     private var tasks: [Task<Void, Never>] = []
 
-    /// Full filter + sort pipeline applied in-memory. Status, search, and business-type
-    /// filters are combined; result is sorted by the selected `sortOption`.
-    var displayedSalons: IdentifiedArrayOf<Salon> {
-        var result = salons
+    var hasAnyFilter: Bool {
+        typeOptions.hasSelection || languageOptions.hasSelection || dateRangeOptions.hasSelection
+    }
 
-        // Filter by status
-        if statusOptions.hasSelection {
+    /// Full filter + sort pipeline applied in-memory.
+    var displayedSalons: IdentifiedArrayOf<Salon> {
+        IdentifiedArrayOf(uniqueElements: applyFiltersAndSort(Array(salons), includeStatus: true))
+    }
+
+    private func applyFiltersAndSort(_ input: [Salon], includeStatus: Bool) -> [Salon] {
+        var result = input
+
+        if includeStatus, statusOptions.hasSelection {
             result = result.filter { statusOptions.selected.contains($0.statusEnum.id) }
         }
 
-        // Filter by search (name or address)
         if !searchText.isEmpty {
             let query = searchText.lowercased()
-            result = result.filter { salon in
-                salon.name.lowercased().contains(query) ||
-                (salon.address?.lowercased().contains(query) ?? false)
+            result = result.filter {
+                $0.name.lowercased().contains(query) ||
+                ($0.address?.lowercased().contains(query) ?? false)
             }
         }
 
-        // Filter by types
         if typeOptions.hasSelection {
             result = result.filter { salon in
                 guard let types = salon.googlePlacesTypes else { return false }
@@ -79,33 +89,37 @@ final class SalonsViewModel: ObservableObject {
             }
         }
 
-        // Sort
-        let sorted = result.sorted { a, b in
-            let result: Bool
-            switch sortOption {
-            case .name:
-                result = a.name.localizedCompare(b.name) == .orderedAscending
-            case .leadTemp:
-                let orderA = leadTempOrder(a.leadTempEnum)
-                let orderB = leadTempOrder(b.leadTempEnum)
-                if orderA != orderB {
-                    result = orderA < orderB
-                } else {
-                    result = a.name.localizedCompare(b.name) == .orderedAscending
-                }
-            case .status:
-                let orderA = statusOrder(a.statusEnum)
-                let orderB = statusOrder(b.statusEnum)
-                if orderA != orderB {
-                    result = orderA < orderB
-                } else {
-                    result = a.name.localizedCompare(b.name) == .orderedAscending
-                }
+        if languageOptions.hasSelection {
+            result = result.filter { salon in
+                guard let lang = salon.language else { return false }
+                return languageOptions.selected.contains(lang)
             }
-            return sortAscending ? result : !result
         }
 
-        return IdentifiedArrayOf(uniqueElements: sorted)
+        if dateRangeOptions.hasSelection {
+            result = result.filter { salon in
+                guard let date = salon.createdAt else { return false }
+                return dateRangeOptions.selectedItems.contains { $0.includes(date) }
+            }
+        }
+
+        return result.sorted { a, b in
+            let asc: Bool
+            switch sortOption {
+            case .name:
+                asc = a.name.localizedCompare(b.name) == .orderedAscending
+            case .leadTemp:
+                let oA = leadTempOrder(a.leadTempEnum), oB = leadTempOrder(b.leadTempEnum)
+                asc = oA != oB ? oA < oB : a.name.localizedCompare(b.name) == .orderedAscending
+            case .status:
+                let oA = statusOrder(a.statusEnum), oB = statusOrder(b.statusEnum)
+                asc = oA != oB ? oA < oB : a.name.localizedCompare(b.name) == .orderedAscending
+            case .dateAdded:
+                let dA = a.createdAt ?? .distantPast, dB = b.createdAt ?? .distantPast
+                asc = dA < dB
+            }
+            return sortAscending ? asc : !asc
+        }
     }
 
     private func leadTempOrder(_ temp: LeadTemp?) -> Int {
@@ -129,27 +143,9 @@ final class SalonsViewModel: ObservableObject {
     }
 
     // MARK: - Stats
-    // Intentionally omits the status filter so the header always shows counts across all statuses,
-    // even when the list is filtered to a specific status.
+    // Intentionally omits the status filter so the header always shows counts across all statuses.
     private var salonsForStats: [Salon] {
-        var result = Array(salons)
-
-        if !searchText.isEmpty {
-            let query = searchText.lowercased()
-            result = result.filter {
-                $0.name.lowercased().contains(query) ||
-                ($0.address?.lowercased().contains(query) ?? false)
-            }
-        }
-
-        if typeOptions.hasSelection {
-            result = result.filter { salon in
-                guard let types = salon.googlePlacesTypes else { return false }
-                return !typeOptions.selected.isDisjoint(with: types)
-            }
-        }
-
-        return result
+        applyFiltersAndSort(Array(salons), includeStatus: false)
     }
 
     var totalCount: Int { salonsForStats.count }
@@ -175,6 +171,7 @@ final class SalonsViewModel: ObservableObject {
             async let _ = service.loadWorksOnTags()
             salons = IdentifiedArrayOf(uniqueElements: try await fetchedSalons)
             buildTypeOptions()
+            buildLanguageOptions()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -182,15 +179,17 @@ final class SalonsViewModel: ObservableObject {
         isLoading = false
     }
 
-    /// Derives available business-type filter options from Google Places data on each salon.
-    /// Generic types (establishment, point_of_interest, etc.) are excluded to keep the filter meaningful.
     private func buildTypeOptions() {
         let ignoredTypes: Set<String> = ["establishment", "point_of_interest", "health", "store"]
         let types = Set(salons.compactMap(\.googlePlacesTypes).flatMap { $0 })
-        let businessTypes = types.subtracting(ignoredTypes)
-            .sorted()
-            .map { BusinessType(id: $0) }
+        let businessTypes = types.subtracting(ignoredTypes).sorted().map { BusinessType(id: $0) }
         typeOptions.setAll(IdentifiedArrayOf(uniqueElements: businessTypes))
+    }
+
+    private func buildLanguageOptions() {
+        let langs = Set(salons.compactMap(\.language).filter { !$0.isEmpty })
+        let options = langs.sorted().map { LanguageOption(id: $0) }
+        languageOptions.setAll(IdentifiedArrayOf(uniqueElements: options))
     }
 
     func retry() {

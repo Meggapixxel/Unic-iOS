@@ -61,6 +61,13 @@
 "sort_by_name" = "За назвою";
 "sort_by_lead_temp" = "За Lead Temp";
 "sort_by_status" = "За статусом";
+"sort_by_date" = "За датою додавання";
+"filter_language" = "Мова";
+"filter_date_added" = "Дата додавання";
+"filter_date_this_week" = "Цього тижня";
+"filter_date_this_month" = "Цього місяця";
+"filter_date_last_3_months" = "Останні 3 місяці";
+"filter_date_this_year" = "Цього року";
 
 /* Salon Detail */
 "edit_note" = "Редагувати нотатку";

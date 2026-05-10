@@ -61,6 +61,13 @@
 "sort_by_name" = "По названию";
 "sort_by_lead_temp" = "По Lead Temp";
 "sort_by_status" = "По статусу";
+"sort_by_date" = "По дате добавления";
+"filter_language" = "Язык";
+"filter_date_added" = "Дата добавления";
+"filter_date_this_week" = "На этой неделе";
+"filter_date_this_month" = "В этом месяце";
+"filter_date_last_3_months" = "Последние 3 месяца";
+"filter_date_this_year" = "В этом году";
 
 /* Salon Detail */
 "edit_note" = "Редактировать заметку";
