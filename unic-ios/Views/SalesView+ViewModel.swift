@@ -71,6 +71,7 @@ final class SalesViewModel: ObservableObject {
     @Published var searchTextTopClients = ""
     @Published var statusFilter: PaymentStatus? = nil
     @Published private(set) var recentlyCreatedInvoiceId: String?
+    @Published private(set) var invoiceFormVM: InvoiceFormViewModel?
     @Published var error: String?
 
     private let service = FlexiBeeService.shared
@@ -93,6 +94,35 @@ final class SalesViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
+    }
+
+    // MARK: - Invoice Form Lifecycle
+
+    func openCreateInvoice() {
+        invoiceFormVM = InvoiceFormViewModel(
+            fetchFirms: { [weak self] in
+                guard let self else { return [] }
+                await self.loadFirms()
+                return self.firms
+            },
+            reloadFirms: { [weak self] in
+                guard let self else { return [] }
+                await self.reloadFirms()
+                return self.firms
+            },
+            onSubmit: { [weak self] invoice in
+                guard let self else { return }
+                try await self.createInvoice(invoice)
+            },
+            onDeleteClient: { [weak self] id in
+                guard let self else { return }
+                try await self.deleteClient(id: id)
+            }
+        )
+    }
+
+    func closeCreateInvoice() {
+        invoiceFormVM = nil
     }
 
     // MARK: - Load
@@ -142,7 +172,7 @@ final class SalesViewModel: ObservableObject {
     @discardableResult
     func createInvoice(_ invoice: NewInvoice) async throws -> String {
         let id = try await service.createInvoice(invoice)
-        await service.forceSync()
+        await service.refreshInvoicesData()
         recentlyCreatedInvoiceId = id
         return id
     }
@@ -153,12 +183,12 @@ final class SalesViewModel: ObservableObject {
 
     func updateInvoice(id: String, invoice: NewInvoice) async throws {
         try await service.updateInvoice(id: id, invoice: invoice)
-        await service.forceSync()
+        await service.refreshInvoicesData()
     }
 
     func deleteInvoice(id: String) async throws {
         try await service.deleteInvoice(id: id)
-        await service.forceSync()
+        await service.refreshInvoicesData()
     }
 
     // MARK: - Period-scoped

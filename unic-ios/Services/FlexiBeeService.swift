@@ -80,6 +80,16 @@ final class FlexiBeeService: ObservableObject {
         await fetchAll()
     }
 
+    /// Lightweight refresh after invoice mutations — only reloads invoices + line items,
+    /// leaving stock/prices/movements untouched. Use instead of forceSync() for create/update/delete.
+    func refreshInvoicesData() async {
+        async let invoicesTask  = fetchInvoices()
+        async let itemsTask     = fetchInvoiceItems()
+        do { invoices     = try await invoicesTask } catch { }
+        do { invoiceItems = try await itemsTask    } catch { }
+        saveToDisk()
+    }
+
     // MARK: - Disk cache
 
     private func restoreFromDisk() {
@@ -201,7 +211,36 @@ final class FlexiBeeService: ObservableObject {
 
     func updateInvoice(id: String, invoice: NewInvoice) async throws {
         try require(AuthService.shared.canEditInvoice)
-        try await postInvoice(to: baseURL + "/faktura-vydana/\(id).json", invoice: invoice, method: "PUT")
+
+        let lineItemDicts: [[String: Any]] = invoice.lineItems.map { line in
+            var dict: [String: Any] = [
+                "nazev":       line.name,
+                "mnozMj":      line.quantity,
+                "cenaMj":      line.unitPrice,
+                "sazDph":      line.vatRate,
+                "typCenyDphK": "typCeny.sDph",
+                "zdrojProSkl": false
+            ]
+            if let code = line.productCode { dict["cenik"] = "code:\(code)" }
+            return dict
+        }
+
+        // polozkyFaktury@removeAll replaces all existing line items instead of appending.
+        var invoiceDict: [String: Any] = [
+            "typDokl":                  invoice.documentType,
+            "firma":                    invoice.clientCode,
+            "datVyst":                  invoice.issueDate,
+            "datSplat":                 invoice.dueDate,
+            "formaUhradyCis":           invoice.paymentMethod,
+            "polozkyFaktury@removeAll": "true",
+            "polozkyFaktury":           lineItemDicts,
+            "zdrojProSkl":              false
+        ]
+        if let notes = invoice.notes { invoiceDict["popis"] = notes }
+
+        let body: [String: Any] = ["winstrom": ["faktura-vydana": [invoiceDict]]]
+        let jsonData = try JSONSerialization.data(withJSONObject: body)
+        _ = try await execute(method: "PUT", urlString: baseURL + "/faktura-vydana/\(id).json", body: jsonData)
     }
 
     func updateInvoicePaymentStatus(id: String, status: PaymentStatus, method: PaymentMethod = .prevod) async throws {

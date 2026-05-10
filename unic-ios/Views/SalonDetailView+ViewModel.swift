@@ -40,7 +40,7 @@ class SalonDetailViewModel: ObservableObject {
     @Published var shouldDismiss = false
 
     // Edit
-    @Published var showEditSalon = false
+    @Published private(set) var salonFormVM: SalonFormViewModel?
 
     private let service = FirebaseService.shared
 
@@ -63,6 +63,24 @@ class SalonDetailViewModel: ObservableObject {
     func cancelAllTasks() {
         tasks.forEach { $0.cancel() }
         tasks.removeAll()
+    }
+
+    // MARK: - Edit Form Lifecycle
+
+    func openEditSalon() {
+        salonFormVM = SalonFormViewModel(
+            existingSalon: salon,
+            onSaved: { [weak self] updated in
+                guard let self else { return }
+                self.salon = updated
+                self.onSalonUpdated(updated)
+            },
+            onDismiss: { [weak self] in self?.closeEditSalon() }
+        )
+    }
+
+    func closeEditSalon() {
+        salonFormVM = nil
     }
 
     // MARK: - Status History

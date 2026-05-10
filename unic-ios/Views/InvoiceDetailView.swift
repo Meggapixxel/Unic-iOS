@@ -37,14 +37,16 @@ struct InvoiceDetailView: View {
                     if viewModel.isUpdatingStatus {
                         ProgressView().scaleEffect(0.8)
                     } else {
-                        Button(String.edit_invoice_action) { viewModel.showEdit = true }
+                        Button(String.edit_invoice_action) { viewModel.openEdit() }
                             .fontWeight(.semibold)
                     }
                 }
             }
         }
-        .sheet(isPresented: $viewModel.showEdit) {
-            InvoiceFormSheetView(salesViewModel: viewModel.salesViewModel, editingInvoice: viewModel.invoice, onDismiss: { viewModel.showEdit = false })
+        .sheet(isPresented: $viewModel.showEdit, onDismiss: { viewModel.closeEdit() }) {
+            if let formVM = viewModel.editFormVM {
+                InvoiceFormView(viewModel: formVM, onDismiss: { viewModel.closeEdit() })
+            }
         }
         .confirmationDialog(
             String.payment_method,

@@ -27,6 +27,7 @@ final class InvoiceDetailViewModel: ObservableObject {
     @Published private(set) var deleteError: String?
 
     @Published var showEdit = false
+    @Published private(set) var editFormVM: InvoiceFormViewModel?
     @Published var showStatusAlert = false
     @Published var showStatusError = false
     @Published var showDeleteAlert = false
@@ -108,6 +109,49 @@ final class InvoiceDetailViewModel: ObservableObject {
 
     func stockItem(for cenikCode: String) -> FlexiBeeStockWithPrice? {
         FlexiBeeService.shared.stockWithPrices[id: cenikCode]
+    }
+
+    // MARK: - Edit Form Lifecycle
+
+    func openEdit() {
+        editFormVM = InvoiceFormViewModel(
+            editingInvoice: invoice,
+            fetchFirms: { [weak self] in
+                guard let self else { return [] }
+                await self.salesViewModel.loadFirms()
+                return self.salesViewModel.firms
+            },
+            reloadFirms: { [weak self] in
+                guard let self else { return [] }
+                await self.salesViewModel.reloadFirms()
+                return self.salesViewModel.firms
+            },
+            onSubmit: { [weak self] updatedInvoice in
+                guard let self else { return }
+                try await self.salesViewModel.updateInvoice(id: self.invoice.id, invoice: updatedInvoice)
+            },
+            onDeleteClient: { [weak self] id in
+                guard let self else { return }
+                try await self.salesViewModel.deleteClient(id: id)
+            }
+        )
+        showEdit = true
+    }
+
+    func closeEdit() {
+        let wasSuccessful = editFormVM?.didSucceed == true
+        editFormVM = nil
+        showEdit = false
+        if wasSuccessful {
+            Task { await reloadAfterEdit() }
+        }
+    }
+
+    private func reloadAfterEdit() async {
+        if let updated = try? await FlexiBeeService.shared.fetchSingleInvoice(id: invoice.id) {
+            invoice = updated
+        }
+        await load()
     }
 
     // MARK: - Load

@@ -41,7 +41,6 @@ private enum AppState {
 
 struct RootView: View {
     @ObservedObject private var auth = AuthService.shared
-    @StateObject private var salesViewModel = SalesViewModel()
     @State private var appState: AppState = .auth
 
     var body: some View {
@@ -52,29 +51,34 @@ struct RootView: View {
             case .fetch:
                 FetchScreen()
             case .main:
-                MainScreen(salesViewModel: salesViewModel)
+                MainScreen()
             }
         }
-        .task(id: auth.isLoggedIn) { handleAuthChange(auth.isLoggedIn) }
+        .task(id: auth.isLoggedIn) { await handleAuthChange(auth.isLoggedIn) }
     }
 }
 
 // MARK: - State transitions
 
 extension RootView {
-    private func handleAuthChange(_ loggedIn: Bool) {
+    private func handleAuthChange(_ loggedIn: Bool) async {
         if loggedIn {
             appState = .fetch
-            Task { await loadConfig() }
+            await loadConfig()
         } else {
             appState = .auth
         }
     }
 
     private func loadConfig() async {
-        async let bundles   = FirebaseService.shared.loadBundleCodes()
-        async let testDrive = FirebaseService.shared.loadTestDriveConfig()
-        _ = await (bundles, testDrive)
+        await withTaskGroup { group in
+            group.addTask {
+                await FirebaseService.shared.loadBundleCodes()
+            }
+            group.addTask {
+                await FirebaseService.shared.loadTestDriveConfig()
+            }
+        }
         appState = .main
     }
 }

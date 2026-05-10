@@ -42,6 +42,7 @@ final class SalonsViewModel: ObservableObject {
     @Published var showFilterPopover = false
     @Published var showStatusInfo = false
     @Published var errorMessage: String?
+    @Published private(set) var salonFormVM: SalonFormViewModel?
 
     // Alert
     @Published var showAlert = false
@@ -200,6 +201,22 @@ final class SalonsViewModel: ObservableObject {
     func cancelAllTasks() {
         tasks.forEach { $0.cancel() }
         tasks.removeAll()
+    }
+
+    // MARK: - Salon Form Lifecycle
+
+    func openAddSalon() {
+        salonFormVM = SalonFormViewModel(
+            onSaved: { [weak self] salon in
+                guard let self else { return }
+                self.addSalon(salon)
+            },
+            onDismiss: { [weak self] in self?.closeAddSalon() }
+        )
+    }
+
+    func closeAddSalon() {
+        salonFormVM = nil
     }
 
     func addSalon(_ salon: Salon) {

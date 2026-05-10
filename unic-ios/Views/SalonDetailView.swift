@@ -54,18 +54,21 @@ struct SalonDetailView: View {
         .toolbar {
             if auth.canEditSalon {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        viewModel.showEditSalon = true
-                    } label: {
+                    Button { viewModel.openEditSalon() } label: {
                         Image(systemName: "pencil")
                     }
                 }
             }
         }
-        .sheet(isPresented: $viewModel.showEditSalon) {
-            SalonFormView(salon: salon, onDismiss: { viewModel.showEditSalon = false }) { updated in
-                viewModel.salon = updated
-                viewModel.onSalonUpdated(updated)
+        .sheet(
+            isPresented: Binding(
+                get: { viewModel.salonFormVM != nil },
+                set: { if !$0 { viewModel.closeEditSalon() } }
+            ),
+            onDismiss: { viewModel.closeEditSalon() }
+        ) {
+            if let formVM = viewModel.salonFormVM {
+                SalonFormView(viewModel: formVM)
             }
         }
         .alert(viewModel.alertTitle, isPresented: $viewModel.showAlert) {

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MainScreen: View {
     @ObservedObject private var auth = AuthService.shared
-    let salesViewModel: SalesViewModel
+    @StateObject private var salesViewModel = SalesViewModel()
     @State private var showGreeting = false
 
     var body: some View {

@@ -51,7 +51,6 @@ extension View {
 struct SalonListView: View {
     @StateObject private var viewModel = SalonsViewModel()
     @State private var showRoutePlanner = false
-    @State private var showAddSalon = false
     @State private var salonPath: [Salon] = []
 
     var body: some View {
@@ -153,9 +152,7 @@ struct SalonListView: View {
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         HStack(spacing: 16) {
-                            Button {
-                                showAddSalon = true
-                            } label: {
+                            Button { viewModel.openAddSalon() } label: {
                                 Image(systemName: "plus")
                                     .imageScale(.large)
                             }
@@ -190,9 +187,15 @@ struct SalonListView: View {
                 .sheet(isPresented: $showRoutePlanner) {
                     RoutePlannerView(salons: viewModel.displayedSalons, isPresented: $showRoutePlanner)
                 }
-                .sheet(isPresented: $showAddSalon) {
-                    SalonFormView(onDismiss: { showAddSalon = false }) { salon in
-                        viewModel.addSalon(salon)
+                .sheet(
+                    isPresented: Binding(
+                        get: { viewModel.salonFormVM != nil },
+                        set: { if !$0 { viewModel.closeAddSalon() } }
+                    ),
+                    onDismiss: { viewModel.closeAddSalon() }
+                ) {
+                    if let formVM = viewModel.salonFormVM {
+                        SalonFormView(viewModel: formVM)
                     }
                 }
         }

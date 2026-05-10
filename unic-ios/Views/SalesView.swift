@@ -30,7 +30,6 @@ struct AnalyticsTabView: View {
 struct InvoicesTabView: View {
     @ObservedObject var viewModel: SalesViewModel
     @State private var router = AppRouter()
-    @State private var showCreateInvoice = false
 
     var body: some View {
         AppNavigationStack(router: router, salesViewModel: viewModel) {
@@ -39,7 +38,7 @@ struct InvoicesTabView: View {
                 .toolbar {
                     if AuthService.shared.canCreateInvoice {
                         ToolbarItem(placement: .topBarLeading) {
-                            Button { showCreateInvoice = true } label: {
+                            Button { viewModel.openCreateInvoice() } label: {
                                 Image(systemName: "square.and.pencil").fontWeight(.semibold)
                             }
                         }
@@ -52,15 +51,23 @@ struct InvoicesTabView: View {
                     if viewModel.isLoading && viewModel.invoices.isEmpty { LoadingOverlay() }
                 }
                 .task { await viewModel.loadIfNeeded() }
-                .sheet(isPresented: $showCreateInvoice, onDismiss: {
-                    if let id = viewModel.recentlyCreatedInvoiceId {
-                        viewModel.clearRecentlyCreatedInvoice()
-                        if let invoice = viewModel.invoices.first(where: { $0.id == id }) {
-                            router.push(.invoice(invoice))
+                .sheet(
+                    isPresented: Binding(
+                        get: { viewModel.invoiceFormVM != nil },
+                        set: { if !$0 { viewModel.closeCreateInvoice() } }
+                    ),
+                    onDismiss: {
+                        if let id = viewModel.recentlyCreatedInvoiceId {
+                            viewModel.clearRecentlyCreatedInvoice()
+                            if let invoice = viewModel.invoices.first(where: { $0.id == id }) {
+                                router.push(.invoice(invoice))
+                            }
                         }
                     }
-                }) {
-                    InvoiceFormSheetView(salesViewModel: viewModel, onDismiss: { showCreateInvoice = false })
+                ) {
+                    if let formVM = viewModel.invoiceFormVM {
+                        InvoiceFormView(viewModel: formVM, onDismiss: { viewModel.closeCreateInvoice() })
+                    }
                 }
         }
     }
