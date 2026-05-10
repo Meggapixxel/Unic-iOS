@@ -197,7 +197,7 @@ private struct InvoicesSectionView: View {
                 ContentUnavailableView(String.sales_invoices_empty, systemImage: "doc.text")
             }
         }
-        .safeAreaInset(edge: .bottom) {
+        .safeAreaInset(edge: .top, spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     SalesFilterChip(title: String.filter_all, isSelected: viewModel.statusFilter == nil) {
@@ -209,12 +209,10 @@ private struct InvoicesSectionView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 4)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
             }
-            .padding()
-            .glassBackgroundRectangle(cornerRadius: 20)
-            .padding()
+            .background(.bar)
         }
     }
 }
