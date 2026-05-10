@@ -62,15 +62,43 @@ final class AuthService: ObservableObject {
     var canViewAllUsers:       Bool { isAdmin }
 
     private let db = Firestore.firestore()
-    private static let storageKey = "auth_current_user"
+    private static let storageKey    = "auth_current_user"
+    private static let cacheAgeKey   = "auth_cache_date"
+    private static let cacheTTL: TimeInterval = 7 * 24 * 3600 // 1 week
 
     private init() {
         if let data = UserDefaults.standard.data(forKey: Self.storageKey) {
             do {
                 currentUser = try JSONDecoder().decode(AppUser.self, from: data)
             } catch {
-                // Corrupted cache — clear and require fresh login
                 UserDefaults.standard.removeObject(forKey: Self.storageKey)
+                UserDefaults.standard.removeObject(forKey: Self.cacheAgeKey)
+            }
+        }
+        observeAuthState()
+    }
+
+    private var isCacheStale: Bool {
+        guard let saved = UserDefaults.standard.object(forKey: Self.cacheAgeKey) as? Date else { return true }
+        return Date().timeIntervalSince(saved) > Self.cacheTTL
+    }
+
+    private func observeAuthState() {
+        Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
+            guard let self else { return }
+            Task { @MainActor in
+                if let uid = firebaseUser?.uid {
+                    let needsRefresh = self.currentUser?.id != uid
+                                   || self.currentUser == nil
+                                   || self.isCacheStale
+                    if needsRefresh {
+                        try? await self.fetchAndStoreUser(uid: uid)
+                    }
+                } else {
+                    UserDefaults.standard.removeObject(forKey: Self.storageKey)
+                    UserDefaults.standard.removeObject(forKey: Self.cacheAgeKey)
+                    self.currentUser = nil
+                }
             }
         }
     }
@@ -103,6 +131,7 @@ final class AuthService: ObservableObject {
             // Firebase signOut fails only for keychain issues; user session is cleared locally regardless
         }
         UserDefaults.standard.removeObject(forKey: Self.storageKey)
+        UserDefaults.standard.removeObject(forKey: Self.cacheAgeKey)
         currentUser = nil
     }
 
@@ -122,6 +151,7 @@ final class AuthService: ObservableObject {
         do {
             let encoded = try JSONEncoder().encode(user)
             UserDefaults.standard.set(encoded, forKey: Self.storageKey)
+            UserDefaults.standard.set(Date(), forKey: Self.cacheAgeKey)
         } catch {
             // JSONEncoder failure for a simple Codable struct is unexpected; session remains active
         }
