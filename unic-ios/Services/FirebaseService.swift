@@ -352,7 +352,7 @@ final class FirebaseService: ObservableObject {
         }
     }
 
-    func addStatusHistoryEntry(salonId: String, status: SalonStatus, currentStatus: SalonStatus?, note: String?, createdBy: String?, date: Date? = nil) async throws {
+    func addStatusHistoryEntry(salonId: String, status: SalonStatus, note: String?, createdBy: String?, date: Date? = nil) async throws {
         AppLogger.log(.info, "Firebase", "addStatusEntry: salonId=\(salonId) status=\(status.rawValue)")
         let now = Timestamp(date: Date())
         var entry: [String: Any] = [
@@ -373,9 +373,9 @@ final class FirebaseService: ObservableObject {
             "latestStatusEntry": entry
         ]
 
-        if status == .testDrive && currentStatus != .testDrive {
+        if status == .testDrive {
             salonUpdate["testDriveStartDate"] = now
-        } else if status != .testDrive {
+        } else {
             salonUpdate["testDriveStartDate"] = FieldValue.delete()
         }
 
