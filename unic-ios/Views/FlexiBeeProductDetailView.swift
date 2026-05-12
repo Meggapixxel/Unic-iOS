@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct FlexiBeeProductDetailView: View {
     let item: FlexiBeeStockWithPrice
