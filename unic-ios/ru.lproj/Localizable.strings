@@ -235,6 +235,9 @@
 "product_sell_price" = "Цена продажи";
 "product_purchase_price" = "Цена закупки";
 "product_margin" = "Маржа";
+"copy_article" = "Скопировать артикул";
+"copy_name" = "Скопировать название";
+"copy_article_and_name" = "Скопировать артикул + название";
 
 /* Info.plist */
 "NSCameraUsageDescription" = "Для сканирования штрихкодов продуктов";

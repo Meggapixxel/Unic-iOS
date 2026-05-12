@@ -245,6 +245,9 @@ extension String {
     static var product_sell_price:     String { String(localized: "product_sell_price") }
     static var product_purchase_price: String { String(localized: "product_purchase_price") }
     static var product_margin:         String { String(localized: "product_margin") }
+    static var copy_article:           String { String(localized: "copy_article") }
+    static var copy_name:              String { String(localized: "copy_name") }
+    static var copy_article_and_name:  String { String(localized: "copy_article_and_name") }
 
     // MARK: - FlexiBee (stock stats)
     static var stock_units: String { String(localized: "stock_units") }

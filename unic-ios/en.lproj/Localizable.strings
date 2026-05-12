@@ -235,6 +235,9 @@
 "product_sell_price" = "Sell price";
 "product_purchase_price" = "Purchase price";
 "product_margin" = "Margin";
+"copy_article" = "Copy article";
+"copy_name" = "Copy name";
+"copy_article_and_name" = "Copy article + name";
 
 /* Info.plist */
 "NSCameraUsageDescription" = "For scanning product barcodes";

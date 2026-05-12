@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct FlexiBeeProductDetailView: View {
     let item: FlexiBeeStockWithPrice
@@ -36,6 +37,23 @@ struct FlexiBeeProductDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 14))
+        .contextMenu {
+            Button {
+                UIPasteboard.general.string = item.code
+            } label: {
+                Label(String.copy_article, systemImage: "doc.on.doc")
+            }
+            Button {
+                UIPasteboard.general.string = item.name
+            } label: {
+                Label(String.copy_name, systemImage: "doc.on.doc")
+            }
+            Button {
+                UIPasteboard.general.string = "\(item.code) \(item.name)"
+            } label: {
+                Label(String.copy_article_and_name, systemImage: "doc.on.doc")
+            }
+        }
     }
 
     private var stockRow: some View {
