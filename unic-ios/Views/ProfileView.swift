@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ProfileView: View {
+struct ProfileScreen: View {
     @ObservedObject private var auth = AuthService.shared
     @State private var router = AppRouter()
     @State private var showLogoutConfirm = false
@@ -33,6 +33,14 @@ struct ProfileView: View {
                     Section(String.profile_activity) {
                         NavigationLink(value: AppDestination.userActivity(user)) {
                             Label(String.profile_activity_history, systemImage: "clock.arrow.circlepath")
+                        }
+                    }
+
+                    if auth.canManagePlans {
+                        Section {
+                            NavigationLink(value: AppDestination.plans) {
+                                Label(String(localized: "plans_nav_title"), systemImage: "target")
+                            }
                         }
                     }
                 }
@@ -70,5 +78,5 @@ struct ProfileView: View {
 }
 
 #Preview {
-    ProfileView()
+    ProfileScreen()
 }

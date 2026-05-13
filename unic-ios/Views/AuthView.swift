@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Not Logged In
 
-struct NotLoggedInView: View {
+struct NotLoggedInScreen: View {
     var body: some View {
         VStack(spacing: 24) {
             Spacer()

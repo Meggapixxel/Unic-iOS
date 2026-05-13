@@ -362,3 +362,41 @@
 "profile_logout_confirm" = "Are you sure you want to log out?";
 "profile_activity" = "Activity";
 "profile_activity_history" = "History";
+
+/* Location Gate */
+"location_required_title" = "Location Access Required";
+"location_required_description" = "Location access is required to use this app. Please grant access in Settings.";
+"open_settings" = "Open Settings";
+
+/* Weekly stats */
+"activity_new_salons" = "🆕 New";
+"activity_old_salons" = "🔄 Repeat";
+
+/* Plan Banner */
+"plan_banner_title" = "Active Plan";
+"plan_active_until" = "until";
+"plans_nav_title" = "Plans";
+"plans_empty" = "No active plans";
+"plan_add" = "New Plan";
+"plan_edit" = "Edit Plan";
+"plan_title_placeholder" = "Plan title";
+"plan_description_placeholder" = "Task description...";
+"plan_start_date" = "Start Date";
+"plan_end_date" = "End Date";
+"plan_delete" = "Delete Plan";
+"plan_delete_confirm" = "Delete this plan?";
+
+/* Promo Offers */
+"promos_nav_title" = "Offers";
+"promos_empty" = "No promotional offers";
+"promo_add" = "New Offer";
+"promo_edit" = "Edit Offer";
+"promo_title_placeholder" = "Offer title";
+"promo_description_placeholder" = "Offer description...";
+"promo_valid_from" = "Valid From";
+"promo_valid_to" = "Valid To";
+"promo_active" = "Active";
+"promo_archive" = "Archive";
+"promo_delete" = "Delete Offer";
+"promo_delete_confirm" = "Delete this offer?";
+"promo_created_by" = "Added by";

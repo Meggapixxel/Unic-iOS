@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct StockChecklistView: View {
+struct StockChecklistScreen: View {
     @StateObject private var viewModel = StockChecklistViewModel()
 
     var body: some View {

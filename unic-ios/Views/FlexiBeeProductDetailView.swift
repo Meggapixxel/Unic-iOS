@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct FlexiBeeProductDetailView: View {
+struct FlexiBeeProductDetailScreen: View {
     let item: FlexiBeeStockWithPrice
 
     @ObservedObject private var auth = AuthService.shared

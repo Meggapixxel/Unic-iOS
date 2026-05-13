@@ -1,5 +1,5 @@
 //
-//  RoutePlannerView.swift
+//  RoutePlannerScreen.swift
 //  unic-ios
 //
 //  Created by UNIC Team on 31/03/2026.
@@ -9,7 +9,7 @@ import SwiftUI
 import MapKit
 import IdentifiedCollections
 
-struct RoutePlannerView: View {
+struct RoutePlannerScreen: View {
     @StateObject private var viewModel: RouteViewModel
 
     init(salons: IdentifiedArrayOf<Salon>, isPresented: Binding<Bool>) {
@@ -362,5 +362,5 @@ struct RouteStopChip: View {
 }
 
 #Preview {
-    RoutePlannerView(salons: IdentifiedArrayOf<Salon>(), isPresented: .constant(true))
+    RoutePlannerScreen(salons: IdentifiedArrayOf<Salon>(), isPresented: .constant(true))
 }

@@ -1,5 +1,5 @@
 //
-//  SalonListView.swift
+//  SalonListScreen.swift
 //  unic-ios
 //
 //  Created by UNIC Team on 04/02/2026.
@@ -48,8 +48,8 @@ extension View {
 
 // MARK: - Salon List View
 
-struct SalonListView: View {
-    @StateObject private var viewModel = SalonsViewModel()
+struct SalonListScreen: View {
+    @ObservedObject var viewModel: SalonsViewModel
     @State private var showRoutePlanner = false
     @State private var salonPath: [Salon] = []
 
@@ -70,7 +70,7 @@ struct SalonListView: View {
                     List {
                         Section {
                             NavigationLink {
-                                TestDriveView(
+                                TestDriveScreen(
                                     salons: Array(viewModel.salons),
                                     onSalonUpdated: { viewModel.updateSalon($0) },
                                     onSalonDeleted: { viewModel.deleteSalon($0) }
@@ -88,7 +88,7 @@ struct SalonListView: View {
                     }
                     .listStyle(.plain)
                     .navigationDestination(for: Salon.self) { salon in
-                        SalonDetailView(
+                        SalonDetailScreen(
                             salon: salon,
                             onSalonUpdated: { viewModel.updateSalon($0) },
                             onSalonDeleted: { viewModel.deleteSalon(salon); salonPath.removeLast() }
@@ -164,13 +164,18 @@ struct SalonListView: View {
                 .task {
                     await viewModel.loadSalonsIfNeeded()
                 }
+                .onChange(of: viewModel.salons) { _, newSalons in
+                    salonPath = salonPath.map { pathSalon in
+                        newSalons.first(where: { $0.salonId == pathSalon.salonId }) ?? pathSalon
+                    }
+                }
                 .alert(viewModel.alertTitle, isPresented: $viewModel.showAlert) {
                     Button("OK", role: .cancel) { }
                 } message: {
                     Text(viewModel.alertMessage)
                 }
                 .sheet(isPresented: $showRoutePlanner) {
-                    RoutePlannerView(salons: viewModel.displayedSalons, isPresented: $showRoutePlanner)
+                    RoutePlannerScreen(salons: viewModel.displayedSalons, isPresented: $showRoutePlanner)
                 }
                 .sheet(
                     isPresented: Binding(
@@ -180,7 +185,7 @@ struct SalonListView: View {
                     onDismiss: { viewModel.closeAddSalon() }
                 ) {
                     if let formVM = viewModel.salonFormVM {
-                        SalonFormView(viewModel: formVM)
+                        SalonFormScreen(viewModel: formVM)
                     }
                 }
         }
@@ -682,5 +687,5 @@ extension SalonStatus {
 }
 
 #Preview {
-    SalonListView()
+    SalonListScreen()
 }

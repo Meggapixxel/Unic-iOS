@@ -2,7 +2,7 @@ import SwiftUI
 import Combine
 import FirebaseFirestore
 
-struct UserActivityView: View {
+struct UserActivityScreen: View {
     let user: AppUser
     @StateObject private var viewModel = UserActivityViewModel()
     @ObservedObject private var auth = AuthService.shared
@@ -50,7 +50,13 @@ struct UserActivityView: View {
                 }
             } else {
                 ForEach(viewModel.entriesByWeek, id: \.key) { group in
-                    Section(header: WeekHeader(weekStart: group.key, count: group.entries.count)) {
+                    let stats = viewModel.weeklyNewVsOld[group.key]
+                    Section(header: WeekHeader(
+                        weekStart: group.key,
+                        count: group.entries.count,
+                        newCount: stats?.new ?? 0,
+                        oldCount: stats?.old ?? 0
+                    )) {
                         ForEach(group.entries) { entry in
                             ActivityRow(entry: entry, showDate: true)
                         }
@@ -123,6 +129,8 @@ private struct DayHeader: View {
 private struct WeekHeader: View {
     let weekStart: Date
     let count: Int
+    var newCount: Int = 0
+    var oldCount: Int = 0
 
     private static let weekRangeFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -137,9 +145,20 @@ private struct WeekHeader: View {
                 .font(.subheadline.bold())
                 .foregroundStyle(.primary)
             Spacer()
-            Text("activity_actions \(count)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if newCount > 0 || oldCount > 0 {
+                HStack(spacing: 8) {
+                    Text("🆕 \(newCount)")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.green)
+                    Text("🔄 \(oldCount)")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.orange)
+                }
+            } else {
+                Text("activity_actions \(count)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

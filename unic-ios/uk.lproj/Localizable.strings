@@ -362,3 +362,41 @@
 "profile_logout_confirm" = "Ви впевнені, що хочете вийти?";
 "profile_activity" = "Активність";
 "profile_activity_history" = "Історія";
+
+/* Location Gate */
+"location_required_title" = "Потрібен доступ до геолокації";
+"location_required_description" = "Для роботи з додатком потрібен доступ до вашої локації. Будь ласка, надайте доступ у налаштуваннях.";
+"open_settings" = "Відкрити налаштування";
+
+/* Weekly stats */
+"activity_new_salons" = "🆕 Нові";
+"activity_old_salons" = "🔄 Повторні";
+
+/* Plan Banner */
+"plan_banner_title" = "Активний план";
+"plan_active_until" = "до";
+"plans_nav_title" = "Плани";
+"plans_empty" = "Немає активних планів";
+"plan_add" = "Новий план";
+"plan_edit" = "Редагувати план";
+"plan_title_placeholder" = "Заголовок плану";
+"plan_description_placeholder" = "Опис задачі...";
+"plan_start_date" = "Дата початку";
+"plan_end_date" = "Дата закінчення";
+"plan_delete" = "Видалити план";
+"plan_delete_confirm" = "Видалити цей план?";
+
+/* Promo Offers */
+"promos_nav_title" = "Акції";
+"promos_empty" = "Немає акційних пропозицій";
+"promo_add" = "Нова акція";
+"promo_edit" = "Редагувати акцію";
+"promo_title_placeholder" = "Назва акції";
+"promo_description_placeholder" = "Опис акції...";
+"promo_valid_from" = "Діє з";
+"promo_valid_to" = "Діє до";
+"promo_active" = "Активні";
+"promo_archive" = "Архів";
+"promo_delete" = "Видалити акцію";
+"promo_delete_confirm" = "Видалити цю акцію?";
+"promo_created_by" = "Додав";

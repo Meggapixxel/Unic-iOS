@@ -60,6 +60,10 @@ final class AuthService: ObservableObject {
     // Users
     var canViewAllUsers:       Bool { isAdmin }
 
+    // Plans & Promos
+    var canManagePlans:        Bool { isAdmin || isManager }
+    var canManagePromos:       Bool { isAdmin || isManager }
+
     private let db = Firestore.firestore()
     private static let storageKey    = "auth_current_user"
     private static let cacheAgeKey   = "auth_cache_date"

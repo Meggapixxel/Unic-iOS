@@ -64,7 +64,7 @@ struct StockMovementItemDraft: Identifiable {
 
 // MARK: - ViewModel
 
-/// Drives `StockMovementView`.
+/// Drives `StockMovementScreen`.
 ///
 /// Layout:
 /// - Regular items section: pre-filled from non-bundle invoice line items, editable.

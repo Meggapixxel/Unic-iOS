@@ -619,4 +619,77 @@ final class FirebaseService: ObservableObject {
             }
         }
     }
+
+    // MARK: - Plans
+
+    func fetchActivePlan() async throws -> Plan? {
+        let now = Timestamp(date: Date())
+        let snapshot = try await db.collection("plans")
+            .whereField("endDate", isGreaterThanOrEqualTo: now)
+            .order(by: "endDate")
+            .limit(to: 5)
+            .getDocuments()
+        let plans = try snapshot.documents.compactMap { try? $0.data(as: Plan.self) }
+        return plans.first { $0.isActive }
+    }
+
+    func fetchAllPlans() async throws -> [Plan] {
+        let snapshot = try await db.collection("plans")
+            .order(by: "startDate", descending: true)
+            .getDocuments()
+        return try snapshot.documents.compactMap { try $0.data(as: Plan.self) }
+    }
+
+    func savePlan(_ plan: Plan) async throws -> Plan {
+        let encoder = Firestore.Encoder()
+        var data = try encoder.encode(plan)
+        data.removeValue(forKey: "id")
+        let docRef: DocumentReference
+        if let id = plan.id {
+            docRef = db.collection("plans").document(id)
+            try await docRef.setData(data)
+        } else {
+            docRef = try await db.collection("plans").addDocument(data: data)
+        }
+        let doc = try await docRef.getDocument()
+        guard let saved = try? doc.data(as: Plan.self) else {
+            throw NSError(domain: "SavePlan", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to fetch saved plan"])
+        }
+        return saved
+    }
+
+    func deletePlan(id: String) async throws {
+        try await db.collection("plans").document(id).delete()
+    }
+
+    // MARK: - Promo Offers
+
+    func fetchPromos() async throws -> [PromoOffer] {
+        let snapshot = try await db.collection("promos")
+            .order(by: "validFrom", descending: true)
+            .getDocuments()
+        return try snapshot.documents.compactMap { try $0.data(as: PromoOffer.self) }
+    }
+
+    func savePromo(_ promo: PromoOffer) async throws -> PromoOffer {
+        let encoder = Firestore.Encoder()
+        var data = try encoder.encode(promo)
+        data.removeValue(forKey: "id")
+        let docRef: DocumentReference
+        if let id = promo.id {
+            docRef = db.collection("promos").document(id)
+            try await docRef.setData(data)
+        } else {
+            docRef = try await db.collection("promos").addDocument(data: data)
+        }
+        let doc = try await docRef.getDocument()
+        guard let saved = try? doc.data(as: PromoOffer.self) else {
+            throw NSError(domain: "SavePromo", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to fetch saved promo"])
+        }
+        return saved
+    }
+
+    func deletePromo(id: String) async throws {
+        try await db.collection("promos").document(id).delete()
+    }
 }

@@ -362,3 +362,41 @@
 "profile_logout_confirm" = "Вы уверены, что хотите выйти?";
 "profile_activity" = "Активность";
 "profile_activity_history" = "История";
+
+/* Location Gate */
+"location_required_title" = "Требуется доступ к геолокации";
+"location_required_description" = "Для работы с приложением необходим доступ к вашей геолокации. Пожалуйста, предоставьте доступ в настройках.";
+"open_settings" = "Открыть настройки";
+
+/* Weekly stats */
+"activity_new_salons" = "🆕 Новые";
+"activity_old_salons" = "🔄 Повторные";
+
+/* Plan Banner */
+"plan_banner_title" = "Активный план";
+"plan_active_until" = "до";
+"plans_nav_title" = "Планы";
+"plans_empty" = "Нет активных планов";
+"plan_add" = "Новый план";
+"plan_edit" = "Редактировать план";
+"plan_title_placeholder" = "Заголовок плана";
+"plan_description_placeholder" = "Описание задачи...";
+"plan_start_date" = "Дата начала";
+"plan_end_date" = "Дата окончания";
+"plan_delete" = "Удалить план";
+"plan_delete_confirm" = "Удалить этот план?";
+
+/* Promo Offers */
+"promos_nav_title" = "Акции";
+"promos_empty" = "Нет акционных предложений";
+"promo_add" = "Новая акция";
+"promo_edit" = "Редактировать акцию";
+"promo_title_placeholder" = "Название акции";
+"promo_description_placeholder" = "Описание акции...";
+"promo_valid_from" = "Действует с";
+"promo_valid_to" = "Действует до";
+"promo_active" = "Активные";
+"promo_archive" = "Архив";
+"promo_delete" = "Удалить акцию";
+"promo_delete_confirm" = "Удалить эту акцию?";
+"promo_created_by" = "Добавил";

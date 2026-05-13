@@ -25,7 +25,7 @@ struct InvoiceLineItemDraft: Identifiable {
 
 // MARK: - Form View
 
-struct InvoiceFormView: View {
+struct InvoiceFormScreen: View {
     @ObservedObject var viewModel: InvoiceFormViewModel
     var onDismiss: () -> Void
 

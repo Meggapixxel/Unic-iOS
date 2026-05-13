@@ -76,4 +76,29 @@ final class UserActivityViewModel: ObservableObject {
             .map { (key: $0.key, entries: $0.value.sorted { $0.timestamp > $1.timestamp }) }
             .sorted { $0.key > $1.key }
     }
+
+    // Per-week breakdown: "new" salons (first appearance) vs "old" (already seen before that week).
+    var weeklyNewVsOld: [Date: (new: Int, old: Int)] {
+        let cal = Calendar.current
+        let sorted = entries.sorted { $0.timestamp < $1.timestamp }
+
+        var seenBefore: Set<String> = []
+        var weekNew: [Date: Set<String>] = [:]
+        var weekOld: [Date: Set<String>] = [:]
+
+        for entry in sorted {
+            let weekStart = cal.dateInterval(of: .weekOfYear, for: entry.timestamp)?.start ?? entry.timestamp
+            if seenBefore.contains(entry.salonId) {
+                weekOld[weekStart, default: []].insert(entry.salonId)
+            } else {
+                weekNew[weekStart, default: []].insert(entry.salonId)
+                seenBefore.insert(entry.salonId)
+            }
+        }
+
+        let allWeeks = Set(weekNew.keys).union(weekOld.keys)
+        return Dictionary(uniqueKeysWithValues: allWeeks.map { week in
+            (week, (new: weekNew[week]?.count ?? 0, old: weekOld[week]?.count ?? 0))
+        })
+    }
 }

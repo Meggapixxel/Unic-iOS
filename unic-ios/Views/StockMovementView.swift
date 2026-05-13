@@ -9,7 +9,7 @@ private enum PickerTarget {
 
 // MARK: - View
 
-struct StockMovementView: View {
+struct StockMovementScreen: View {
     @StateObject private var viewModel: StockMovementViewModel
     @Binding var isPresented: Bool
 

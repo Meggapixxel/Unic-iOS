@@ -16,7 +16,7 @@ enum SalesSection: String, CaseIterable {
     }
 }
 
-struct SalesTabView: View {
+struct SalesScreen: View {
     @ObservedObject var viewModel: SalesViewModel
     @State private var router = AppRouter()
     @State private var section: SalesSection = .invoices
@@ -65,7 +65,7 @@ struct SalesTabView: View {
                 }
             ) {
                 if let formVM = viewModel.invoiceFormVM {
-                    InvoiceFormView(viewModel: formVM, onDismiss: { viewModel.closeCreateInvoice() })
+                    InvoiceFormScreen(viewModel: formVM, onDismiss: { viewModel.closeCreateInvoice() })
                 }
             }
         }
@@ -258,7 +258,7 @@ private struct InvoiceRowContent: View {
 
 // MARK: - All Top Products
 
-struct AllTopProductsView: View {
+struct AllTopProductsScreen: View {
     @ObservedObject var viewModel: SalesViewModel
     var router: AppRouter
 
@@ -293,7 +293,7 @@ struct AllTopProductsView: View {
 
 // MARK: - All Top Clients
 
-struct AllTopClientsView: View {
+struct AllTopClientsScreen: View {
     @ObservedObject var viewModel: SalesViewModel
 
     var body: some View {

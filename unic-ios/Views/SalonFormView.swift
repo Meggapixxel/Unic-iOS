@@ -128,7 +128,7 @@ private func normalizedInstagram(_ raw: String) -> String {
 
 // MARK: - View
 
-struct SalonFormView: View {
+struct SalonFormScreen: View {
     @ObservedObject var viewModel: SalonFormViewModel
     @ObservedObject private var firebaseService = FirebaseService.shared
 

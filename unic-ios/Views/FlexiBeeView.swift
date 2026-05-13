@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Main FlexiBee View
 
-struct FlexiBeeView: View {
+struct FlexiBeeScreen: View {
     @StateObject private var viewModel = FlexiBeeViewModel()
     @State private var router = AppRouter()
 

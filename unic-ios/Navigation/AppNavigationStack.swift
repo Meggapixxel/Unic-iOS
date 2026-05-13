@@ -12,23 +12,25 @@ struct AppNavigationStack<Content: View>: View {
                 .navigationDestination(for: AppDestination.self) { destination in
                     switch destination {
                     case .product(let item):
-                        FlexiBeeProductDetailView(item: item)
+                        FlexiBeeProductDetailScreen(item: item)
                     case .invoice(let invoice):
                         if let vm = salesViewModel {
-                            InvoiceDetailView(invoice: invoice, salesViewModel: vm, router: router)
+                            InvoiceDetailScreen(invoice: invoice, salesViewModel: vm, router: router)
                         }
                     case .allTopProducts:
                         if let vm = salesViewModel {
-                            AllTopProductsView(viewModel: vm, router: router)
+                            AllTopProductsScreen(viewModel: vm, router: router)
                         }
                     case .allTopClients:
                         if let vm = salesViewModel {
-                            AllTopClientsView(viewModel: vm)
+                            AllTopClientsScreen(viewModel: vm)
                         }
                     case .userActivity(let user):
-                        UserActivityView(user: user)
+                        UserActivityScreen(user: user)
                     case .stockChecklist:
-                        StockChecklistView()
+                        StockChecklistScreen()
+                    case .plans:
+                        PlansScreen()
                     }
                 }
         }

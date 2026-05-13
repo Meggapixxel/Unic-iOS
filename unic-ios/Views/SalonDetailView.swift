@@ -1,5 +1,5 @@
 //
-//  SalonDetailView.swift
+//  SalonDetailScreen.swift
 //  unic-ios
 //
 //  Created by UNIC Team on 04/02/2026.
@@ -9,7 +9,7 @@ import SwiftUI
 import MapKit
 import IdentifiedCollections
 
-struct SalonDetailView: View {
+struct SalonDetailScreen: View {
     @StateObject private var viewModel: SalonDetailViewModel
     @ObservedObject private var auth = AuthService.shared
 
@@ -68,7 +68,7 @@ struct SalonDetailView: View {
             onDismiss: { viewModel.closeEditSalon() }
         ) {
             if let formVM = viewModel.salonFormVM {
-                SalonFormView(viewModel: formVM)
+                SalonFormScreen(viewModel: formVM)
             }
         }
         .alert(viewModel.alertTitle, isPresented: $viewModel.showAlert) {
@@ -202,7 +202,7 @@ struct SalonDetailView: View {
                     // Map
                     if let coordinate = salon.coordinate {
                         NavigationLink {
-                            SalonFullMapView(salon: salon)
+                            SalonFullMapScreen(salon: salon)
                         } label: {
                             Map(initialPosition: .region(MKCoordinateRegion(
                                 center: coordinate,
@@ -230,25 +230,37 @@ struct SalonDetailView: View {
                             Divider()
                         }
 
-                        Button {
-                            UIPasteboard.general.string = address
-                        } label: {
-                            HStack {
-                                Image(systemName: "mappin.circle.fill")
-                                    .foregroundColor(.red)
-                                Text(address)
-                                    .font(.subheadline)
-                                    .foregroundColor(.primary)
-                                    .multilineTextAlignment(.leading)
-                                Spacer()
-                                Image(systemName: "doc.on.doc")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                        HStack {
+                            Button {
+                                UIPasteboard.general.string = address
+                            } label: {
+                                HStack {
+                                    Image(systemName: "mappin.circle.fill")
+                                        .foregroundColor(.red)
+                                    Text(address)
+                                        .font(.subheadline)
+                                        .foregroundColor(.primary)
+                                        .multilineTextAlignment(.leading)
+                                    Spacer()
+                                    Image(systemName: "doc.on.doc")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                                .contentShape(Rectangle())
                             }
-                            .padding()
-                            .contentShape(Rectangle())
+                            .buttonStyle(.plain)
+
+                            Button {
+                                openNavigation(coordinate: salon.coordinate, address: address, name: salon.displayName)
+                            } label: {
+                                Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
+                                    .font(.title3)
+                                    .foregroundStyle(.blue)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.trailing, 12)
                         }
-                        .buttonStyle(.plain)
                     }
 
                     // Coordinates
@@ -475,6 +487,26 @@ struct SalonDetailView: View {
                 .cornerRadius(12)
             }
             .disabled(viewModel.isSaving)
+        }
+    }
+}
+
+// MARK: - Navigation Helper
+
+extension SalonDetailScreen {
+    private func openNavigation(coordinate: CLLocationCoordinate2D?, address: String, name: String) {
+        if let coord = coordinate {
+            let encodedName = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            let googleUrl = URL(string: "comgooglemaps://?daddr=\(coord.latitude),\(coord.longitude)&directionsmode=driving")
+            let appleUrl = URL(string: "maps://?daddr=\(coord.latitude),\(coord.longitude)&q=\(encodedName)")
+            if let google = googleUrl, UIApplication.shared.canOpenURL(google) {
+                UIApplication.shared.open(google)
+            } else if let apple = appleUrl {
+                UIApplication.shared.open(apple)
+            }
+        } else if let encoded = address.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let appleUrl = URL(string: "maps://?q=\(encoded)") {
+            UIApplication.shared.open(appleUrl)
         }
     }
 }
@@ -928,7 +960,7 @@ struct ScoringRow: View {
 
 #Preview {
     NavigationStack {
-        SalonDetailView(
+        SalonDetailScreen(
             salon: Salon(
                 salonId: "test",
                 name: "Test Salon",

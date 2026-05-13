@@ -4,7 +4,7 @@ import IdentifiedCollections
 
 // MARK: - View
 
-struct InvoiceDetailView: View {
+struct InvoiceDetailScreen: View {
     @StateObject private var viewModel: InvoiceDetailViewModel
     @State private var itemsExpanded = false
     @State private var stockExpanded = false
@@ -45,7 +45,7 @@ struct InvoiceDetailView: View {
         }
         .sheet(isPresented: $viewModel.showEdit, onDismiss: { viewModel.closeEdit() }) {
             if let formVM = viewModel.editFormVM {
-                InvoiceFormView(viewModel: formVM, onDismiss: { viewModel.closeEdit() })
+                InvoiceFormScreen(viewModel: formVM, onDismiss: { viewModel.closeEdit() })
             }
         }
         .confirmationDialog(
@@ -59,7 +59,7 @@ struct InvoiceDetailView: View {
         }
         .sheet(isPresented: $viewModel.showStockMovement) {
             if let pending = viewModel.pendingMovement {
-                StockMovementView(pending: pending, isPresented: $viewModel.showStockMovement)
+                StockMovementScreen(pending: pending, isPresented: $viewModel.showStockMovement)
             }
         }
         .alert(String.invoice_status_change_title, isPresented: $viewModel.showStatusAlert) {

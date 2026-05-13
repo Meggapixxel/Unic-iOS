@@ -1,5 +1,5 @@
 //
-//  RoutePlannerView+ViewModel.swift
+//  RoutePlannerScreen+ViewModel.swift
 //  unic-ios
 //
 //  Created by UNIC Team on 31/03/2026.

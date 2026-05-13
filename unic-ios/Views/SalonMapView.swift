@@ -9,20 +9,29 @@ import CoreLocation
 
 // MARK: - Location Manager
 
-final class LocationManager: NSObject, CLLocationManagerDelegate {
+final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = LocationManager()
     private let manager = CLLocationManager()
+
+    @Published private(set) var authStatus: CLAuthorizationStatus = .notDetermined
 
     override init() {
         super.init()
         manager.delegate = self
+        authStatus = manager.authorizationStatus
     }
 
     func requestPermission() {
         manager.requestWhenInUseAuthorization()
     }
 
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {}
+    var isAuthorized: Bool {
+        authStatus == .authorizedWhenInUse || authStatus == .authorizedAlways
+    }
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        authStatus = manager.authorizationStatus
+    }
 }
 
 // MARK: - Annotation Model
@@ -44,6 +53,7 @@ final class SalonAnnotation: NSObject, MKAnnotation {
 struct SalonNativeMapView: UIViewRepresentable {
     let salons: [Salon]
     let onSelect: (Salon) -> Void
+    @Binding var centerOnUser: Bool
 
     private static let annotationId  = "SalonPin"
     private static let clusterPrefix = "SalonCluster"
@@ -65,14 +75,22 @@ struct SalonNativeMapView: UIViewRepresentable {
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
-        let existing = map.annotations.compactMap { $0 as? SalonAnnotation }
-        let existingIds = Set(existing.map { $0.salon.salonId })
-        let newIds = Set(salons.compactMap { $0.coordinate != nil ? $0.salonId : nil })
+        if centerOnUser {
+            map.setUserTrackingMode(.follow, animated: true)
+            DispatchQueue.main.async { self.centerOnUser = false }
+        }
 
-        if existingIds == newIds { return }
+        let existing = map.annotations.compactMap { $0 as? SalonAnnotation }
+        let existingMap = Dictionary(uniqueKeysWithValues: existing.map { ($0.salon.salonId, $0.salon) })
+        let newMapped = salons.filter { $0.coordinate != nil }
+        let existingIds = Set(existingMap.keys)
+        let newIds = Set(newMapped.map { $0.salonId })
+        let dataChanged = newMapped.contains { existingMap[$0.salonId] != $0 }
+
+        if existingIds == newIds && !dataChanged { return }
 
         map.removeAnnotations(existing)
-        let annotations = salons.compactMap { salon -> SalonAnnotation? in
+        let annotations = newMapped.compactMap { salon -> SalonAnnotation? in
             guard let c = salon.coordinate else { return nil }
             return SalonAnnotation(salon: salon, coordinate: c)
         }
@@ -171,23 +189,44 @@ struct SalonNativeMapView: UIViewRepresentable {
 
 struct SalonMapView: View {
     @ObservedObject var viewModel: SalonsViewModel
+    @ObservedObject private var locationManager = LocationManager.shared
     @State private var selectedSalon: Salon?
+    @State private var centerOnUser = false
 
     private var mappedCount: Int {
         viewModel.displayedSalons.filter { $0.coordinate != nil }.count
     }
 
     var body: some View {
-        SalonNativeMapView(salons: Array(viewModel.displayedSalons)) { salon in
-            selectedSalon = salon
-        }
+        SalonNativeMapView(
+            salons: Array(viewModel.displayedSalons),
+            onSelect: { selectedSalon = $0 },
+            centerOnUser: $centerOnUser
+        )
         .ignoresSafeArea()
         .onAppear {
-            LocationManager.shared.requestPermission()
+            if !locationManager.isAuthorized {
+                LocationManager.shared.requestPermission()
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if locationManager.isAuthorized {
+                Button {
+                    centerOnUser = true
+                } label: {
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.blue)
+                        .padding(12)
+                        .glassBackgroundCircle()
+                }
+                .padding(.top, 16)
+                .padding(.trailing, 16)
+            }
         }
         .sheet(item: $selectedSalon) { salon in
             NavigationStack {
-                SalonDetailView(
+                SalonDetailScreen(
                     salon: salon,
                     showMap: false,
                     onSalonUpdated: { viewModel.updateSalon($0) },

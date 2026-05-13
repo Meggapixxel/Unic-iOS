@@ -1,5 +1,5 @@
 //
-//  SalonFullMapView.swift
+//  SalonFullMapScreen.swift
 //  unic-ios
 //
 //  Created by UNIC Team on 04/02/2026.
@@ -8,7 +8,7 @@
 import SwiftUI
 import MapKit
 
-struct SalonFullMapView: View {
+struct SalonFullMapScreen: View {
     let salon: Salon
 
     @State private var position: MapCameraPosition = .automatic
@@ -166,7 +166,7 @@ struct SalonFullMapView: View {
 
 //#Preview {
 //    NavigationStack {
-//        SalonFullMapView(salon: Salon(
+//        SalonFullMapScreen(salon: Salon(
 //            salonId: "test",
 //            name: "Test Salon",
 //            city: "Prague",

@@ -11,7 +11,7 @@ import IdentifiedCollections
 /// **No bundles:** "Paid" → confirmation alert → status = paid.
 ///   FlexiBee auto-creates the stock movement at invoice creation time.
 ///
-/// **Bundles present:** "Paid" → opens StockMovementView where user fills bundle components
+/// **Bundles present:** "Paid" → opens StockMovementScreen where user fills bundle components
 ///   → on submit, movement is created and status is set to paid automatically.
 ///   (FlexiBee cannot auto-create movements for bundles — no warehouse code.)
 ///
@@ -95,7 +95,7 @@ final class InvoiceDetailViewModel: ObservableObject {
         return lineItems.contains { codes.contains($0.productCode) }
     }
 
-    /// True when pressing "Paid" should open StockMovementView first (bundle invoices with no movement yet).
+    /// True when pressing "Paid" should open StockMovementScreen first (bundle invoices with no movement yet).
     var needsBundleMovement: Bool {
         canManageStock && hasBundles && !stockMovementCreated
     }

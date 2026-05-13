@@ -1,14 +1,14 @@
 import SwiftUI
 import Combine
 
-struct UsersView: View {
+struct UsersScreen: View {
     @StateObject private var viewModel = UsersViewModel()
 
     var body: some View {
         NavigationStack {
             List {
                 ForEach(viewModel.visibleUsers) { user in
-                    NavigationLink(destination: UserActivityView(user: user)) {
+                    NavigationLink(destination: UserActivityScreen(user: user)) {
                         HStack(spacing: 12) {
                             Circle()
                                 .fill(viewModel.roleColor(user.role).opacity(0.15))

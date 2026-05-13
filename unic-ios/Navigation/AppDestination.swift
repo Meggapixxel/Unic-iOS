@@ -7,4 +7,5 @@ enum AppDestination: Hashable {
     case allTopClients
     case userActivity(AppUser)
     case stockChecklist
+    case plans
 }

@@ -1,5 +1,5 @@
 //
-//  TestDriveView.swift
+//  TestDriveScreen.swift
 //  unic-ios
 //
 
@@ -46,7 +46,7 @@ struct TestDriveEntry: Identifiable {
 
 // MARK: - View
 
-struct TestDriveView: View {
+struct TestDriveScreen: View {
     let salons: [Salon]
     let onSalonUpdated: (Salon) -> Void
     let onSalonDeleted: (Salon) -> Void
@@ -76,7 +76,7 @@ struct TestDriveView: View {
             } else {
                 ForEach(viewModel.entries) { entry in
                     NavigationLink {
-                        SalonDetailView(
+                        SalonDetailScreen(
                             salon: entry.salon,
                             onSalonUpdated: { updated in
                                 onSalonUpdated(updated)
