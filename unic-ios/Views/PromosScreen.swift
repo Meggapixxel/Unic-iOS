@@ -6,9 +6,7 @@ import SwiftUI
 @MainActor
 final class PromosViewModel: ObservableObject {
     @Published var promos: [PromoOffer] = []
-    @Published var isLoading = false
     @Published var error: String?
-    @Published var showArchive = false
     @Published var formVM: PromoFormViewModel?
     @Published var selectedPromo: PromoOffer?
     @Published var showDeleteConfirmation = false
@@ -18,13 +16,11 @@ final class PromosViewModel: ObservableObject {
     private var tasks: [Task<Void, Never>] = []
 
     var displayed: [PromoOffer] {
-        promos.filter { showArchive ? $0.isPast : !$0.isPast }
+        promos.filter { !$0.isPast }
     }
 
     func load() {
         let task = Task {
-            isLoading = true
-            defer { isLoading = false }
             do {
                 promos = try await service.fetchPromos()
             } catch {
@@ -116,14 +112,6 @@ struct PromosScreen: View {
             .navigationTitle(String(localized: "promos_nav_title"))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Picker("", selection: $viewModel.showArchive) {
-                        Text(String(localized: "promo_active")).tag(false)
-                        Text(String(localized: "promo_archive")).tag(true)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 150)
-                }
                 if auth.canManagePromos {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button { viewModel.openAdd() } label: { Image(systemName: "plus") }
@@ -131,9 +119,7 @@ struct PromosScreen: View {
                 }
             }
             .overlay {
-                if viewModel.isLoading {
-                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity).background(.ultraThinMaterial)
-                } else if viewModel.displayed.isEmpty {
+                if viewModel.displayed.isEmpty {
                     ContentUnavailableView(String(localized: "promos_empty"), systemImage: "tag")
                 }
             }
