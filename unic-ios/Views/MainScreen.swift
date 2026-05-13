@@ -40,7 +40,7 @@ struct MainScreen: View {
             .onChange(of: selectedTab) { old, new in
                 guard !auth.isSales, new == 3 else { return }
                 selectedTab = old
-                withAnimation(.easeInOut(duration: 0.25)) { showMoreMenu = true }
+                showMoreMenu = true
             }
 
             VStack(spacing: 0) {
@@ -61,26 +61,25 @@ struct MainScreen: View {
             }
             .padding(.top, 60)
 
-            if showMoreMenu {
-                Color.black.opacity(0.35)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.25)) { showMoreMenu = false }
-                    }
-                    .zIndex(10)
-
-                HStack {
-                    Spacer()
-                    MoreMenuPanel { dest in
-                        withAnimation(.easeInOut(duration: 0.25)) { showMoreMenu = false }
-                        moreDestination = dest
-                    }
-                    .transition(.move(edge: .trailing))
-                    .zIndex(11)
-                }
+            Color.black.opacity(showMoreMenu ? 0.35 : 0)
                 .ignoresSafeArea()
-                .zIndex(11)
+                .allowsHitTesting(showMoreMenu)
+                .onTapGesture { showMoreMenu = false }
+                .animation(.easeInOut(duration: 0.22), value: showMoreMenu)
+                .zIndex(10)
+
+            HStack(spacing: 0) {
+                Spacer()
+                MoreMenuPanel { dest in
+                    showMoreMenu = false
+                    moreDestination = dest
+                }
             }
+            .ignoresSafeArea()
+            .offset(x: showMoreMenu ? 0 : 300)
+            .animation(.spring(response: 0.38, dampingFraction: 0.82), value: showMoreMenu)
+            .allowsHitTesting(showMoreMenu)
+            .zIndex(11)
         }
         .sheet(item: $moreDestination) { dest in
             switch dest {
