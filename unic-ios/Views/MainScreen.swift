@@ -109,11 +109,29 @@ private struct MoreMenuPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("More")
-                .font(.title3.bold())
+            if let user = auth.currentUser {
+                VStack(alignment: .leading, spacing: 10) {
+                    Circle()
+                        .fill(roleColor(user.role).opacity(0.15))
+                        .frame(width: 64, height: 64)
+                        .overlay {
+                            Text(initials(user))
+                                .font(.title2.bold())
+                                .foregroundStyle(roleColor(user.role))
+                        }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(user.fullName)
+                            .font(.headline)
+                        Text(user.role.displayName)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 .padding(.horizontal, 20)
-                .padding(.top, 60)
-                .padding(.bottom, 16)
+                .padding(.top, 64)
+                .padding(.bottom, 20)
+            }
 
             Divider()
 
@@ -133,8 +151,22 @@ private struct MoreMenuPanel: View {
 
             Spacer()
         }
-        .frame(width: 260)
+        .frame(width: 270)
         .background(.regularMaterial)
+    }
+
+    private func initials(_ user: AppUser) -> String {
+        let f = user.firstName.first.map(String.init) ?? ""
+        let l = user.lastName.first.map(String.init) ?? ""
+        return (f + l).uppercased()
+    }
+
+    private func roleColor(_ role: UserRole) -> Color {
+        switch role {
+        case .admin:   return .red
+        case .manager: return .orange
+        case .sales:   return .blue
+        }
     }
 }
 
