@@ -3,11 +3,16 @@ import SwiftUI
 import Combine
 import FirebaseFirestore
 
+enum StockSortField: String, CaseIterable {
+    case quantity, code, name
+}
+
 /// Thin proxy over `FlexiBeeService` for the stock inventory screen.
 /// Exists to keep view-specific state (search, sort, barcode UI) separate from the shared service.
 @MainActor
 final class FlexiBeeViewModel: ObservableObject {
     @Published var searchText = ""
+    @Published var sortField: StockSortField = .quantity
     @Published var sortAscending = false
     @Published var showBarcodeScanner = false
     @Published var isSearchingBarcode = false
@@ -45,7 +50,14 @@ final class FlexiBeeViewModel: ObservableObject {
         let items: [FlexiBeeStockWithPrice] = searchText.isEmpty
             ? Array(base)
             : base.filter { $0.code.lowercased().contains(q) || $0.name.lowercased().contains(q) }
-        return items.sorted { sortAscending ? $0.quantity < $1.quantity : $0.quantity > $1.quantity }
+        return items.sorted {
+            let asc = sortAscending
+            switch sortField {
+            case .quantity: return asc ? $0.quantity < $1.quantity : $0.quantity > $1.quantity
+            case .code:     return asc ? $0.code     < $1.code     : $0.code     > $1.code
+            case .name:     return asc ? $0.name     < $1.name     : $0.name     > $1.name
+            }
+        }
     }
 
     // MARK: - Actions

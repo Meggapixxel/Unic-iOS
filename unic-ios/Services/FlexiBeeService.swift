@@ -451,7 +451,8 @@ final class FlexiBeeService: ObservableObject {
             FlexiBeeResponse<FlexiBeeCenikWrapper>.self,
             path: "/cenik.json",
             fields: FlexiBeeCenikItem.apiFields,
-            limit: 300
+            limit: 2000,
+            detail: true
         )
         return response.winstrom.cenik
     }
@@ -461,7 +462,7 @@ final class FlexiBeeService: ObservableObject {
             FlexiBeeResponse<FlexiBeeStockWrapper>.self,
             path: "/skladova-karta.json",
             fields: FlexiBeeStockRaw.requestFields,
-            limit: 300
+            limit: 2000
         )
         return response.winstrom.cards.map { $0.toCard() }
     }

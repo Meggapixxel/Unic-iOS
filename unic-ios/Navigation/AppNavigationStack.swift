@@ -27,6 +27,8 @@ struct AppNavigationStack<Content: View>: View {
                         }
                     case .userActivity(let user):
                         UserActivityView(user: user)
+                    case .stockChecklist:
+                        StockChecklistView()
                     }
                 }
         }

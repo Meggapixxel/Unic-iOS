@@ -248,10 +248,25 @@ extension String {
     static var copy_article:           String { String(localized: "copy_article") }
     static var copy_name:              String { String(localized: "copy_name") }
     static var copy_article_and_name:  String { String(localized: "copy_article_and_name") }
+    static var product_show_details:   String { String(localized: "product_show_details") }
+    static var product_hide_details:   String { String(localized: "product_hide_details") }
 
     // MARK: - FlexiBee (stock stats)
     static var stock_units: String { String(localized: "stock_units") }
     static var stock_low:   String { String(localized: "stock_low") }
+
+    // MARK: - FlexiBee (stock sort)
+    static var stock_sort_quantity: String { String(localized: "stock_sort_quantity") }
+    static var stock_sort_code:     String { String(localized: "stock_sort_code") }
+    static var stock_sort_name:     String { String(localized: "stock_sort_name") }
+    static var stock_sort_asc:      String { String(localized: "stock_sort_asc") }
+    static var stock_sort_desc:     String { String(localized: "stock_sort_desc") }
+
+    // MARK: - FlexiBee / Stock Checklist
+    static var stock_checklist_empty: String { String(localized: "stock_checklist_empty") }
+    static func stock_checklist_total(_ n: Int) -> String {
+        String(format: String(localized: "stock_checklist_total %d"), n)
+    }
 
     // MARK: - Sales
     static var sales_nav_title:             String { String(localized: "sales_nav_title") }

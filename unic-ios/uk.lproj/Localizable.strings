@@ -238,6 +238,8 @@
 "copy_article" = "Скопіювати артикул";
 "copy_name" = "Скопіювати назву";
 "copy_article_and_name" = "Скопіювати артикул + назву";
+"product_show_details" = "Показати деталі";
+"product_hide_details" = "Сховати деталі";
 
 /* Info.plist */
 "NSCameraUsageDescription" = "Для сканування штрихкодів продуктів";
@@ -250,6 +252,13 @@
 "see_all" = "Показати всі";
 "stock_units" = "Одиниць";
 "stock_low" = "Мало";
+"stock_sort_quantity" = "По кількості";
+"stock_sort_code" = "По артикулу";
+"stock_sort_name" = "По назві";
+"stock_sort_asc" = "За зростанням";
+"stock_sort_desc" = "За спаданням";
+"stock_checklist_empty" = "Скануйте товар для формування списку";
+"stock_checklist_total %d" = "Всього: %d";
 
 /* Sales */
 "sales_nav_title" = "Sales";

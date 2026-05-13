@@ -238,6 +238,8 @@
 "copy_article" = "Скопировать артикул";
 "copy_name" = "Скопировать название";
 "copy_article_and_name" = "Скопировать артикул + название";
+"product_show_details" = "Показать детали";
+"product_hide_details" = "Скрыть детали";
 
 /* Info.plist */
 "NSCameraUsageDescription" = "Для сканирования штрихкодов продуктов";
@@ -250,6 +252,13 @@
 "see_all" = "Показать все";
 "stock_units" = "Единиц";
 "stock_low" = "Мало";
+"stock_sort_quantity" = "По количеству";
+"stock_sort_code" = "По артикулу";
+"stock_sort_name" = "По названию";
+"stock_sort_asc" = "По возрастанию";
+"stock_sort_desc" = "По убыванию";
+"stock_checklist_empty" = "Отсканируйте товар для формирования списка";
+"stock_checklist_total %d" = "Всего: %d";
 
 /* Sales */
 "sales_nav_title" = "Sales";

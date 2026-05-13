@@ -117,15 +117,8 @@ struct StockWithPriceRow: View {
     }
 
     private var priceInfo: some View {
-        VStack(alignment: .trailing, spacing: 1) {
-            Text(czk(item.sellPriceVAT))
-                .font(.caption.bold())
-                .foregroundStyle(.primary)
-            if let margin = item.marginPercent {
-                Text("↑\(Int(margin))%")
-                    .font(.caption2)
-                    .foregroundStyle(margin >= 30 ? .green : margin >= 15 ? .orange : .red)
-            }
-        }
+        Text(czk(item.sellPriceVAT))
+            .font(.caption.bold())
+            .foregroundStyle(.primary)
     }
 }

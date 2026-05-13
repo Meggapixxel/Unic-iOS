@@ -238,6 +238,8 @@
 "copy_article" = "Copy article";
 "copy_name" = "Copy name";
 "copy_article_and_name" = "Copy article + name";
+"product_show_details" = "Show details";
+"product_hide_details" = "Hide details";
 
 /* Info.plist */
 "NSCameraUsageDescription" = "For scanning product barcodes";
@@ -250,6 +252,13 @@
 "see_all" = "See all";
 "stock_units" = "Units";
 "stock_low" = "Low";
+"stock_sort_quantity" = "By quantity";
+"stock_sort_code" = "By article";
+"stock_sort_name" = "By name";
+"stock_sort_asc" = "Ascending";
+"stock_sort_desc" = "Descending";
+"stock_checklist_empty" = "Scan products to build a list";
+"stock_checklist_total %d" = "Total: %d";
 
 /* Sales */
 "sales_nav_title" = "Sales";

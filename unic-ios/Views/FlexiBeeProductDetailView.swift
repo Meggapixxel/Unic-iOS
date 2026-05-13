@@ -3,6 +3,9 @@ import SwiftUI
 struct FlexiBeeProductDetailView: View {
     let item: FlexiBeeStockWithPrice
 
+    @ObservedObject private var auth = AuthService.shared
+    @State private var showPurchaseDetails = false
+
     var body: some View {
         List {
             Section {
@@ -14,8 +17,21 @@ struct FlexiBeeProductDetailView: View {
             Section {
                 stockRow
                 if item.sellPriceVAT > 0 { sellPriceRow }
-                if item.purchasePrice > 0 { purchasePriceRow }
-                if let margin = item.marginPercent { marginRow(margin) }
+                if auth.canViewSales {
+                    if showPurchaseDetails {
+                        purchasePriceRow
+                    }
+                    Button {
+                        showPurchaseDetails.toggle()
+                    } label: {
+                        Label(
+                            showPurchaseDetails ? String.product_hide_details : String.product_show_details,
+                            systemImage: showPurchaseDetails ? "eye.slash" : "eye"
+                        )
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    }
+                }
             }
         }
         .listStyle(.insetGrouped)

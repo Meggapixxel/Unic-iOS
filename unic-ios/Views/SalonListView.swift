@@ -122,19 +122,17 @@ struct SalonListView: View {
                 .navigationTitle("Salons")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
-                    if !viewModel.showMap {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button {
-                                viewModel.showFilterPopover = true
-                            } label: {
-                                Image(systemName: "line.3.horizontal.decrease.circle")
-                                    .symbolVariant(viewModel.hasAnyFilter ? .fill : .none)
-                                    .imageScale(.large)
-                            }
-                            .popover(isPresented: $viewModel.showFilterPopover) {
-                                FilterSortPopoverView(viewModel: viewModel)
-                                    .presentationCompactAdaptation(.popover)
-                            }
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            viewModel.showFilterPopover = true
+                        } label: {
+                            Image(systemName: "line.3.horizontal.decrease.circle")
+                                .symbolVariant(viewModel.hasAnyFilter ? .fill : .none)
+                                .imageScale(.large)
+                        }
+                        .popover(isPresented: $viewModel.showFilterPopover) {
+                            FilterSortPopoverView(viewModel: viewModel)
+                                .presentationCompactAdaptation(.popover)
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
