@@ -395,8 +395,6 @@
 "promo_description_placeholder" = "Опис акції...";
 "promo_valid_from" = "Діє з";
 "promo_valid_to" = "Діє до";
-"promo_active" = "Активні";
-"promo_archive" = "Архів";
 "promo_delete" = "Видалити акцію";
 "promo_delete_confirm" = "Видалити цю акцію?";
 "promo_created_by" = "Додав";

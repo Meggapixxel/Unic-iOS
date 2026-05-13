@@ -395,8 +395,6 @@
 "promo_description_placeholder" = "Описание акции...";
 "promo_valid_from" = "Действует с";
 "promo_valid_to" = "Действует до";
-"promo_active" = "Активные";
-"promo_archive" = "Архив";
 "promo_delete" = "Удалить акцию";
 "promo_delete_confirm" = "Удалить эту акцию?";
 "promo_created_by" = "Добавил";

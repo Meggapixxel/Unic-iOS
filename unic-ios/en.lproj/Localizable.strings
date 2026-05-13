@@ -395,8 +395,6 @@
 "promo_description_placeholder" = "Offer description...";
 "promo_valid_from" = "Valid From";
 "promo_valid_to" = "Valid To";
-"promo_active" = "Active";
-"promo_archive" = "Archive";
 "promo_delete" = "Delete Offer";
 "promo_delete_confirm" = "Delete this offer?";
 "promo_created_by" = "Added by";
