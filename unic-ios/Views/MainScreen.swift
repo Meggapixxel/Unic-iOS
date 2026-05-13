@@ -11,11 +11,12 @@ struct MainScreen: View {
     @StateObject private var planViewModel = PlanViewModel()
     @State private var showGreeting = false
     @State private var selectedTab: Int = 0
+    @State private var previousTab: Int = 0
     @State private var showMoreMenu = false
-    @State private var moreContent: MoreDestination = .sales
+    @State private var activeMoreContent: MoreDestination? = nil
 
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack {
             TabView(selection: $selectedTab) {
                 SalonListScreen(viewModel: salonsViewModel)
                     .tabItem { Label("Salons", systemImage: "storefront") }
@@ -31,16 +32,19 @@ struct MainScreen: View {
                         .tabItem { Label(String.profile_nav_title, systemImage: "person.circle") }
                         .tag(3)
                 } else {
-                    moreTabContent
+                    Color.clear
                         .tabItem { Label("More", systemImage: "ellipsis") }
                         .tag(3)
                 }
             }
-            .onChange(of: selectedTab) { _, new in
+            .onChange(of: selectedTab) { old, new in
                 guard !auth.isSales, new == 3 else { return }
+                previousTab = old
+                selectedTab = old
                 showMoreMenu = true
             }
 
+            // Plan banner + greeting
             VStack(spacing: 0) {
                 PlanBannerView(viewModel: planViewModel)
                     .animation(.spring(response: 0.4), value: planViewModel.shouldShow)
@@ -58,7 +62,11 @@ struct MainScreen: View {
                 }
             }
             .padding(.top, 60)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .allowsHitTesting(false)
+            .zIndex(1)
 
+            // More drawer backdrop + panel
             Color.black.opacity(showMoreMenu ? 0.35 : 0)
                 .ignoresSafeArea()
                 .allowsHitTesting(showMoreMenu)
@@ -69,8 +77,10 @@ struct MainScreen: View {
             HStack(spacing: 0) {
                 Spacer()
                 MoreMenuPanel { dest in
-                    moreContent = dest
                     showMoreMenu = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        activeMoreContent = dest
+                    }
                 }
             }
             .ignoresSafeArea()
@@ -78,7 +88,16 @@ struct MainScreen: View {
             .animation(.spring(response: 0.38, dampingFraction: 0.82), value: showMoreMenu)
             .allowsHitTesting(showMoreMenu)
             .zIndex(11)
+
+            // Selected More screen
+            if let content = activeMoreContent {
+                moreScreenView(for: content)
+                    .ignoresSafeArea()
+                    .transition(.move(edge: .trailing))
+                    .zIndex(20)
+            }
         }
+        .animation(.easeInOut(duration: 0.3), value: activeMoreContent != nil)
         .onAppear {
             planViewModel.load()
             withAnimation(.easeIn(duration: 0.3)) { showGreeting = true }
@@ -91,11 +110,25 @@ struct MainScreen: View {
     }
 
     @ViewBuilder
-    private var moreTabContent: some View {
-        switch moreContent {
-        case .sales:   SalesScreen(viewModel: salesViewModel)
-        case .users:   UsersScreen()
-        case .profile: ProfileScreen()
+    private func moreScreenView(for dest: MoreDestination) -> some View {
+        ZStack(alignment: .topLeading) {
+            switch dest {
+            case .sales:   SalesScreen(viewModel: salesViewModel)
+            case .users:   UsersScreen()
+            case .profile: ProfileScreen()
+            }
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.3)) { activeMoreContent = nil }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(10)
+                    .background(.regularMaterial, in: Circle())
+            }
+            .padding(.top, 56)
+            .padding(.leading, 16)
         }
     }
 }
