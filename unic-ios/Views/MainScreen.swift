@@ -156,9 +156,7 @@ private struct MoreMenuPanel: View {
     }
 
     private func initials(_ user: AppUser) -> String {
-        let f = user.firstName.first.map(String.init) ?? ""
-        let l = user.lastName.first.map(String.init) ?? ""
-        return (f + l).uppercased()
+        "\(user.firstName.prefix(1))\(user.lastName.prefix(1))".uppercased()
     }
 
     private func roleColor(_ role: UserRole) -> Color {
