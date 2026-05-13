@@ -39,7 +39,7 @@ struct TagChip: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
         .background(Color(.systemGray5))
-        .cornerRadius(12)
+        .clipShape(Capsule())
     }
 }
 
