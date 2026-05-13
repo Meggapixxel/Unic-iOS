@@ -60,7 +60,7 @@ struct ProfileScreen: View {
                     if auth.canManagePlans {
                         Section {
                             NavigationLink(value: AppDestination.plans) {
-                                Label(String(localized: "plans_nav_title"), systemImage: "target")
+                                Label(String.plans_nav_title, systemImage: "target")
                             }
                         }
                     }

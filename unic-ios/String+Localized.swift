@@ -371,6 +371,21 @@ extension String {
     static var role_manager:    String { String(localized: "role_manager") }
     static var role_sales:      String { String(localized: "role_sales") }
 
+    // MARK: - Plans
+    static var plans_nav_title: String { String(localized: "plans_nav_title") }
+
+    // MARK: - Promos
+    static var promos_nav_title:              String { String(localized: "promos_nav_title") }
+    static var promos_empty:                  String { String(localized: "promos_empty") }
+    static var promo_delete:                  String { String(localized: "promo_delete") }
+    static var promo_edit:                    String { String(localized: "promo_edit") }
+    static var promo_delete_confirm:          String { String(localized: "promo_delete_confirm") }
+    static var promo_title_placeholder:       String { String(localized: "promo_title_placeholder") }
+    static var promo_description_placeholder: String { String(localized: "promo_description_placeholder") }
+    static var promo_valid_from:              String { String(localized: "promo_valid_from") }
+    static var promo_valid_to:                String { String(localized: "promo_valid_to") }
+    static var promo_add:                     String { String(localized: "promo_add") }
+
     // MARK: - Profile
     static var profile_nav_title:       String { String(localized: "profile_nav_title") }
     static var profile_logout:          String { String(localized: "profile_logout") }

@@ -96,12 +96,12 @@ struct PromosScreen: View {
                             Button(role: .destructive) {
                                 viewModel.confirmDelete(promo)
                             } label: {
-                                Label(String(localized: "promo_delete"), systemImage: "trash")
+                                Label(String.promo_delete, systemImage: "trash")
                             }
                             Button {
                                 viewModel.openEdit(promo)
                             } label: {
-                                Label(String(localized: "promo_edit"), systemImage: "pencil")
+                                Label(String.promo_edit, systemImage: "pencil")
                             }
                             .tint(.orange)
                         }
@@ -109,7 +109,7 @@ struct PromosScreen: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle(String(localized: "promos_nav_title"))
+            .navigationTitle(String.promos_nav_title)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 if auth.canManagePromos {
@@ -120,12 +120,12 @@ struct PromosScreen: View {
             }
             .overlay {
                 if viewModel.displayed.isEmpty {
-                    ContentUnavailableView(String(localized: "promos_empty"), systemImage: "tag")
+                    ContentUnavailableView(String.promos_empty, systemImage: "tag")
                 }
             }
-            .confirmationDialog(String(localized: "promo_delete_confirm"), isPresented: $viewModel.showDeleteConfirmation, titleVisibility: .visible) {
-                Button(String(localized: "promo_delete"), role: .destructive) { viewModel.deletePromo() }
-                Button(String(localized: "cancel"), role: .cancel) {}
+            .confirmationDialog(String.promo_delete_confirm, isPresented: $viewModel.showDeleteConfirmation, titleVisibility: .visible) {
+                Button(String.promo_delete, role: .destructive) { viewModel.deletePromo() }
+                Button(String.cancel, role: .cancel) {}
             }
             .sheet(item: $viewModel.selectedPromo) { promo in
                 PromoDetailScreen(promo: promo, onEdit: auth.canManagePromos ? { viewModel.openEdit(promo) } : nil)
@@ -153,12 +153,7 @@ private struct PromoRow: View {
             HStack {
                 Text(promo.title)
                     .font(.headline)
-                Spacer()
-                if promo.isActive {
-                    Text("● Active")
-                        .font(.caption.bold())
-                        .foregroundStyle(.green)
-                }
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             Text(promo.description)
                 .font(.subheadline)
@@ -288,18 +283,18 @@ struct PromoFormScreen: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField(String(localized: "promo_title_placeholder"), text: $viewModel.title)
+                    TextField(String.promo_title_placeholder, text: $viewModel.title)
                 }
                 Section {
-                    TextField(String(localized: "promo_description_placeholder"), text: $viewModel.description, axis: .vertical)
+                    TextField(String.promo_description_placeholder, text: $viewModel.description, axis: .vertical)
                         .lineLimit(4...10)
                 }
                 Section {
-                    DatePicker(String(localized: "promo_valid_from"), selection: $viewModel.validFrom, displayedComponents: .date)
-                    DatePicker(String(localized: "promo_valid_to"), selection: $viewModel.validTo, in: viewModel.validFrom..., displayedComponents: .date)
+                    DatePicker(String.promo_valid_from, selection: $viewModel.validFrom, displayedComponents: .date)
+                    DatePicker(String.promo_valid_to, selection: $viewModel.validTo, in: viewModel.validFrom..., displayedComponents: .date)
                 }
             }
-            .navigationTitle(String(localized: viewModel.existing == nil ? "promo_add" : "promo_edit"))
+            .navigationTitle(viewModel.existing == nil ? String.promo_add : String.promo_edit)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
