@@ -18,6 +18,7 @@ enum SalesSection: String, CaseIterable {
 
 struct SalesScreen: View {
     @ObservedObject var viewModel: SalesViewModel
+    @Environment(\.dismiss) private var dismiss
     @State private var router = AppRouter()
     @State private var section: SalesSection = .invoices
 
@@ -33,6 +34,9 @@ struct SalesScreen: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    CloseButton { dismiss() }
+                }
                 ToolbarItem(placement: .principal) {
                     Picker("", selection: $section) {
                         ForEach(SalesSection.allCases, id: \.self) {

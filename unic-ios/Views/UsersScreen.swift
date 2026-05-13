@@ -3,6 +3,7 @@ import Combine
 
 struct UsersScreen: View {
     @StateObject private var viewModel = UsersViewModel()
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -32,6 +33,11 @@ struct UsersScreen: View {
             }
             .listStyle(.plain)
             .navigationTitle(String.users_nav_title)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    CloseButton { dismiss() }
+                }
+            }
             .overlay {
                 if viewModel.isLoading {
                     ProgressView()
