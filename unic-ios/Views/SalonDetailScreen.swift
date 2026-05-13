@@ -414,7 +414,7 @@ struct SalonDetailScreen: View {
                                     .padding(.vertical, 5)
                                     .background(Color.accentColor.opacity(0.12))
                                     .foregroundColor(.accentColor)
-                                    .cornerRadius(8)
+                                    .clipShape(Capsule())
                             }
                         }
                     }
