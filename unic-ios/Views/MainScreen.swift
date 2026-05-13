@@ -1,8 +1,7 @@
 import SwiftUI
 
-private enum MoreDestination: Identifiable {
+private enum MoreDestination {
     case sales, users, profile
-    var id: Self { self }
 }
 
 struct MainScreen: View {
@@ -13,7 +12,7 @@ struct MainScreen: View {
     @State private var showGreeting = false
     @State private var selectedTab: Int = 0
     @State private var showMoreMenu = false
-    @State private var moreDestination: MoreDestination? = nil
+    @State private var moreContent: MoreDestination = .sales
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -32,14 +31,13 @@ struct MainScreen: View {
                         .tabItem { Label(String.profile_nav_title, systemImage: "person.circle") }
                         .tag(3)
                 } else {
-                    Color.clear
+                    moreTabContent
                         .tabItem { Label("More", systemImage: "ellipsis") }
                         .tag(3)
                 }
             }
-            .onChange(of: selectedTab) { old, new in
+            .onChange(of: selectedTab) { _, new in
                 guard !auth.isSales, new == 3 else { return }
-                selectedTab = old
                 showMoreMenu = true
             }
 
@@ -71,8 +69,8 @@ struct MainScreen: View {
             HStack(spacing: 0) {
                 Spacer()
                 MoreMenuPanel { dest in
+                    moreContent = dest
                     showMoreMenu = false
-                    moreDestination = dest
                 }
             }
             .ignoresSafeArea()
@@ -80,13 +78,6 @@ struct MainScreen: View {
             .animation(.spring(response: 0.38, dampingFraction: 0.82), value: showMoreMenu)
             .allowsHitTesting(showMoreMenu)
             .zIndex(11)
-        }
-        .sheet(item: $moreDestination) { dest in
-            switch dest {
-            case .sales:  SalesScreen(viewModel: salesViewModel)
-            case .users:  UsersScreen()
-            case .profile: ProfileScreen()
-            }
         }
         .onAppear {
             planViewModel.load()
@@ -97,6 +88,15 @@ struct MainScreen: View {
             }
         }
         .onDisappear { planViewModel.cancel() }
+    }
+
+    @ViewBuilder
+    private var moreTabContent: some View {
+        switch moreContent {
+        case .sales:   SalesScreen(viewModel: salesViewModel)
+        case .users:   UsersScreen()
+        case .profile: ProfileScreen()
+        }
     }
 }
 
