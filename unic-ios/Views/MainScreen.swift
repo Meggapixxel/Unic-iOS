@@ -110,27 +110,33 @@ private struct MoreMenuPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let user = auth.currentUser {
-                VStack(alignment: .leading, spacing: 10) {
-                    Circle()
-                        .fill(roleColor(user.role).opacity(0.15))
-                        .frame(width: 64, height: 64)
-                        .overlay {
-                            Text(initials(user))
-                                .font(.title2.bold())
-                                .foregroundStyle(roleColor(user.role))
+                Button { onSelect(.profile) } label: {
+                    HStack(spacing: 14) {
+                        Circle()
+                            .fill(roleColor(user.role).opacity(0.15))
+                            .frame(width: 52, height: 52)
+                            .overlay {
+                                Text(initials(user))
+                                    .font(.headline.bold())
+                                    .foregroundStyle(roleColor(user.role))
+                            }
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(user.fullName)
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+                            Text(user.role.displayName)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(user.fullName)
-                            .font(.headline)
-                        Text(user.role.displayName)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 64)
+                    .padding(.bottom, 20)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 64)
-                .padding(.bottom, 20)
             }
 
             Divider()
@@ -144,9 +150,6 @@ private struct MoreMenuPanel: View {
                 MoreMenuRow(icon: "person.2.fill", label: String.users_nav_title) {
                     onSelect(.users)
                 }
-            }
-            MoreMenuRow(icon: "person.circle", label: String.profile_nav_title) {
-                onSelect(.profile)
             }
 
             Spacer()
