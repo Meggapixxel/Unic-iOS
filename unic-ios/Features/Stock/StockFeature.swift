@@ -1,0 +1,226 @@
+// FILE: unic-ios/Features/Stock/StockFeature.swift
+import ComposableArchitecture
+import Foundation
+
+// MARK: - Stock Feature
+// StockSortField (.name / .code / .quantity) is defined in FlexiBeeScreen+ViewModel.swift
+
+@Reducer
+struct StockFeature {
+    @ObservableState
+    struct State: Equatable {
+        var searchText: String = ""
+        var sortField: StockSortField = .quantity
+        var sortAscending: Bool = false
+        var isLoading: Bool = false
+        var errorMessage: String?
+        var lastSyncDate: Date?
+        @Presents var destination: Destination.State?
+
+        // Backing store — populated on load/sync
+        var allStock: [FlexiBeeStockWithPrice] = []
+
+        var filteredStock: [FlexiBeeStockWithPrice] {
+            let q = searchText.lowercased()
+            let items: [FlexiBeeStockWithPrice] = searchText.isEmpty
+                ? allStock
+                : allStock.filter {
+                    $0.code.lowercased().contains(q) ||
+                    $0.name.lowercased().contains(q)
+                }
+            return items.sorted {
+                switch sortField {
+                case .quantity:
+                    return sortAscending ? $0.quantity < $1.quantity : $0.quantity > $1.quantity
+                case .code:
+                    return sortAscending ? $0.code < $1.code : $0.code > $1.code
+                case .name:
+                    return sortAscending ? $0.name < $1.name : $0.name > $1.name
+                }
+            }
+        }
+
+        var totalStockUnits: Double { allStock.reduce(0) { $0 + $1.quantity } }
+        var lowStockCount: Int { allStock.filter { $0.quantity <= 2 }.count }
+    }
+
+    // MARK: - Destination
+
+    @Reducer
+    enum Destination {
+        case product(ProductDetailFeature)
+        case checklist(StockChecklistFeature)
+        case barcodeScanner(BarcodeScannerFeature)
+    }
+
+    // MARK: - Action
+
+    enum Action: BindableAction {
+        case binding(BindingAction<State>)
+        case onLoad
+        case forceSync
+        case syncCompleted([FlexiBeeStockWithPrice], Date?)
+        case syncFailed(String)
+        case destinationChanged
+        case openProduct(FlexiBeeStockWithPrice)
+        case openChecklist
+        case openBarcodeScanner
+        case barcodeScanned(String)
+        case barcodeSearchCompleted(FlexiBeeStockWithPrice?)
+        case destination(PresentationAction<Destination.Action>)
+    }
+
+    // MARK: - Dependencies
+
+    @Dependency(\.flexiBeeClient) var flexiBeeClient
+    @Dependency(\.firebaseClient) var firebaseClient
+
+    // MARK: - Body
+
+    var body: some ReducerOf<Self> {
+        BindingReducer()
+
+        Reduce { state, action in
+            switch action {
+
+            case .onLoad:
+                state.isLoading = flexiBeeClient.isLoading()
+                state.lastSyncDate = flexiBeeClient.lastSyncDate()
+                let stock = flexiBeeClient.stockWithPrices()
+                if !stock.isEmpty {
+                    state.allStock = Array(stock)
+                    state.isLoading = false
+                }
+                return .run { send in
+                    await flexiBeeClient.loadIfNeeded()
+                    let updated = flexiBeeClient.stockWithPrices()
+                    let date = flexiBeeClient.lastSyncDate()
+                    await send(.syncCompleted(Array(updated), date))
+                }
+
+            case .forceSync:
+                state.isLoading = true
+                state.errorMessage = nil
+                return .run { send in
+                    await flexiBeeClient.forceSync()
+                    let stock = flexiBeeClient.stockWithPrices()
+                    let date = flexiBeeClient.lastSyncDate()
+                    await send(.syncCompleted(Array(stock), date))
+                }
+
+            case let .syncCompleted(stock, date):
+                state.isLoading = false
+                state.allStock = stock
+                state.lastSyncDate = date
+                return .none
+
+            case let .syncFailed(msg):
+                state.isLoading = false
+                state.errorMessage = msg
+                return .none
+
+            case .destinationChanged:
+                return .none
+
+            case let .openProduct(product):
+                state.destination = .product(ProductDetailFeature.State(product: product))
+                return .none
+
+            case .openChecklist:
+                state.destination = .checklist(StockChecklistFeature.State())
+                return .none
+
+            case .openBarcodeScanner:
+                state.destination = .barcodeScanner(BarcodeScannerFeature.State())
+                return .none
+
+            case let .barcodeScanned(barcode):
+                state.destination = nil
+                return .run { [stock = state.allStock] send in
+                    do {
+                        guard let article = try await firebaseClient.lookupBarcodeArticle(barcode) else {
+                            await send(.barcodeSearchCompleted(nil))
+                            return
+                        }
+                        let normalized = Self.normalizeKod(article)
+                        let product = stock.first { Self.normalizeKod($0.code) == normalized }
+                        await send(.barcodeSearchCompleted(product))
+                    } catch {
+                        await send(.barcodeSearchCompleted(nil))
+                    }
+                }
+
+            case let .barcodeSearchCompleted(product):
+                if let product {
+                    state.destination = .product(ProductDetailFeature.State(product: product))
+                }
+                return .none
+
+            case .destination(.presented(.barcodeScanner(.scanCompleted(let barcode)))):
+                return .send(.barcodeScanned(barcode))
+
+            case .destination(.presented(.checklist(.dismiss))):
+                state.destination = nil
+                return .none
+
+            case .destination:
+                return .none
+
+            case .binding:
+                return .none
+            }
+        }
+        .ifLet(\.$destination, action: \.destination)
+    }
+
+    private static func normalizeKod(_ s: String) -> String {
+        s.replacingOccurrences(of: #"[^A-Za-z0-9]+"#, with: "", options: .regularExpression)
+         .uppercased()
+    }
+}
+
+// MARK: - Product Detail Feature (leaf)
+
+@Reducer
+struct ProductDetailFeature {
+    @ObservableState
+    struct State: Equatable {
+        var product: FlexiBeeStockWithPrice
+        var showPurchaseDetails: Bool = false
+    }
+
+    enum Action: BindableAction {
+        case binding(BindingAction<State>)
+        case togglePurchaseDetails
+    }
+
+    var body: some ReducerOf<Self> {
+        BindingReducer()
+        Reduce { state, action in
+            switch action {
+            case .togglePurchaseDetails:
+                state.showPurchaseDetails.toggle()
+                return .none
+            case .binding:
+                return .none
+            }
+        }
+    }
+}
+
+// MARK: - Barcode Scanner Feature (leaf)
+
+@Reducer
+struct BarcodeScannerFeature {
+    @ObservableState
+    struct State: Equatable {}
+
+    enum Action {
+        case scanCompleted(String)
+        case dismiss
+    }
+
+    var body: some ReducerOf<Self> {
+        Reduce { _, _ in .none }
+    }
+}

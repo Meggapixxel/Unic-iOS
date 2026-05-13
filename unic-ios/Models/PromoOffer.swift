@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct PromoOffer: Codable, Identifiable {
+struct PromoOffer: Codable, Identifiable, Equatable {
     @DocumentID var id: String?
     let title: String
     let description: String

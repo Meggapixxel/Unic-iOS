@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct Plan: Codable, Identifiable {
+struct Plan: Codable, Identifiable, Equatable {
     @DocumentID var id: String?
     let title: String
     let description: String

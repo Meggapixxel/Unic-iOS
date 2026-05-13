@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0391707D2F32ED5200A82FD4 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 0391707C2F32ED5200A82FD4 /* FirebaseFirestore */; };
 		039170882F330B6200A82FD4 /* IdentifiedCollections in Frameworks */ = {isa = PBXBuildFile; productRef = 039170872F330B6200A82FD4 /* IdentifiedCollections */; };
+		0391708B2F330B6200A82FD4 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 0391708A2F330B6200A82FD4 /* ComposableArchitecture */; };
 		039170A02F32ED5200A82FD4 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 039170A12F32ED5200A82FD4 /* FirebaseAuth */; };
 /* End PBXBuildFile section */
 
@@ -32,6 +33,7 @@
 				0391707D2F32ED5200A82FD4 /* FirebaseFirestore in Frameworks */,
 				039170A02F32ED5200A82FD4 /* FirebaseAuth in Frameworks */,
 				039170882F330B6200A82FD4 /* IdentifiedCollections in Frameworks */,
+				0391708B2F330B6200A82FD4 /* ComposableArchitecture in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,6 +79,7 @@
 				0391707C2F32ED5200A82FD4 /* FirebaseFirestore */,
 				039170A12F32ED5200A82FD4 /* FirebaseAuth */,
 				039170872F330B6200A82FD4 /* IdentifiedCollections */,
+				0391708A2F330B6200A82FD4 /* ComposableArchitecture */,
 			);
 			productName = "unic-ios";
 			productReference = 0391705B2F32E68700A82FD4 /* unic-ios.app */;
@@ -111,6 +114,7 @@
 			packageReferences = (
 				0391707B2F32ED5200A82FD4 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				039170862F330B6200A82FD4 /* XCRemoteSwiftPackageReference "swift-identified-collections" */,
+				039170892F330B6200A82FD4 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0391705C2F32E68700A82FD4 /* Products */;
@@ -362,6 +366,14 @@
 				minimumVersion = 1.1.1;
 			};
 		};
+		039170892F330B6200A82FD4 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture.git";
+			requirement = {
+				kind = exactVersion;
+				version = 1.25.5;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -374,6 +386,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 039170862F330B6200A82FD4 /* XCRemoteSwiftPackageReference "swift-identified-collections" */;
 			productName = IdentifiedCollections;
+		};
+		0391708A2F330B6200A82FD4 /* ComposableArchitecture */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 039170892F330B6200A82FD4 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
+			productName = ComposableArchitecture;
 		};
 		039170A12F32ED5200A82FD4 /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;

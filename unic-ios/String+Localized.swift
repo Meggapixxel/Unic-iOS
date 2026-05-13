@@ -372,7 +372,16 @@ extension String {
     static var role_sales:      String { String(localized: "role_sales") }
 
     // MARK: - Plans
-    static var plans_nav_title: String { String(localized: "plans_nav_title") }
+    static var plans_nav_title:           String { String(localized: "plans_nav_title") }
+    static var plans_empty:               String { String(localized: "plans_empty") }
+    static var plan_add:                  String { String(localized: "plan_add") }
+    static var plan_edit:                 String { String(localized: "plan_edit") }
+    static var plan_delete:               String { String(localized: "plan_delete") }
+    static var plan_delete_confirm:       String { String(localized: "plan_delete_confirm") }
+    static var plan_title_placeholder:    String { String(localized: "plan_title_placeholder") }
+    static var plan_description_placeholder: String { String(localized: "plan_description_placeholder") }
+    static var plan_start_date:           String { String(localized: "plan_start_date") }
+    static var plan_end_date:             String { String(localized: "plan_end_date") }
 
     // MARK: - Promos
     static var promos_nav_title:              String { String(localized: "promos_nav_title") }
