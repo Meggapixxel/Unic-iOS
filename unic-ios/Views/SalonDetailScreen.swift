@@ -29,9 +29,6 @@ struct SalonDetailScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Info
-                infoSection
-
                 // Quick Actions
                 quickActionsSection
 
@@ -46,6 +43,9 @@ struct SalonDetailScreen: View {
 
                 // Delete Section
                 deleteSection
+
+                // Admin Section
+                adminSection
             }
             .padding()
         }
@@ -105,18 +105,6 @@ struct SalonDetailScreen: View {
         }
         .task {
             viewModel.loadLatestStatusEntry()
-        }
-    }
-
-    // MARK: - Info Section
-
-    @ViewBuilder
-    private var infoSection: some View {
-        if let category = salon.categoryName {
-            Text(category)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -487,6 +475,30 @@ struct SalonDetailScreen: View {
                 .cornerRadius(12)
             }
             .disabled(viewModel.isSaving)
+        }
+    }
+
+    // MARK: - Admin Section
+
+    @ViewBuilder
+    private var adminSection: some View {
+        if auth.isAdmin {
+            VStack(alignment: .leading, spacing: 8) {
+                SectionHeader(title: "ADMIN")
+                HStack {
+                    Text("ID")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(salon.salonId)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+            }
         }
     }
 }
