@@ -687,5 +687,5 @@ extension SalonStatus {
 }
 
 #Preview {
-    SalonListScreen()
+    SalonListScreen(viewModel: SalonsViewModel())
 }
