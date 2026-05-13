@@ -8,4 +8,6 @@ enum AppDestination: Hashable {
     case userActivity(AppUser)
     case stockChecklist
     case plans
+    case sales
+    case users
 }

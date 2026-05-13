@@ -16,61 +16,55 @@ enum SalesSection: String, CaseIterable {
     }
 }
 
-struct SalesScreen: View {
+struct SalesContentView: View {
     @ObservedObject var viewModel: SalesViewModel
-    @Environment(\.dismiss) private var dismiss
-    @State private var router = AppRouter()
+    var router: AppRouter
     @State private var section: SalesSection = .invoices
 
     var body: some View {
-        AppNavigationStack(router: router, salesViewModel: viewModel) {
-            Group {
-                switch section {
-                case .analytics:
-                    AnalyticsSectionView(viewModel: viewModel, router: router)
-                case .invoices:
-                    InvoicesSectionView(viewModel: viewModel)
-                }
+        Group {
+            switch section {
+            case .analytics:
+                AnalyticsSectionView(viewModel: viewModel, router: router)
+            case .invoices:
+                InvoicesSectionView(viewModel: viewModel)
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    CloseButton { dismiss() }
-                }
-                ToolbarItem(placement: .principal) {
-                    Picker("", selection: $section) {
-                        ForEach(SalesSection.allCases, id: \.self) {
-                            Text($0.label).tag($0)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 220)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    SyncDateLabel(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate)
-                }
-            }
-            .overlay {
-                if viewModel.isLoading && viewModel.invoices.isEmpty { LoadingOverlay() }
-            }
-            .task { await viewModel.loadIfNeeded() }
-            .sheet(
-                isPresented: Binding(
-                    get: { viewModel.invoiceFormVM != nil },
-                    set: { if !$0 { viewModel.closeCreateInvoice() } }
-                ),
-                onDismiss: {
-                    if let id = viewModel.recentlyCreatedInvoiceId {
-                        viewModel.clearRecentlyCreatedInvoice()
-                        if let invoice = viewModel.invoices.first(where: { $0.id == id }) {
-                            router.push(.invoice(invoice))
-                        }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("", selection: $section) {
+                    ForEach(SalesSection.allCases, id: \.self) {
+                        Text($0.label).tag($0)
                     }
                 }
-            ) {
-                if let formVM = viewModel.invoiceFormVM {
-                    InvoiceFormScreen(viewModel: formVM, onDismiss: { viewModel.closeCreateInvoice() })
+                .pickerStyle(.segmented)
+                .frame(width: 220)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                SyncDateLabel(isLoading: viewModel.isLoading, lastSyncDate: viewModel.lastSyncDate)
+            }
+        }
+        .overlay {
+            if viewModel.isLoading && viewModel.invoices.isEmpty { LoadingOverlay() }
+        }
+        .task { await viewModel.loadIfNeeded() }
+        .sheet(
+            isPresented: Binding(
+                get: { viewModel.invoiceFormVM != nil },
+                set: { if !$0 { viewModel.closeCreateInvoice() } }
+            ),
+            onDismiss: {
+                if let id = viewModel.recentlyCreatedInvoiceId {
+                    viewModel.clearRecentlyCreatedInvoice()
+                    if let invoice = viewModel.invoices.first(where: { $0.id == id }) {
+                        router.push(.invoice(invoice))
+                    }
                 }
+            }
+        ) {
+            if let formVM = viewModel.invoiceFormVM {
+                InvoiceFormScreen(viewModel: formVM, onDismiss: { viewModel.closeCreateInvoice() })
             }
         }
     }

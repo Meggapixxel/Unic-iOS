@@ -5,11 +5,9 @@ struct ProfileScreen: View {
     @State private var router = AppRouter()
     @StateObject private var salesViewModel = SalesViewModel()
     @State private var showLogoutConfirm = false
-    @State private var showSales = false
-    @State private var showUsers = false
 
     var body: some View {
-        AppNavigationStack(router: router) {
+        AppNavigationStack(router: router, salesViewModel: salesViewModel) {
             List {
                 if let user = auth.currentUser {
                     Section {
@@ -41,18 +39,16 @@ struct ProfileScreen: View {
 
                     if auth.canViewSales {
                         Section {
-                            Button { showSales = true } label: {
+                            NavigationLink(value: AppDestination.sales) {
                                 Label(String.sales_nav_title, systemImage: "chart.line.uptrend.xyaxis")
-                                    .foregroundStyle(.primary)
                             }
                         }
                     }
 
                     if auth.canViewUsers {
                         Section {
-                            Button { showUsers = true } label: {
+                            NavigationLink(value: AppDestination.users) {
                                 Label(String.users_nav_title, systemImage: "person.2.fill")
-                                    .foregroundStyle(.primary)
                             }
                         }
                     }
@@ -80,12 +76,6 @@ struct ProfileScreen: View {
                 Button(String.profile_logout, role: .destructive) { auth.logout() }
                 Button(String.cancel, role: .cancel) {}
             }
-        }
-        .fullScreenCover(isPresented: $showSales) {
-            SalesScreen(viewModel: salesViewModel)
-        }
-        .fullScreenCover(isPresented: $showUsers) {
-            UsersScreen()
         }
     }
 

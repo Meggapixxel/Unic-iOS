@@ -31,6 +31,12 @@ struct AppNavigationStack<Content: View>: View {
                         StockChecklistScreen()
                     case .plans:
                         PlansScreen()
+                    case .sales:
+                        if let vm = salesViewModel {
+                            SalesContentView(viewModel: vm, router: router)
+                        }
+                    case .users:
+                        UsersContentView()
                     }
                 }
         }
