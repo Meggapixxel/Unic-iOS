@@ -102,9 +102,14 @@ struct InvoiceDetailView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(store.invoice.invoiceNumber)
                         .font(.title3.bold())
-                    Text(store.invoice.clientName)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    Button {
+                        store.send(.clientTapped)
+                    } label: {
+                        Text(store.invoice.clientName)
+                            .font(.subheadline)
+                            .foregroundStyle(.blue)
+                    }
+                    .buttonStyle(.plain)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 6) {
@@ -229,22 +234,35 @@ struct InvoiceDetailView: View {
     }
 
     private func lineItemRow(_ item: FlexiBeeInvoiceItem) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.productName).font(.callout)
-                if !item.productCode.isEmpty {
-                    Text(item.productCode)
-                        .font(.caption2)
+        Button {
+            if !item.productCode.isEmpty {
+                store.send(.productTapped(item.productCode))
+            }
+        } label: {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.productName).font(.callout)
+                    if !item.productCode.isEmpty {
+                        Text(item.productCode)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("\(String.create_invoice_item_qty): \(String(format: "%g", item.quantity))")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Text("\(String.create_invoice_item_qty): \(String(format: "%g", item.quantity))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(czk(item.total)).font(.callout.bold())
+                if !item.productCode.isEmpty {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
             }
-            Spacer()
-            Text(czk(item.total)).font(.callout.bold())
+            .padding(.vertical, 2)
         }
-        .padding(.vertical, 2)
+        .buttonStyle(.plain)
+        .disabled(item.productCode.isEmpty)
     }
 
     // MARK: - Stock Movement Section

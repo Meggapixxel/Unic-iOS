@@ -86,6 +86,8 @@ struct InvoiceDetailFeature {
         case invoiceRefreshed(FlexiBeeInvoice)
         case destination(PresentationAction<Destination.Action>)
         case failed(String)
+        case productTapped(String)
+        case clientTapped
     }
 
     // MARK: - Dependencies
@@ -309,6 +311,12 @@ struct InvoiceDetailFeature {
                 state.isLoading = false
                 state.isLoadingPDF = false
                 _ = msg
+                return .none
+
+            case .productTapped:
+                return .none
+
+            case .clientTapped:
                 return .none
             }
         }

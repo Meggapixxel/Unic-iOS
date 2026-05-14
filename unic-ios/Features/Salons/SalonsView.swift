@@ -2,7 +2,6 @@
 
 import ComposableArchitecture
 import SwiftUI
-import MapKit
 
 struct SalonsView: View {
     @Bindable var store: StoreOf<SalonsFeature>
@@ -294,44 +293,60 @@ private struct SalonsFilterPopoverView: View {
     }
 }
 
-// MARK: - Map Wrapper (delegates to existing SalonMapView logic)
+// MARK: - Map View
 
 private struct SalonsMapView: View {
     @Bindable var store: StoreOf<SalonsFeature>
+    @ObservedObject private var locationManager = LocationManager.shared
+    @State private var centerOnUser = false
 
-    var body: some View {
-        // Bridge to legacy SalonMapView by constructing a temporary SalonsViewModel-like object.
-        // This wraps the displayed salons for map display.
-        SalonsMapBridgeView(
-            salons: store.displayedSalons,
-            onSalonTapped: { store.send(.salonTapped($0)) }
-        )
+    private var mappedCount: Int {
+        store.displayedSalons.filter { $0.coordinate != nil }.count
     }
-}
-
-private struct SalonsMapBridgeView: View {
-    let salons: IdentifiedArrayOf<Salon>
-    let onSalonTapped: (Salon) -> Void
 
     var body: some View {
-        // Use MapKit directly to show salons with coordinates
-        Map {
-            ForEach(salons.filter { $0.coordinate != nil }) { salon in
-                if let coord = salon.coordinate {
-                    Annotation(salon.displayName, coordinate: coord) {
-                        Button {
-                            onSalonTapped(salon)
-                        } label: {
-                            Circle()
-                                .fill(salon.statusEnum.color)
-                                .frame(width: 14, height: 14)
-                                .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                                .shadow(radius: 2)
-                        }
-                    }
-                }
+        SalonNativeMapView(
+            salons: Array(store.displayedSalons),
+            onSelect: { store.send(.salonTapped($0)) },
+            centerOnUser: $centerOnUser
+        )
+        .ignoresSafeArea()
+        .onAppear {
+            if !locationManager.isAuthorized {
+                LocationManager.shared.requestPermission()
             }
         }
-        .ignoresSafeArea(edges: .bottom)
+        .overlay(alignment: .topTrailing) {
+            if locationManager.isAuthorized {
+                Button {
+                    centerOnUser = true
+                } label: {
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.blue)
+                        .padding(12)
+                        .glassBackgroundCircle()
+                }
+                .padding(.top, 16)
+                .padding(.trailing, 16)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 8) {
+                Text("salons_on_map \(mappedCount)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                StatusFilterChipsView(
+                    statusFilter: $store.statusFilter,
+                    showStatusInfo: $store.showStatusInfo
+                )
+            }
+            .padding(.vertical)
+            .glassBackgroundRectangle(cornerRadius: 20)
+            .padding(.horizontal)
+        }
+        .sheet(isPresented: $store.showStatusInfo) {
+            StatusInfoView(isPresented: $store.showStatusInfo)
+        }
     }
 }

@@ -17,6 +17,8 @@ struct ProfileFeature {
         case allTopProducts(AllTopProductsFeature)
         case users(UsersFeature)
         case plans(PlansFeature)
+        case productDetail(ProductDetailFeature)
+        case clientDetail(ClientDetailFeature)
     }
 
     // MARK: - State
@@ -122,6 +124,42 @@ struct ProfileFeature {
                 return .run { [flexiBeeClient] send in
                     await flexiBeeClient.forceSync()
                 }
+
+            case .path(.element(_, .invoiceDetail(.productTapped(let code)))):
+                let stock = flexiBeeClient.stockWithPrices()
+                if let product = stock.first(where: { $0.code == code }) {
+                    state.path.append(.productDetail(ProductDetailFeature.State(product: product)))
+                }
+                return .none
+
+            case .path(.element(let id, .invoiceDetail(.clientTapped))):
+                if case let .invoiceDetail(detailState) = state.path[id: id] {
+                    let name = detailState.invoice.clientName
+                    let code = detailState.invoice.clientCode
+                    let allInvoices = flexiBeeClient.invoices()
+                    let clientInvoices = allInvoices.filter {
+                        code != nil ? $0.clientCode == code : $0.clientName == name
+                    }
+                    state.path.append(.clientDetail(ClientDetailFeature.State(clientName: name, invoices: clientInvoices)))
+                }
+                return .none
+
+            case .path(.element(_, .allTopProducts(.productTapped(let code)))):
+                let stock = flexiBeeClient.stockWithPrices()
+                if let product = stock.first(where: { $0.code == code }) {
+                    state.path.append(.productDetail(ProductDetailFeature.State(product: product)))
+                }
+                return .none
+
+            case .path(.element(_, .allTopClients(.clientTapped(let name)))):
+                let allInvoices = flexiBeeClient.invoices()
+                let clientInvoices = allInvoices.filter { $0.clientName == name }
+                state.path.append(.clientDetail(ClientDetailFeature.State(clientName: name, invoices: clientInvoices)))
+                return .none
+
+            case .path(.element(_, .clientDetail(.invoiceTapped(let invoice)))):
+                state.path.append(.invoiceDetail(InvoiceDetailFeature.State(invoice: invoice)))
+                return .none
 
             case .path(.element(_, .users(.userTapped(let user)))):
                 state.path.append(.userActivity(UserActivityFeature.State(user: user)))

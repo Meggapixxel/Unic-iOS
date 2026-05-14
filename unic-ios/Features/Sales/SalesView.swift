@@ -392,23 +392,31 @@ struct AllTopProductsView: View {
     var body: some View {
         List {
             ForEach(Array(store.filtered.enumerated()), id: \.offset) { idx, p in
-                HStack(alignment: .top, spacing: 8) {
-                    Text("\(idx + 1)")
-                        .font(.caption.bold())
-                        .foregroundStyle(.secondary)
-                        .frame(width: 20, alignment: .leading)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(p.name).font(.callout).lineLimit(2)
-                        Text(p.code).font(.caption2).foregroundStyle(.secondary)
+                Button {
+                    store.send(.productTapped(p.code))
+                } label: {
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("\(idx + 1)")
+                            .font(.caption.bold())
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(p.name).font(.callout).lineLimit(2)
+                            Text(p.code).font(.caption2).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text(String.sales_quantity(Int(p.quantity))).font(.callout.bold())
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
                     }
-                    Spacer()
-                    Text(String.sales_quantity(Int(p.quantity))).font(.callout.bold())
+                    .padding(.vertical, 2)
                 }
-                .padding(.vertical, 2)
+                .buttonStyle(.plain)
             }
         }
         .listStyle(.plain)
-        .searchable(text: $store.searchText, prompt: String.sales_search_prompt)
+        .searchable(text: $store.searchText, prompt: String.search_stock)
         .navigationTitle(String.sales_top_products)
         .navigationBarTitleDisplayMode(.inline)
         .overlay {
@@ -427,16 +435,24 @@ struct AllTopClientsView: View {
     var body: some View {
         List {
             ForEach(Array(store.filtered.enumerated()), id: \.offset) { idx, client in
-                HStack(alignment: .top, spacing: 8) {
-                    Text("\(idx + 1)")
-                        .font(.caption.bold())
-                        .foregroundStyle(.secondary)
-                        .frame(width: 20, alignment: .leading)
-                    Text(client.name).font(.callout).lineLimit(2)
-                    Spacer()
-                    Text(czk(client.revenue)).font(.callout.bold())
+                Button {
+                    store.send(.clientTapped(client.name))
+                } label: {
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("\(idx + 1)")
+                            .font(.caption.bold())
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20, alignment: .leading)
+                        Text(client.name).font(.callout).lineLimit(2)
+                        Spacer()
+                        Text(czk(client.revenue)).font(.callout.bold())
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(.vertical, 2)
                 }
-                .padding(.vertical, 2)
+                .buttonStyle(.plain)
             }
         }
         .listStyle(.plain)

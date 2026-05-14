@@ -338,6 +338,7 @@ struct AllTopProductsFeature {
 
     enum Action: BindableAction {
         case binding(BindingAction<State>)
+        case productTapped(String)
     }
 
     var body: some Reducer<State, Action> {
@@ -369,10 +370,39 @@ struct AllTopClientsFeature {
 
     enum Action: BindableAction {
         case binding(BindingAction<State>)
+        case clientTapped(String)
     }
 
     var body: some Reducer<State, Action> {
         BindingReducer()
+        Reduce { _, _ in .none }
+    }
+}
+
+// MARK: - ClientDetailFeature
+
+@Reducer
+struct ClientDetailFeature {
+    @ObservableState
+    struct State: Equatable {
+        var clientName: String
+        var invoices: [FlexiBeeInvoice]
+
+        var totalRevenue: Double { invoices.reduce(0) { $0 + $1.total } }
+        var paidRevenue:  Double { invoices.filter { $0.paymentStatus == .paid }.reduce(0) { $0 + $1.total } }
+        var unpaidRevenue: Double { totalRevenue - paidRevenue }
+
+        static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.clientName == rhs.clientName &&
+            lhs.invoices.map(\.id) == rhs.invoices.map(\.id)
+        }
+    }
+
+    enum Action {
+        case invoiceTapped(FlexiBeeInvoice)
+    }
+
+    var body: some Reducer<State, Action> {
         Reduce { _, _ in .none }
     }
 }

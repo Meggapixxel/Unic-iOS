@@ -118,6 +118,10 @@ struct ProfileView: View {
                     UsersView(store: usersStore)
                 case let .plans(plansStore):
                     PlansView(store: plansStore)
+                case let .productDetail(productStore):
+                    ProductDetailView(store: productStore)
+                case let .clientDetail(clientStore):
+                    ClientDetailView(store: clientStore)
                 }
             }
             .toolbar(.hidden, for: .tabBar)
