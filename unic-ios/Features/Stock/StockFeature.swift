@@ -10,8 +10,8 @@ struct StockFeature {
     @ObservableState
     struct State: Equatable {
         var searchText: String = ""
-        var sortField: StockSortField = .quantity
-        var sortAscending: Bool = false
+        var sortField: StockSortField = .section
+        var sortAscending: Bool = true
         var isLoading: Bool = false
         var errorMessage: String?
         var lastSyncDate: Date?
@@ -27,22 +27,29 @@ struct StockFeature {
                 ? allStock
                 : allStock.filter {
                     $0.code.lowercased().contains(q) ||
-                    $0.name.lowercased().contains(q)
+                    $0.displayName.lowercased().contains(q)
                 }
-            return items.sorted {
-                switch sortField {
-                case .quantity:
-                    return sortAscending ? $0.quantity < $1.quantity : $0.quantity > $1.quantity
-                case .code:
-                    return sortAscending ? $0.code < $1.code : $0.code > $1.code
-                case .name:
-                    return sortAscending ? $0.name < $1.name : $0.name > $1.name
-                }
+            switch sortField {
+            case .section:
+                return items.sorted { $0.displayName < $1.displayName }
+            case .name:
+                return items.sorted { $0.displayName < $1.displayName }
+            case .quantity:
+                return items.sorted { sortAscending ? $0.quantity < $1.quantity : $0.quantity > $1.quantity }
             }
         }
 
         var totalStockUnits: Double { allStock.reduce(0) { $0 + $1.quantity } }
         var lowStockCount: Int { allStock.filter { $0.quantity <= 2 }.count }
+
+        var groupedStock: [(line: String, items: [FlexiBeeStockWithPrice])] {
+            let grouped = Dictionary(grouping: filteredStock, by: \.productLine)
+            return grouped.keys.sorted { a, b in
+                if a == "—" { return false }
+                if b == "—" { return true }
+                return a < b
+            }.map { line in (line: line, items: grouped[line]!) }
+        }
     }
 
     // MARK: - Path

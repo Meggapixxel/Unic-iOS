@@ -258,8 +258,8 @@ extension String {
     static var stock_low:   String { String(localized: "stock_low") }
 
     // MARK: - FlexiBee (stock sort)
+    static var stock_sort_section:  String { String(localized: "stock_sort_section") }
     static var stock_sort_quantity: String { String(localized: "stock_sort_quantity") }
-    static var stock_sort_code:     String { String(localized: "stock_sort_code") }
     static var stock_sort_name:     String { String(localized: "stock_sort_name") }
     static var stock_sort_asc:      String { String(localized: "stock_sort_asc") }
     static var stock_sort_desc:     String { String(localized: "stock_sort_desc") }

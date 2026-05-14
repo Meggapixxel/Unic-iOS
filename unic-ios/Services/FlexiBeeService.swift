@@ -254,6 +254,7 @@ final class FlexiBeeService: ObservableObject {
         let body: [String: Any] = ["winstrom": ["faktura-vydana": [invoiceDict]]]
         let jsonData = try JSONSerialization.data(withJSONObject: body)
         _ = try await execute(method: "PUT", urlString: baseURL + "/faktura-vydana/\(id).json", body: jsonData)
+        lineItemsByInvoiceId.removeValue(forKey: id)
     }
 
     func updateInvoicePaymentStatus(id: String, status: PaymentStatus, method: PaymentMethod = .prevod) async throws {

@@ -252,8 +252,8 @@
 "see_all" = "Показати всі";
 "stock_units" = "Одиниць";
 "stock_low" = "Мало";
+"stock_sort_section" = "По секціях";
 "stock_sort_quantity" = "По кількості";
-"stock_sort_code" = "По артикулу";
 "stock_sort_name" = "По назві";
 "stock_sort_asc" = "За зростанням";
 "stock_sort_desc" = "За спаданням";

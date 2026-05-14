@@ -117,6 +117,16 @@ struct FlexiBeeStockWithPrice: Identifiable, Hashable {
     var sellPriceVAT:  Double  { price?.sellPriceVAT  ?? 0 }
     var purchasePrice: Double  { price?.purchasePrice ?? 0 }
     var marginPercent: Double? { price?.marginPercent }
+
+    var productLine: String {
+        guard let range = name.range(of: " - ") else { return "—" }
+        return String(name[name.startIndex..<range.lowerBound])
+    }
+
+    var displayName: String {
+        guard let range = name.range(of: " - ") else { return name }
+        return String(name[range.upperBound...])
+    }
 }
 
 struct FlexiBeeErrorResponse: Decodable {

@@ -29,11 +29,11 @@ struct StockMovementScreen: View {
     var body: some View {
         NavigationStack {
             Form {
-                if !viewModel.items.isEmpty || viewModel.bundleSections.isEmpty {
-                    regularItemsSection
-                }
                 ForEach($viewModel.bundleSections) { $section in
                     bundleSectionView(section: $section)
+                }
+                if !viewModel.items.isEmpty || viewModel.bundleSections.isEmpty {
+                    regularItemsSection
                 }
                 if let error = viewModel.submitError {
                     Section {

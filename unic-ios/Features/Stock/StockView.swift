@@ -66,15 +66,17 @@ struct StockView: View {
         ToolbarItem(placement: .topBarLeading) {
             Menu {
                 Picker(selection: $store.sortField) {
-                    Text(String.stock_sort_quantity).tag(StockSortField.quantity)
-                    Text(String.stock_sort_code).tag(StockSortField.code)
+                    Text(String.stock_sort_section).tag(StockSortField.section)
                     Text(String.stock_sort_name).tag(StockSortField.name)
+                    Text(String.stock_sort_quantity).tag(StockSortField.quantity)
                 } label: { EmptyView() }
-                Divider()
-                Picker(selection: $store.sortAscending) {
-                    Text(String.stock_sort_asc).tag(true)
-                    Text(String.stock_sort_desc).tag(false)
-                } label: { EmptyView() }
+                if store.sortField == .quantity {
+                    Divider()
+                    Picker(selection: $store.sortAscending) {
+                        Text(String.stock_sort_asc).tag(true)
+                        Text(String.stock_sort_desc).tag(false)
+                    } label: { EmptyView() }
+                }
             } label: {
                 Image(systemName: "arrow.up.arrow.down").imageScale(.large)
             }
@@ -112,20 +114,19 @@ private struct StockListContent: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                 }
-                Section {
-                    ForEach(store.filteredStock) { item in
-                        Button {
-                            store.send(.openProduct(item))
-                        } label: {
-                            HStack(spacing: 8) {
-                                StockWithPriceRow(item: item)
-                                Image(systemName: "chevron.right")
-                                    .font(.caption2.bold())
-                                    .foregroundStyle(.tertiary)
+                if store.sortField == .section {
+                    ForEach(store.groupedStock, id: \.line) { group in
+                        Section("\(group.line) (\(group.items.count))") {
+                            ForEach(group.items) { item in
+                                stockItemButton(item)
                             }
-                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                    }
+                } else {
+                    Section {
+                        ForEach(store.filteredStock) { item in
+                            stockItemButton(item)
+                        }
                     }
                 }
             }
@@ -160,6 +161,19 @@ private struct StockListContent: View {
         }
     }
     
+    private func stockItemButton(_ item: FlexiBeeStockWithPrice) -> some View {
+        Button { store.send(.openProduct(item)) } label: {
+            HStack(spacing: 8) {
+                StockWithPriceRow(item: item)
+                Image(systemName: "chevron.right")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     private var header: some View {
         VStack {
             SyncStatusRow(isLoading: false, lastSyncDate: store.lastSyncDate)

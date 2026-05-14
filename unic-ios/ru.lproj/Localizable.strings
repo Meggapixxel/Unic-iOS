@@ -252,8 +252,8 @@
 "see_all" = "Показать все";
 "stock_units" = "Единиц";
 "stock_low" = "Мало";
+"stock_sort_section" = "По секциям";
 "stock_sort_quantity" = "По количеству";
-"stock_sort_code" = "По артикулу";
 "stock_sort_name" = "По названию";
 "stock_sort_asc" = "По возрастанию";
 "stock_sort_desc" = "По убыванию";

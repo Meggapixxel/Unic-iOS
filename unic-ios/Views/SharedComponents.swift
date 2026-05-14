@@ -276,7 +276,7 @@ struct FilterRow: View {
 // MARK: - StockSortField
 
 enum StockSortField: String, CaseIterable {
-    case quantity, code, name
+    case section, name, quantity
 }
 
 // MARK: - SalonStatus UI Extensions
@@ -796,7 +796,7 @@ struct StockWithPriceRow: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
-                Text(item.name)
+                Text(item.displayName)
                     .font(.callout)
                     .lineLimit(2)
             }

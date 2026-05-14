@@ -252,8 +252,8 @@
 "see_all" = "See all";
 "stock_units" = "Units";
 "stock_low" = "Low";
+"stock_sort_section" = "By section";
 "stock_sort_quantity" = "By quantity";
-"stock_sort_code" = "By article";
 "stock_sort_name" = "By name";
 "stock_sort_asc" = "Ascending";
 "stock_sort_desc" = "Descending";
