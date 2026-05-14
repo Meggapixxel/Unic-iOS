@@ -58,8 +58,8 @@ struct SalonNativeMapView: UIViewRepresentable {
     let onSelect: (Salon) -> Void
     @Binding var centerOnUser: Bool
 
-    private static let annotationId  = "SalonPin"
-    private static let clusterPrefix = "SalonCluster"
+    private static let annotationId        = "SalonPin"
+    private static let clusteringIdentifier = "SalonCluster"
 
     func makeUIView(context: Context) -> MKMapView {
         let map = MKMapView()
@@ -133,7 +133,7 @@ struct SalonNativeMapView: UIViewRepresentable {
             view.glyphImage = nil
             view.glyphText = nil
             view.titleVisibility = .hidden
-            view.clusteringIdentifier = SalonNativeMapView.clusterPrefix
+            view.clusteringIdentifier = SalonNativeMapView.clusteringIdentifier
             view.displayPriority = .defaultLow
             view.canShowCallout = true
 
