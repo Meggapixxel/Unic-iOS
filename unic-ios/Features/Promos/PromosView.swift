@@ -48,6 +48,12 @@ struct PromosView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 if store.canManagePromos {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button { store.send(.toggleShowDisabled) } label: {
+                            Image(systemName: store.showAll ? "eye" : "eye.slash")
+                        }
+                        .tint(store.showAll ? .accentColor : .secondary)
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button { store.send(.openAdd) } label: { Image(systemName: "plus") }
                     }

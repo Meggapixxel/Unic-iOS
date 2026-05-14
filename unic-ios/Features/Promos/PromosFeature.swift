@@ -31,13 +31,17 @@ struct PromosFeature {
         var promos: [PromoOffer] = []
         var error: String?
         var canManagePromos = false
+        var showAll = false
         var promoToDelete: PromoOffer?
         @Presents var destination: Destination.State?
 
         var displayed: [PromoOffer] {
-            canManagePromos
-                ? promos.filter { !$0.isPast }
-                : promos.filter { $0.isActive && $0.isEnabled }
+            if canManagePromos {
+                return showAll
+                    ? promos.filter { !$0.isActive || !$0.isEnabled }
+                    : promos.filter { $0.isActive && $0.isEnabled }
+            }
+            return promos.filter { $0.isActive && $0.isEnabled }
         }
     }
 
@@ -50,6 +54,7 @@ struct PromosFeature {
         case openEdit(PromoOffer)
         case openDetail(PromoOffer)
         case toggleEnabled(PromoOffer)
+        case toggleShowDisabled
         case deleteTapped(PromoOffer)
         case deleteConfirmed
         case cancelDelete
@@ -97,6 +102,10 @@ struct PromosFeature {
                     promo: promo,
                     canManagePromos: state.canManagePromos
                 ))
+                return .none
+
+            case .toggleShowDisabled:
+                state.showAll.toggle()
                 return .none
 
             case .toggleEnabled(let promo):
