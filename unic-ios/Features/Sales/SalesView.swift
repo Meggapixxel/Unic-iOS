@@ -118,6 +118,7 @@ private struct AnalyticsSection: View {
                                         isLast: idx == clients.count - 1,
                                         showChevron: true
                                     )
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -199,6 +200,7 @@ private struct InvoicesSection: View {
                     store.send(.invoiceTapped(invoice))
                 } label: {
                     InvoiceRowView(invoice: invoice)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -428,6 +430,7 @@ struct AllTopProductsView: View {
                             .foregroundStyle(.tertiary)
                     }
                     .padding(.vertical, 2)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -468,6 +471,7 @@ struct AllTopClientsView: View {
                             .foregroundStyle(.tertiary)
                     }
                     .padding(.vertical, 2)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }

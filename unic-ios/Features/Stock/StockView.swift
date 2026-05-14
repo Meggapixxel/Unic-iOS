@@ -126,6 +126,7 @@ private struct StockListContent: View {
                                     .font(.caption2.bold())
                                     .foregroundStyle(.tertiary)
                             }
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }

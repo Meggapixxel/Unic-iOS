@@ -98,6 +98,7 @@ struct ClientDetailView: View {
                         store.send(.invoiceTapped(invoice))
                     } label: {
                         InvoiceRowView(invoice: invoice)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }

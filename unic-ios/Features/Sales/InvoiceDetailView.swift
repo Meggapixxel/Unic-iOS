@@ -274,6 +274,7 @@ struct InvoiceDetailView: View {
                 }
             }
             .padding(.vertical, 2)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(item.productCode.isEmpty)
