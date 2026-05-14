@@ -154,8 +154,7 @@ struct TestDriveView: View {
     var body: some View {
         TestDriveScreen(
             salons: Array(store.salons),
-            onSalonUpdated: { _ in },
-            onSalonDeleted: { _ in }
+            onSalonTapped: { store.send(.salonTapped($0)) }
         )
     }
 }

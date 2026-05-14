@@ -140,34 +140,47 @@ struct ClientEditView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(String.create_invoice_client) {
-                    TextField(String.create_client_name_placeholder, text: $store.name)
-                        .autocorrectionDisabled()
-                }
-                Section("IČO / DIČ") {
-                    LabeledContent("IČO") {
-                        TextField("12345678", text: $store.ic)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    LabeledContent("DIČ") {
-                        TextField("CZ12345678", text: $store.dic)
-                            .multilineTextAlignment(.trailing)
+                Section {
+                    HStack(spacing: 12) {
+                        Image(systemName: "building.2.fill")
+                            .foregroundStyle(Color.accentColor)
+                            .frame(width: 20)
+                        TextField(String.create_client_name_placeholder, text: $store.name)
                             .autocorrectionDisabled()
                     }
                 }
-                Section(String.section_contacts) {
-                    LabeledContent("Email") {
+                Section {
+                    HStack(spacing: 12) {
+                        Image(systemName: "number")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
+                        TextField("IČO", text: $store.ic)
+                            .keyboardType(.numberPad)
+                    }
+                    HStack(spacing: 12) {
+                        Image(systemName: "doc.text.fill")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
+                        TextField("DIČ", text: $store.dic)
+                            .autocorrectionDisabled()
+                    }
+                }
+                Section {
+                    HStack(spacing: 12) {
+                        Image(systemName: "envelope.fill")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
                         TextField("info@company.cz", text: $store.email)
                             .keyboardType(.emailAddress)
-                            .multilineTextAlignment(.trailing)
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
                     }
-                    LabeledContent(String.phone_label) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "phone.fill")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
                         TextField("+420 123 456 789", text: $store.phone)
                             .keyboardType(.phonePad)
-                            .multilineTextAlignment(.trailing)
                     }
                 }
                 if let err = store.errorMessage {
@@ -183,16 +196,19 @@ struct ClientEditView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String.cancel) { store.send(.dismiss) }
-                        .disabled(store.isSubmitting)
+                    Button { store.send(.dismiss) } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .disabled(store.isSubmitting)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if store.isSubmitting {
                         ProgressView().scaleEffect(0.8)
                     } else {
-                        Button(String.save) { store.send(.submitTapped) }
-                            .disabled(!store.isValid)
-                            .fontWeight(.semibold)
+                        Button { store.send(.submitTapped) } label: {
+                            Image(systemName: "checkmark")
+                        }
+                        .disabled(!store.isValid)
                     }
                 }
             }

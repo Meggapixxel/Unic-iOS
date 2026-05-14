@@ -233,6 +233,10 @@ struct SalonsFeature {
                 return .none
 
             // MARK: Path propagation
+            case let .path(.element(id: _, action: .testDrive(.salonTapped(salon)))):
+                state.path.append(.salonDetail(SalonDetailFeature.State(salon: salon)))
+                return .none
+
             case let .path(.element(id: _, action: .salonDetail(.salonUpdated(salon)))):
                 return .send(.salonSaved(salon))
 

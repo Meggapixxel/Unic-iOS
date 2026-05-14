@@ -49,18 +49,21 @@ struct InvoiceFormScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button(String.cancel) { onDismiss() }
-                    .disabled(viewModel.isSubmitting)
+                Button { onDismiss() } label: {
+                    Image(systemName: "xmark")
+                }
+                .disabled(viewModel.isSubmitting)
             }
             ToolbarItem(placement: .confirmationAction) {
                 if viewModel.isSubmitting {
                     ProgressView().scaleEffect(0.8)
                 } else {
-                    Button(viewModel.submitLabel) {
+                    Button {
                         Task { await viewModel.submit() }
+                    } label: {
+                        Image(systemName: "checkmark")
                     }
                     .disabled(!viewModel.isValid)
-                    .fontWeight(.semibold)
                 }
             }
         }
@@ -330,7 +333,7 @@ struct FirmPickerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String.cancel) { isPresented = false }
+                    Button { isPresented = false } label: { Image(systemName: "xmark") }
                 }
                 if viewModel.canCreateClient {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -368,34 +371,47 @@ struct CreateClientView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(String.create_invoice_client) {
-                    TextField(String.create_client_name_placeholder, text: $clientVM.name)
-                        .autocorrectionDisabled()
-                }
-                Section("IČO / DIČ") {
-                    LabeledContent("IČO") {
-                        TextField("12345678", text: $clientVM.ic)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    LabeledContent("DIČ") {
-                        TextField("CZ12345678", text: $clientVM.dic)
-                            .multilineTextAlignment(.trailing)
+                Section {
+                    HStack(spacing: 12) {
+                        Image(systemName: "building.2.fill")
+                            .foregroundStyle(Color.accentColor)
+                            .frame(width: 20)
+                        TextField(String.create_client_name_placeholder, text: $clientVM.name)
                             .autocorrectionDisabled()
                     }
                 }
-                Section(String.section_contacts) {
-                    LabeledContent("Email") {
+                Section {
+                    HStack(spacing: 12) {
+                        Image(systemName: "number")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
+                        TextField("IČO", text: $clientVM.ic)
+                            .keyboardType(.numberPad)
+                    }
+                    HStack(spacing: 12) {
+                        Image(systemName: "doc.text.fill")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
+                        TextField("DIČ", text: $clientVM.dic)
+                            .autocorrectionDisabled()
+                    }
+                }
+                Section {
+                    HStack(spacing: 12) {
+                        Image(systemName: "envelope.fill")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
                         TextField("info@company.cz", text: $clientVM.email)
                             .keyboardType(.emailAddress)
-                            .multilineTextAlignment(.trailing)
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
                     }
-                    LabeledContent(String.phone_label) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "phone.fill")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20)
                         TextField("+420 123 456 789", text: $clientVM.phone)
                             .keyboardType(.phonePad)
-                            .multilineTextAlignment(.trailing)
                     }
                 }
                 if let err = clientVM.error {
@@ -410,18 +426,21 @@ struct CreateClientView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String.cancel) { isPresented = false }
-                        .disabled(clientVM.isSubmitting)
+                    Button { isPresented = false } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .disabled(clientVM.isSubmitting)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if clientVM.isSubmitting {
                         ProgressView().scaleEffect(0.8)
                     } else {
-                        Button(String.save) {
+                        Button {
                             Task { await clientVM.submit(using: formViewModel) }
+                        } label: {
+                            Image(systemName: "checkmark")
                         }
                         .disabled(!clientVM.isValid)
-                        .fontWeight(.semibold)
                     }
                 }
             }
@@ -480,7 +499,7 @@ struct ProductPickerForInvoiceView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String.cancel) { isPresented = false }
+                    Button { isPresented = false } label: { Image(systemName: "xmark") }
                 }
             }
         }

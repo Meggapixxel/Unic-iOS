@@ -47,18 +47,21 @@ struct StockMovementScreen: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String.stock_movement_skip) { viewModel.skip() }
-                        .disabled(viewModel.isSubmitting)
+                    Button { viewModel.skip() } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .disabled(viewModel.isSubmitting)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if viewModel.isSubmitting {
                         ProgressView().scaleEffect(0.8)
                     } else {
-                        Button(String.stock_movement_submit) {
+                        Button {
                             Task { await viewModel.submit() }
+                        } label: {
+                            Image(systemName: "checkmark")
                         }
                         .disabled(!viewModel.isValid)
-                        .fontWeight(.semibold)
                     }
                 }
             }

@@ -14,7 +14,9 @@ struct TestDriveFeature {
     struct State: Equatable {
         var salons: IdentifiedArrayOf<Salon>
     }
-    enum Action {}
+    enum Action {
+        case salonTapped(Salon)
+    }
     var body: some Reducer<State, Action> { EmptyReducer() }
 }
 

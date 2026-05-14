@@ -48,8 +48,7 @@ struct TestDriveEntry: Identifiable {
 
 struct TestDriveScreen: View {
     let salons: [Salon]
-    let onSalonUpdated: (Salon) -> Void
-    let onSalonDeleted: (Salon) -> Void
+    let onSalonTapped: (Salon) -> Void
 
     @StateObject private var viewModel = TestDriveViewModel()
 
@@ -75,21 +74,10 @@ struct TestDriveScreen: View {
                 .listRowBackground(Color.clear)
             } else {
                 ForEach(viewModel.entries) { entry in
-                    NavigationLink {
-                        SalonDetailScreen(
-                            salon: entry.salon,
-                            onSalonUpdated: { updated in
-                                onSalonUpdated(updated)
-                                Task { await viewModel.load(from: salons) }
-                            },
-                            onSalonDeleted: {
-                                onSalonDeleted(entry.salon)
-                                Task { await viewModel.load(from: salons) }
-                            }
-                        )
-                    } label: {
+                    Button { onSalonTapped(entry.salon) } label: {
                         TestDriveRow(entry: entry)
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }
