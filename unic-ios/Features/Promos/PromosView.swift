@@ -164,15 +164,7 @@ struct PromoDetailView: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(12)
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label(promo.validFrom.formatted(date: .long, time: .omitted), systemImage: "calendar")
-                            .font(.subheadline)
-                        Label(promo.validTo.formatted(date: .long, time: .omitted), systemImage: "calendar.badge.checkmark")
-                            .font(.subheadline)
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
+                    PromoPeriodView(promo: promo)
                 }
                 .padding()
             }
@@ -191,6 +183,74 @@ struct PromoDetailView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Promo Period
+
+private struct PromoPeriodView: View {
+    let promo: PromoOffer
+
+    private var progress: Double {
+        let total = promo.validTo.timeIntervalSince(promo.validFrom)
+        let elapsed = Date().timeIntervalSince(promo.validFrom)
+        return min(max(elapsed / total, 0), 1)
+    }
+
+    private var statusText: String {
+        let now = Date()
+        if now < promo.validFrom {
+            let days = Calendar.current.dateComponents([.day], from: now, to: promo.validFrom).day ?? 0
+            return "Starts in \(days) day\(days == 1 ? "" : "s")"
+        } else if promo.isActive {
+            let days = Calendar.current.dateComponents([.day], from: now, to: promo.validTo).day ?? 0
+            return days == 0 ? "Last day" : "\(days) day\(days == 1 ? "" : "s") left"
+        } else {
+            return "Expired"
+        }
+    }
+
+    private var barColor: Color {
+        if promo.isActive { return .accentColor }
+        return Date() < promo.validFrom ? .orange : .gray
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("From").font(.caption).foregroundStyle(.secondary)
+                    Text(promo.validFrom.formatted(.dateTime.day().month(.abbreviated).year()))
+                        .font(.subheadline.weight(.semibold))
+                }
+                Spacer()
+                Image(systemName: "arrow.right").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Until").font(.caption).foregroundStyle(.secondary)
+                    Text(promo.validTo.formatted(.dateTime.day().month(.abbreviated).year()))
+                        .font(.subheadline.weight(.semibold))
+                }
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color(.systemGray5)).frame(height: 6)
+                    Capsule()
+                        .fill(barColor)
+                        .frame(width: geo.size.width * progress, height: 6)
+                }
+            }
+            .frame(height: 6)
+            HStack {
+                Spacer()
+                Text(statusText)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(promo.isActive ? Color.accentColor : .secondary)
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
     }
 }
 
