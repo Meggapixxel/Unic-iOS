@@ -232,7 +232,7 @@ struct FlexiBeeInvoicesWrapper: Decodable {
 
 // MARK: - Invoice Line Item
 
-struct FlexiBeeInvoiceItem: Identifiable, Codable {
+struct FlexiBeeInvoiceItem: Identifiable, Codable, Equatable {
     let id: String
     private let codeRaw:       String?
     private let nameRaw:       String?
