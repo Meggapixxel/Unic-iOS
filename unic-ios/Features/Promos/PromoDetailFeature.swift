@@ -7,6 +7,7 @@ struct PromoDetailFeature {
     struct State: Equatable {
         var promo: PromoOffer
         var canManagePromos: Bool
+        var language: String
         var isTogglingEnabled = false
     }
 

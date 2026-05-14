@@ -7,9 +7,31 @@ struct PromosView: View {
     var body: some View {
         NavigationStack {
             List {
+                if !store.availableCategories.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(store.availableCategories, id: \.self) { cat in
+                                let selected = store.selectedCategories.contains(cat)
+                                Button { store.send(.toggleCategory(cat)) } label: {
+                                    Text(cat)
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(selected ? .white : .primary)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(selected ? Color.accentColor : Color(.systemGray5), in: Capsule())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 4)
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                }
                 ForEach(store.displayed) { promo in
                     Button { store.send(.openDetail(promo)) } label: {
-                        PromoRowView(promo: promo)
+                        PromoRowView(promo: promo, language: store.language)
                     }
                     .buttonStyle(.plain)
                     .swipeActions(edge: .trailing) {
@@ -47,6 +69,18 @@ struct PromosView: View {
             .navigationTitle(String.promos_nav_title)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Picker("", selection: Binding(
+                        get: { store.language },
+                        set: { store.send(.setLanguage($0)) }
+                    )) {
+                        Text("EN").tag("en")
+                        Text("UK").tag("uk")
+                        Text("RU").tag("ru")
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 120)
+                }
                 if store.canManagePromos {
                     ToolbarItem(placement: .topBarLeading) {
                         Button { store.send(.toggleShowDisabled) } label: {
@@ -94,11 +128,12 @@ struct PromosView: View {
 
 private struct PromoRowView: View {
     let promo: PromoOffer
+    let language: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(promo.title)
+                Text(promo.localizedTitle(for: language))
                     .font(.headline)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(promo.category)
@@ -108,8 +143,9 @@ private struct PromoRowView: View {
                     .padding(.vertical, 3)
                     .background(promo.isEnabled ? Color.accentColor : Color.gray, in: Capsule())
             }
-            if !promo.description.isEmpty {
-                Text(promo.description)
+            let desc = promo.localizedDescription(for: language)
+            if !desc.isEmpty {
+                Text(desc)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -157,8 +193,9 @@ struct PromoDetailView: View {
                                     .background(Color(.systemGray5), in: Capsule())
                             }
                         }
-                        if !store.promo.description.isEmpty {
-                            Text(store.promo.description)
+                        let desc = store.promo.localizedDescription(for: store.language)
+                        if !desc.isEmpty {
+                            Text(desc)
                                 .font(.body)
                         }
                     }
@@ -171,7 +208,7 @@ struct PromoDetailView: View {
                 }
                 .padding()
             }
-            .navigationTitle(store.promo.title)
+            .navigationTitle(store.promo.localizedTitle(for: store.language))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -272,17 +309,27 @@ struct PromoFormView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("English") {
+                    TextField("Title", text: $store.titleEn)
+                    TextField("Description", text: $store.descriptionEn, axis: .vertical)
+                        .lineLimit(3...8)
+                }
+                Section("Українська") {
+                    TextField("Назва", text: $store.titleUk)
+                    TextField("Опис", text: $store.descriptionUk, axis: .vertical)
+                        .lineLimit(3...8)
+                }
+                Section("Русский") {
+                    TextField("Название", text: $store.titleRu)
+                    TextField("Описание", text: $store.descriptionRu, axis: .vertical)
+                        .lineLimit(3...8)
+                }
                 Section {
-                    TextField(String.promo_title_placeholder, text: $store.title)
                     Picker(String.promo_category, selection: $store.category) {
                         ForEach(PromoOffer.categories, id: \.self) { cat in
                             Text(cat).tag(cat)
                         }
                     }
-                }
-                Section {
-                    TextField(String.promo_description_placeholder, text: $store.description, axis: .vertical)
-                        .lineLimit(4...10)
                 }
                 Section {
                     DatePicker(String.promo_valid_from, selection: $store.validFrom, displayedComponents: .date)

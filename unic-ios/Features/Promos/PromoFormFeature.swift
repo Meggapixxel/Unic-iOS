@@ -5,8 +5,12 @@ import Foundation
 struct PromoFormFeature {
     @ObservableState
     struct State: Equatable {
-        var title: String = ""
-        var description: String = ""
+        var titleEn: String = ""
+        var titleUk: String = ""
+        var titleRu: String = ""
+        var descriptionEn: String = ""
+        var descriptionUk: String = ""
+        var descriptionRu: String = ""
         var category: String = "Other"
         var validFrom: Date = Date()
         var validTo: Date = Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
@@ -14,15 +18,19 @@ struct PromoFormFeature {
         var alertMessage: String?
         var existing: PromoOffer?
 
-        var isValid: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        var isValid: Bool { !titleEn.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
         init(existing: PromoOffer? = nil) {
             self.existing = existing
-            self.title = existing?.title ?? ""
-            self.description = existing?.description ?? ""
-            self.category = existing?.category ?? "Other"
+            self.titleEn       = existing?.content["en"]?.title ?? ""
+            self.titleUk       = existing?.content["uk"]?.title ?? ""
+            self.titleRu       = existing?.content["ru"]?.title ?? ""
+            self.descriptionEn = existing?.content["en"]?.description ?? ""
+            self.descriptionUk = existing?.content["uk"]?.description ?? ""
+            self.descriptionRu = existing?.content["ru"]?.description ?? ""
+            self.category  = existing?.category ?? "Other"
             self.validFrom = existing?.validFrom ?? Date()
-            self.validTo = existing?.validTo ?? Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
+            self.validTo   = existing?.validTo ?? Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
         }
     }
 
@@ -50,14 +58,26 @@ struct PromoFormFeature {
             case .saveTapped:
                 guard state.isValid else { return .none }
                 state.isSaving = true
+                var promoContent: [String: PromoContent] = [:]
+                let langs = [("en", state.titleEn, state.descriptionEn),
+                             ("uk", state.titleUk, state.descriptionUk),
+                             ("ru", state.titleRu, state.descriptionRu)]
+                for (lang, t, d) in langs {
+                    let title = t.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !title.isEmpty {
+                        promoContent[lang] = PromoContent(
+                            title: title,
+                            description: d.trimmingCharacters(in: .whitespacesAndNewlines)
+                        )
+                    }
+                }
                 let promo = PromoOffer(
                     id: state.existing?.id,
-                    title: state.title.trimmingCharacters(in: .whitespacesAndNewlines),
-                    description: state.description.trimmingCharacters(in: .whitespacesAndNewlines),
                     validFrom: state.validFrom,
                     validTo: state.validTo,
                     createdBy: auth.currentUser()?.id ?? "",
-                    category: state.category
+                    category: state.category,
+                    content: promoContent
                 )
                 let firebase = firebase
                 return .run { [firebase] send in

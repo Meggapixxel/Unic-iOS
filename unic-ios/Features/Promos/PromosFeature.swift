@@ -32,16 +32,30 @@ struct PromosFeature {
         var error: String?
         var canManagePromos = false
         var showAll = false
+        var language: String = Locale.current.appLanguage
+        var selectedCategories: Set<String> = []
         var promoToDelete: PromoOffer?
         @Presents var destination: Destination.State?
 
+        var availableCategories: [String] {
+            let base = canManagePromos
+                ? (showAll ? promos.filter { !$0.isActive || !$0.isEnabled } : promos.filter { $0.isActive && $0.isEnabled })
+                : promos.filter { $0.isActive && $0.isEnabled }
+            var seen = Set<String>()
+            return base.compactMap { seen.insert($0.category).inserted ? $0.category : nil }
+        }
+
         var displayed: [PromoOffer] {
+            let base: [PromoOffer]
             if canManagePromos {
-                return showAll
+                base = showAll
                     ? promos.filter { !$0.isActive || !$0.isEnabled }
                     : promos.filter { $0.isActive && $0.isEnabled }
+            } else {
+                base = promos.filter { $0.isActive && $0.isEnabled }
             }
-            return promos.filter { $0.isActive && $0.isEnabled }
+            guard !selectedCategories.isEmpty else { return base }
+            return base.filter { selectedCategories.contains($0.category) }
         }
     }
 
@@ -55,6 +69,8 @@ struct PromosFeature {
         case openDetail(PromoOffer)
         case toggleEnabled(PromoOffer)
         case toggleShowDisabled
+        case setLanguage(String)
+        case toggleCategory(String)
         case deleteTapped(PromoOffer)
         case deleteConfirmed
         case cancelDelete
@@ -100,12 +116,29 @@ struct PromosFeature {
             case .openDetail(let promo):
                 state.destination = .detail(PromoDetailFeature.State(
                     promo: promo,
-                    canManagePromos: state.canManagePromos
+                    canManagePromos: state.canManagePromos,
+                    language: state.language
                 ))
                 return .none
 
             case .toggleShowDisabled:
                 state.showAll.toggle()
+                return .none
+
+            case .toggleCategory(let cat):
+                if state.selectedCategories.contains(cat) {
+                    state.selectedCategories.remove(cat)
+                } else {
+                    state.selectedCategories.insert(cat)
+                }
+                return .none
+
+            case .setLanguage(let lang):
+                state.language = lang
+                if case .detail(var detailState) = state.destination {
+                    detailState.language = lang
+                    state.destination = .detail(detailState)
+                }
                 return .none
 
             case .toggleEnabled(let promo):
