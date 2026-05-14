@@ -15,6 +15,11 @@ struct AppView: View {
                     AuthView(store: authStore)
                 }
 
+            case .welcome:
+                if let welcomeStore = store.scope(state: \.welcome, action: \.welcome) {
+                    WelcomeView(store: welcomeStore)
+                }
+
             case .main:
                 if let mainStore = store.scope(state: \.main, action: \.main) {
                     MainView(store: mainStore)

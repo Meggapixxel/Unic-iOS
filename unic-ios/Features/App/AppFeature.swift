@@ -8,12 +8,14 @@ struct AppFeature {
     enum State: Equatable {
         case loading
         case auth(AuthFeature.State)
+        case welcome(WelcomeFeature.State)
         case main(MainFeature.State)
 
         static func == (lhs: Self, rhs: Self) -> Bool {
             switch (lhs, rhs) {
             case (.loading, .loading): return true
             case let (.auth(l), .auth(r)): return l == r
+            case let (.welcome(l), .welcome(r)): return l == r
             case let (.main(l), .main(r)): return l == r
             default: return false
             }
@@ -24,6 +26,7 @@ struct AppFeature {
         case onAppear
         case authStateChanged(AppUser?)
         case auth(AuthFeature.Action)
+        case welcome(WelcomeFeature.Action)
         case main(MainFeature.Action)
     }
 
@@ -40,10 +43,11 @@ struct AppFeature {
                         await send(.authStateChanged(user))
                     }
                 }
+
             case .authStateChanged(let user):
                 if let user {
                     guard case .main = state else {
-                        state = .main(MainFeature.State(currentUser: user))
+                        state = .welcome(WelcomeFeature.State(user: user))
                         return .none
                     }
                 } else {
@@ -53,11 +57,17 @@ struct AppFeature {
                     }
                 }
                 return .none
-            case .auth, .main:
+
+            case .welcome(.delegate(.readyToEnter(let user, let salons))):
+                state = .main(MainFeature.State(currentUser: user, preloadedSalons: salons))
+                return .none
+
+            case .auth, .welcome, .main:
                 return .none
             }
         }
         .ifCaseLet(\.auth, action: \.auth) { AuthFeature() }
+        .ifCaseLet(\.welcome, action: \.welcome) { WelcomeFeature() }
         .ifCaseLet(\.main, action: \.main) { MainFeature() }
     }
 }

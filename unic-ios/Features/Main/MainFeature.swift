@@ -16,9 +16,12 @@ struct MainFeature {
 
         enum Tab: String, Equatable, Hashable, CaseIterable { case salons, promos, stock, profile }
 
-        init(currentUser: AppUser) {
+        init(currentUser: AppUser, preloadedSalons: IdentifiedArrayOf<Salon> = []) {
             self.currentUser = currentUser
             self.profile = ProfileFeature.State(currentUser: currentUser)
+            if !preloadedSalons.isEmpty {
+                self.salons.salons = preloadedSalons
+            }
         }
     }
 
