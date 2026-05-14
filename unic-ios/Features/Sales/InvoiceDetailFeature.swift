@@ -193,7 +193,8 @@ struct InvoiceDetailFeature {
             case .openStockMovement:
                 state.destination = .stockMovement(StockMovementPlaceholderFeature.State(
                     invoiceId: state.invoice.id,
-                    invoiceNumber: state.invoice.invoiceNumber
+                    invoiceNumber: state.invoice.invoiceNumber,
+                    lineItems: state.lineItems
                 ))
                 return .none
 
@@ -361,6 +362,7 @@ struct StockMovementPlaceholderFeature {
     struct State: Equatable {
         var invoiceId: String
         var invoiceNumber: String
+        var lineItems: [FlexiBeeInvoiceItem] = []
     }
 
     enum Action {

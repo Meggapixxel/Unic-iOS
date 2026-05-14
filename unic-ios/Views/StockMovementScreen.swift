@@ -21,6 +21,11 @@ struct StockMovementScreen: View {
         self._isPresented = isPresented
     }
 
+    init(viewModel: StockMovementViewModel, isPresented: Binding<Bool>) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+        self._isPresented = isPresented
+    }
+
     var body: some View {
         NavigationStack {
             Form {

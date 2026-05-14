@@ -79,6 +79,7 @@ final class StockMovementViewModel: ObservableObject {
     @Published private(set) var isSubmitting = false
     @Published private(set) var submitError: String?
     @Published private(set) var didSucceed = false
+    @Published private(set) var submittedMovement = false
 
     let invoiceId:     String
     let invoiceNumber: String
@@ -150,6 +151,7 @@ final class StockMovementViewModel: ObservableObject {
         )
         do {
             try await FlexiBeeService.shared.createStockMovement(movement)
+            submittedMovement = true
             await onMovementCreated?()
             await FlexiBeeService.shared.forceSync()
             didSucceed = true

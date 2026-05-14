@@ -389,34 +389,40 @@ private struct _PaymentMethodRow: View {
 }
 
 // MARK: - Stock Movement Bridge View
-// Bridges the legacy StockMovementScreen to the TCA StockMovementPlaceholderFeature
-// until the movement screen is fully ported to TCA.
 
 private struct StockMovementBridgeView: View {
     let store: StoreOf<StockMovementPlaceholderFeature>
 
-    var body: some View {
-        NavigationStack {
-            VStack {
-                Text(String.stock_movement_title)
-                    .font(.headline)
-                Spacer()
-                HStack(spacing: 16) {
-                    Button(String.stock_movement_skip) {
-                        store.send(.skipped)
-                    }
-                    .buttonStyle(.bordered)
+    @StateObject private var viewModel: StockMovementViewModel
+    @State private var isPresented = true
 
-                    Button(String.stock_movement_submit) {
-                        store.send(.submitted)
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("\(String.stock_movement_title) – \(store.invoiceNumber)")
-            .navigationBarTitleDisplayMode(.inline)
+    init(store: StoreOf<StockMovementPlaceholderFeature>) {
+        self.store = store
+        let draftItems: [InvoiceLineItemDraft] = store.lineItems.compactMap { item in
+            guard let code = item.stockCode, item.quantity > 0 else { return nil }
+            var draft = InvoiceLineItemDraft()
+            draft.name = item.productName
+            draft.productCode = code
+            draft.quantity = String(format: "%g", item.quantity)
+            return draft
         }
+        let pending = PendingMovement(
+            invoiceId: store.invoiceId,
+            invoiceNumber: store.invoiceNumber,
+            items: draftItems
+        )
+        _viewModel = StateObject(wrappedValue: StockMovementViewModel(pending: pending))
+    }
+
+    var body: some View {
+        StockMovementScreen(viewModel: viewModel, isPresented: $isPresented)
+            .onChange(of: isPresented) { _, presented in
+                guard !presented else { return }
+                if viewModel.submittedMovement {
+                    store.send(.submitted)
+                } else {
+                    store.send(.skipped)
+                }
+            }
     }
 }
