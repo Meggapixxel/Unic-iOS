@@ -14,6 +14,7 @@ struct ProfileFeature {
         case sales(SalesFeature)
         case invoiceDetail(InvoiceDetailFeature)
         case allTopClients(AllTopClientsFeature)
+        case allTopProducts(AllTopProductsFeature)
         case users(UsersFeature)
         case plans(PlansFeature)
     }
@@ -106,6 +107,12 @@ struct ProfileFeature {
             case .path(.element(let id, .sales(.seeAllTopClientsTapped))):
                 if case let .sales(salesState) = state.path[id: id] {
                     state.path.append(.allTopClients(AllTopClientsFeature.State(clients: salesState.topClients)))
+                }
+                return .none
+
+            case .path(.element(let id, .sales(.seeAllTopProductsTapped))):
+                if case let .sales(salesState) = state.path[id: id] {
+                    state.path.append(.allTopProducts(AllTopProductsFeature.State(products: salesState.topProducts)))
                 }
                 return .none
 

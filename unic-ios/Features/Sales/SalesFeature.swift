@@ -32,6 +32,7 @@ struct SalesFeature {
 
         // Backing data
         var allInvoices: [FlexiBeeInvoice] = []
+        var allMovementItems: [FlexiBeeStockMovementItem] = []
 
         // MARK: Computed — period analytics
 
@@ -73,7 +74,21 @@ struct SalesFeature {
                 .sorted { $0.revenue > $1.revenue }
         }
 
-        var topProducts: [(code: String, name: String, quantity: Double)] { [] }
+        var topProducts: [(code: String, name: String, quantity: Double)] {
+            let (from, to) = period.dateRange(for: selectedDate)
+            let inPeriod = allMovementItems.filter {
+                guard let d = $0.date else { return false }
+                return d >= from && d <= to
+            }
+            return Dictionary(grouping: inPeriod, by: { $0.productCode })
+                .compactMap { code, items -> (code: String, name: String, quantity: Double)? in
+                    guard !code.isEmpty else { return nil }
+                    let qty = items.reduce(0) { $0 + $1.quantityIssued }
+                    let name = items.first?.productName ?? code
+                    return (code: code, name: name, quantity: qty)
+                }
+                .sorted { $0.quantity > $1.quantity }
+        }
 
         private static let monthFmt: DateFormatter = {
             let f = DateFormatter(); f.locale = Locale.current; f.dateFormat = "MMM"; return f
@@ -142,6 +157,7 @@ struct SalesFeature {
         case invoiceCreated(FlexiBeeInvoice)
         case invoiceTapped(FlexiBeeInvoice)
         case seeAllTopClientsTapped
+        case seeAllTopProductsTapped
         case destination(PresentationAction<Destination.Action>)
         case failed(String)
     }
@@ -165,12 +181,16 @@ struct SalesFeature {
                 let cached = flexiBeeClient.invoices()
                 if !cached.isEmpty {
                     state.allInvoices = cached
+                    state.allMovementItems = flexiBeeClient.salesMovementItems()
                 }
                 let flexiBeeClient = flexiBeeClient
                 return .run { [flexiBeeClient] send in
                     await flexiBeeClient.loadIfNeeded()
-                    let (invoices, syncDate) = await MainActor.run { (flexiBeeClient.invoices(), flexiBeeClient.lastSyncDate()) }
+                    let (invoices, movements, syncDate) = await MainActor.run {
+                        (flexiBeeClient.invoices(), flexiBeeClient.salesMovementItems(), flexiBeeClient.lastSyncDate())
+                    }
                     await send(.syncCompleted(invoices, syncDate))
+                    await send(.binding(.set(\.allMovementItems, movements)))
                 }
 
             case .forceSync:
@@ -178,8 +198,11 @@ struct SalesFeature {
                 let flexiBeeClient = flexiBeeClient
                 return .run { [flexiBeeClient] send in
                     await flexiBeeClient.forceSync()
-                    let (invoices, syncDate) = await MainActor.run { (flexiBeeClient.invoices(), flexiBeeClient.lastSyncDate()) }
+                    let (invoices, movements, syncDate) = await MainActor.run {
+                        (flexiBeeClient.invoices(), flexiBeeClient.salesMovementItems(), flexiBeeClient.lastSyncDate())
+                    }
                     await send(.syncCompleted(invoices, syncDate))
+                    await send(.binding(.set(\.allMovementItems, movements)))
                 }
 
             case let .syncCompleted(invoices, date):
@@ -245,6 +268,10 @@ struct SalesFeature {
                 return .none
 
             case .seeAllTopClientsTapped:
+                // Navigation handled by parent (ProfileFeature)
+                return .none
+
+            case .seeAllTopProductsTapped:
                 // Navigation handled by parent (ProfileFeature)
                 return .none
 

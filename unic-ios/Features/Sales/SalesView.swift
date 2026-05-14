@@ -119,11 +119,24 @@ private struct AnalyticsSection: View {
                         .padding(.horizontal, 16)
                     }
 
-                    // Top products (placeholder — needs movement data from dependency)
-                    // When movement data is wired in, replace with real data
-                    if store.topClients.count > 0 {
-                        // Products section placeholder - populated when movement items are available
-                        EmptyView()
+                    let products = store.topProducts.prefix(5)
+                    if !products.isEmpty {
+                        SalesRankingSection(
+                            title: String.sales_top_products,
+                            seeAllLabel: store.topProducts.count > 5 ? String.see_all : nil,
+                            seeAllAction: { store.send(.seeAllTopProductsTapped) }
+                        ) {
+                            ForEach(Array(products.enumerated()), id: \.offset) { idx, product in
+                                SalesRankingRow(
+                                    rank: idx + 1,
+                                    title: product.name,
+                                    subtitle: product.code,
+                                    value: String.sales_quantity(Int(product.quantity)),
+                                    isLast: idx == products.count - 1
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 16)
                     }
                 } else {
                     ContentUnavailableView(String.no_data, systemImage: "chart.bar")

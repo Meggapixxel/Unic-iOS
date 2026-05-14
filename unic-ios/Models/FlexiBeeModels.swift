@@ -297,7 +297,7 @@ struct FlexiBeeStockMovementWrapper: Decodable, Sendable {
 
 // MARK: - Stock Movement Item (Warehouse outflow line)
 
-struct FlexiBeeStockMovementItem: Identifiable, Codable, Sendable {
+struct FlexiBeeStockMovementItem: Identifiable, Codable, Equatable, Sendable {
     let id:              String
     private let codeRaw: String?
     private let nameRaw: String?

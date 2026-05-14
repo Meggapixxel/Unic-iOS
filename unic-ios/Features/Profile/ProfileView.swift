@@ -112,6 +112,8 @@ struct ProfileView: View {
                     InvoiceDetailView(store: detailStore)
                 case let .allTopClients(clientsStore):
                     AllTopClientsView(store: clientsStore)
+                case let .allTopProducts(productsStore):
+                    AllTopProductsView(store: productsStore)
                 case let .users(usersStore):
                     UsersView(store: usersStore)
                 case let .plans(plansStore):

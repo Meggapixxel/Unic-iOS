@@ -9,6 +9,7 @@ struct FlexiBeeClient: @unchecked Sendable {
     var stockWithPrices: () -> IdentifiedArrayOf<FlexiBeeStockWithPrice> = { [] }
     var stock: () -> [FlexiBeeStockCard] = { [] }
     var invoices: () -> [FlexiBeeInvoice] = { [] }
+    var salesMovementItems: () -> [FlexiBeeStockMovementItem] = { [] }
     var isLoading: () -> Bool = { false }
     var lastSyncDate: () -> Date? = { nil }
     var fetchFirms: () async throws -> [FlexiBeeFirm] = { [] }
@@ -39,6 +40,7 @@ extension FlexiBeeClient: DependencyKey {
                 stockWithPrices: { MainActor.assumeIsolated { s.stockWithPrices } },
                 stock: { MainActor.assumeIsolated { s.stock } },
                 invoices: { MainActor.assumeIsolated { s.invoices } },
+                salesMovementItems: { MainActor.assumeIsolated { s.salesMovementItems } },
                 isLoading: { MainActor.assumeIsolated { s.isLoading } },
                 lastSyncDate: { MainActor.assumeIsolated { s.lastSyncDate } },
                 fetchFirms: { try await s.fetchFirms() },
