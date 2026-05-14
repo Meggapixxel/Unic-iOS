@@ -79,17 +79,19 @@ struct ProfileView: View {
                     }
                 }
 
-                // MARK: Logout
-                Section {
-                    Button(role: .destructive) {
-                        store.send(.logoutTapped)
-                    } label: {
-                        Label(String.profile_logout, systemImage: "rectangle.portrait.and.arrow.right")
-                    }
-                }
             }
             .navigationTitle(String.profile_nav_title)
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .destructive) {
+                        store.send(.logoutTapped)
+                    } label: {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                    }
+                    .tint(.red)
+                }
+            }
             .task { store.send(.onLoad) }
             .confirmationDialog(
                 String.profile_logout_confirm,
