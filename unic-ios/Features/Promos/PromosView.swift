@@ -7,28 +7,6 @@ struct PromosView: View {
     var body: some View {
         NavigationStack {
             List {
-                if !store.availableCategories.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(store.availableCategories, id: \.self) { cat in
-                                let selected = store.selectedCategories.contains(cat)
-                                Button { store.send(.toggleCategory(cat)) } label: {
-                                    Text(cat)
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(selected ? .white : .primary)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(selected ? Color.accentColor : Color(.systemGray5), in: Capsule())
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal, 4)
-                    }
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
                 ForEach(store.displayed) { promo in
                     Button { store.send(.openDetail(promo)) } label: {
                         PromoRowView(promo: promo, language: store.language)
@@ -66,6 +44,25 @@ struct PromosView: View {
             }
             .refreshable { await store.send(.onLoad).finish() }
             .listStyle(.insetGrouped)
+            .safeAreaInset(edge: .bottom) {
+                if !store.availableCategories.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(store.availableCategories, id: \.self) { cat in
+                                FilterChip(
+                                    title: cat,
+                                    isSelected: store.selectedCategories.contains(cat)
+                                ) { store.send(.toggleCategory(cat)) }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                    }
+                    .glassBackgroundRectangle(cornerRadius: 20)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                }
+            }
             .navigationTitle(String.promos_nav_title)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
