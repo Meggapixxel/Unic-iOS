@@ -28,6 +28,7 @@ struct FirebaseClient: @unchecked Sendable {
     var savePlan: (_ plan: Plan) async throws -> Plan = { _ in throw NSError() }
     var deletePlan: (_ id: String) async throws -> Void
     // Promos
+    var fetchPromoCategories: () async throws -> [String] = { [] }
     var fetchPromos: () async throws -> [PromoOffer] = { [] }
     var savePromo: (_ promo: PromoOffer) async throws -> PromoOffer = { _ in throw NSError() }
     var deletePromo: (_ id: String) async throws -> Void
@@ -71,6 +72,7 @@ extension FirebaseClient: DependencyKey {
                 fetchAllPlans: { try await s.fetchAllPlans() },
                 savePlan: { plan in try await s.savePlan(plan) },
                 deletePlan: { id in try await s.deletePlan(id: id) },
+                fetchPromoCategories: { try await s.fetchPromoCategories() },
                 fetchPromos: { try await s.fetchPromos() },
                 savePromo: { promo in try await s.savePromo(promo) },
                 deletePromo: { id in try await s.deletePromo(id: id) },

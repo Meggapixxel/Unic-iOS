@@ -672,6 +672,11 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Promo Offers
 
+    func fetchPromoCategories() async throws -> [String] {
+        let doc = try await db.collection("config").document("promos").getDocument()
+        return doc.data()?["categories"] as? [String] ?? []
+    }
+
     func fetchPromos() async throws -> [PromoOffer] {
         let snapshot = try await db.collection("promos")
             .order(by: "validFrom", descending: true)

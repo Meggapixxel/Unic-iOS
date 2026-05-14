@@ -29,6 +29,7 @@ struct PromosFeature {
     @ObservableState
     struct State: Equatable {
         var promos: [PromoOffer] = []
+        var categories: [String] = []
         var error: String?
         var canManagePromos = false
         var showAll = false
@@ -41,8 +42,8 @@ struct PromosFeature {
             let base = canManagePromos
                 ? (showAll ? promos.filter { !$0.isActive || !$0.isEnabled } : promos.filter { $0.isActive && $0.isEnabled })
                 : promos.filter { $0.isActive && $0.isEnabled }
-            var seen = Set<String>()
-            return base.compactMap { seen.insert($0.category).inserted ? $0.category : nil }
+            let presentInBase = Set(base.map { $0.category })
+            return categories.filter { presentInBase.contains($0) }
         }
 
         var displayed: [PromoOffer] {
@@ -64,6 +65,7 @@ struct PromosFeature {
     enum Action {
         case onLoad
         case promosLoaded([PromoOffer])
+        case categoriesLoaded([String])
         case openAdd
         case openEdit(PromoOffer)
         case openDetail(PromoOffer)
@@ -93,9 +95,11 @@ struct PromosFeature {
                 state.canManagePromos = auth.canManagePromos()
                 let firebase = firebase
                 return .run { [firebase] send in
+                    async let promos = firebase.fetchPromos()
+                    async let categories = firebase.fetchPromoCategories()
                     do {
-                        let promos = try await firebase.fetchPromos()
-                        await send(.promosLoaded(promos))
+                        await send(.promosLoaded(try promos))
+                        await send(.categoriesLoaded(try categories))
                     } catch {
                         await send(.failed(error.localizedDescription))
                     }
@@ -103,6 +107,10 @@ struct PromosFeature {
 
             case .promosLoaded(let promos):
                 state.promos = promos
+                return .none
+
+            case .categoriesLoaded(let cats):
+                state.categories = cats
                 return .none
 
             case .openAdd:
