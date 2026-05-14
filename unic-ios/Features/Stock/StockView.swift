@@ -83,7 +83,7 @@ struct StockView: View {
         }
         
         if #available(iOS 26.0, *) {
-            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            ToolbarSpacer(.fixed, placement: .topBarLeading)
         }
         
         ToolbarItem(placement: .topBarLeading) {
