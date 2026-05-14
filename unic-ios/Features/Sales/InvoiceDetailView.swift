@@ -14,11 +14,8 @@ struct InvoiceDetailView: View {
             headerSection
             infoSection
             notesSection
-            primaryActionSection
             itemsSection
             stockMovementSection
-            documentsSection
-            deleteSection
         }
         .listStyle(.insetGrouped)
         .navigationTitle(store.invoice.invoiceNumber)
@@ -31,6 +28,9 @@ struct InvoiceDetailView: View {
                     }
                     .fontWeight(.semibold)
                 }
+            }
+            ToolbarItemGroup(placement: .bottomBar) {
+                bottomBar
             }
         }
         .task { store.send(.onLoad) }
@@ -160,44 +160,58 @@ struct InvoiceDetailView: View {
         }
     }
 
-    // MARK: - Primary Action Section
+    // MARK: - Bottom Bar
 
     @ViewBuilder
-    private var primaryActionSection: some View {
-        let canShowPaid = !store.isLoading && store.invoice.paymentStatus != .paid
-        if canShowPaid {
-            Section {
-                // Manual stock movement button (when no movement yet)
-                if !store.stockMovementCreated {
-                    Button {
-                        store.send(.openStockMovement)
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Label(String.stock_movement_create, systemImage: "shippingbox.fill")
-                                .fontWeight(.semibold)
-                            Spacer()
-                        }
-                    }
-                    .foregroundStyle(.white)
-                    .listRowBackground(Color.blue)
-                }
+    private var bottomBar: some View {
+        // Delete
+        Button {
+            store.send(.deleteTapped)
+        } label: {
+            Image(systemName: "trash")
+        }
+        .tint(.red)
+        .disabled(store.isLoading)
 
-                // Mark as paid
-                Button {
-                    store.send(.setPaymentStatus(.paid, nil))
-                } label: {
-                    HStack {
-                        Spacer()
-                        Label(String.payment_paid, systemImage: "checkmark.circle.fill")
-                            .fontWeight(.semibold)
-                        Spacer()
-                    }
-                }
-                .foregroundStyle(.white)
-                .listRowBackground(Color.green)
+        Spacer()
+
+        // Stock movement
+        Button {
+            store.send(.openStockMovement)
+        } label: {
+            Image(systemName: store.stockMovementCreated ? "shippingbox.fill" : "shippingbox")
+        }
+        .disabled(store.isLoading || store.invoice.paymentStatus == .paid)
+
+        Spacer()
+
+        // Payment status
+        Button {
+            store.send(.setPaymentStatus(.paid, nil))
+        } label: {
+            Image(systemName: "checkmark.circle.fill")
+        }
+        .tint(store.invoice.paymentStatus == .paid ? .secondary : .green)
+        .disabled(store.isLoading || store.invoice.paymentStatus == .paid)
+
+        Spacer()
+
+        // Documents / PDF
+        Button {
+            let isCash = store.invoice.paymentMethod == .hotove && store.cashReceiptId != nil
+            if isCash {
+                store.send(.shareBothPDFs)
+            } else {
+                store.send(.shareInvoicePDF)
+            }
+        } label: {
+            if store.isLoadingPDF {
+                ProgressView().scaleEffect(0.8)
+            } else {
+                Image(systemName: "doc.text.fill")
             }
         }
+        .disabled(store.isLoadingPDF)
     }
 
     // MARK: - Items Section
@@ -309,50 +323,6 @@ struct InvoiceDetailView: View {
         }
     }
 
-    // MARK: - Documents Section
-
-    private var documentsSection: some View {
-        let isCash = store.invoice.paymentMethod == .hotove && store.cashReceiptId != nil
-        return Section {
-            Button {
-                if isCash {
-                    store.send(.shareBothPDFs)
-                } else {
-                    store.send(.shareInvoicePDF)
-                }
-            } label: {
-                HStack {
-                    Label(String.pdf_documents, systemImage: "doc.fill")
-                    Spacer()
-                    if store.isLoadingPDF {
-                        ProgressView().scaleEffect(0.8)
-                    }
-                }
-            }
-            .disabled(store.isLoadingPDF)
-        }
-    }
-
-    // MARK: - Delete Section
-
-    @ViewBuilder
-    private var deleteSection: some View {
-        if !store.isLoading {
-            Section {
-                Button {
-                    store.send(.deleteTapped)
-                } label: {
-                    HStack {
-                        Spacer()
-                        Text(String.delete_invoice_action).fontWeight(.semibold)
-                        Spacer()
-                    }
-                }
-                .foregroundStyle(.white)
-                .listRowBackground(Color.red)
-            }
-        }
-    }
 }
 
 // MARK: - PDF Share Sheet View
