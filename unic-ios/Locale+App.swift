@@ -1,6 +1,7 @@
 import Foundation
 
-enum AppLanguage: String, CaseIterable, Equatable {
+enum AppLanguage: String, CaseIterable, Equatable, Identifiable {
+    var id: String { rawValue }
     case en = "en"
     case ua = "uk"
     case ru = "ru"
