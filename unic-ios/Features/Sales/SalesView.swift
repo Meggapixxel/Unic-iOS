@@ -119,22 +119,27 @@ private struct AnalyticsSection: View {
                         .padding(.horizontal, 16)
                     }
 
-                    let products = store.topProducts.prefix(5)
+                    let products = Array(store.topProducts.dropFirst(2).prefix(5))
                     if !products.isEmpty {
                         SalesRankingSection(
                             title: String.sales_top_products,
-                            seeAllLabel: store.topProducts.count > 5 ? String.see_all : nil,
+                            seeAllLabel: store.topProducts.count > 7 ? String.see_all : nil,
                             seeAllAction: { store.send(.seeAllTopProductsTapped) }
                         ) {
                             ForEach(Array(products.enumerated()), id: \.offset) { idx, product in
                                 SalesRankingRow(
-                                    rank: idx + 1,
+                                    rank: idx + 3,
                                     title: product.name,
                                     subtitle: product.code,
                                     value: String.sales_quantity(Int(product.quantity)),
                                     isLast: idx == products.count - 1
                                 )
                             }
+                            Text(String.sales_top_products_from3_note)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                .padding(.top, 4)
                         }
                         .padding(.horizontal, 16)
                     }

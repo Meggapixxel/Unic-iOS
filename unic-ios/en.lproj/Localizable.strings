@@ -273,6 +273,7 @@
 "sales_chart_revenue" = "Revenue";
 "sales_top_clients" = "Top Clients";
 "sales_top_products" = "Top Products";
+"sales_top_products_from3_note" = "Positions 1–2 are not shown";
 "sales_quantity %lld" = "%lld pcs";
 "sales_search_prompt" = "Client or invoice number";
 "sales_invoices_empty" = "No Invoices";

@@ -273,6 +273,7 @@
 "sales_chart_revenue" = "Доход";
 "sales_top_clients" = "Топ клиенты";
 "sales_top_products" = "Топ продукты";
+"sales_top_products_from3_note" = "Позиции 1–2 не отображаются";
 "sales_quantity %lld" = "%lld шт";
 "sales_search_prompt" = "Клиент или номер фактуры";
 "sales_invoices_empty" = "Нет фактур";
