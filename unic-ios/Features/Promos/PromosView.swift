@@ -70,13 +70,15 @@ struct PromosView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    HStack(spacing: 6) {
+                    Picker("", selection: Binding(
+                        get: { store.language },
+                        set: { store.send(.setLanguage($0)) }
+                    )) {
                         ForEach(AppLanguage.allCases) { lang in
-                            FilterChip(title: lang.label, isSelected: store.language == lang) {
-                                store.send(.setLanguage(lang))
-                            }
+                            Text(lang.label).tag(lang)
                         }
                     }
+                    .pickerStyle(.menu)
                 }
                 if store.canManagePromos {
                     ToolbarItem(placement: .topBarLeading) {
