@@ -24,25 +24,10 @@ struct MainView: View {
                     .tag(MainFeature.State.Tab.profile)
             }
 
-            VStack(spacing: 0) {
-                TCAPlankBannerView(store: store.scope(state: \.planBanner, action: \.planBanner))
-
-                if store.showGreeting {
-                    Text("👋 \(store.currentUser.firstName)")
-                        .font(.subheadline.bold())
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(.thinMaterial)
-                        .cornerRadius(12)
-                        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
-                        .padding(.top, 8)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-            }
-            .padding(.top, 60)
-            .allowsHitTesting(false)
+            TCAPlankBannerView(store: store.scope(state: \.planBanner, action: \.planBanner))
+                .padding(.top, 60)
+                .allowsHitTesting(false)
         }
-        .animation(.easeInOut(duration: 0.4), value: store.showGreeting)
         .task { store.send(.onAppear) }
     }
 }

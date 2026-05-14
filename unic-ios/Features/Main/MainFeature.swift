@@ -12,8 +12,6 @@ struct MainFeature {
         var stock = StockFeature.State()
         var profile: ProfileFeature.State
         var planBanner = PlanBannerFeature.State()
-        var showGreeting = false
-
         enum Tab: String, Equatable, Hashable, CaseIterable { case salons, promos, stock, profile }
 
         init(currentUser: AppUser, preloadedSalons: IdentifiedArrayOf<Salon> = []) {
@@ -33,10 +31,7 @@ struct MainFeature {
         case profile(ProfileFeature.Action)
         case planBanner(PlanBannerFeature.Action)
         case onAppear
-        case greetingTimerFired
     }
-
-    @Dependency(\.continuousClock) var clock
 
     var body: some Reducer<State, Action> {
         BindingReducer()
@@ -48,13 +43,6 @@ struct MainFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                state.showGreeting = true
-                return .run { send in
-                    try await clock.sleep(for: .seconds(2.5))
-                    await send(.greetingTimerFired)
-                }
-            case .greetingTimerFired:
-                state.showGreeting = false
                 return .none
             case .binding, .salons, .promos, .stock, .profile, .planBanner:
                 return .none
