@@ -401,3 +401,5 @@
 "promo_delete_confirm" = "Delete this offer?";
 "promo_created_by" = "Added by";
 "promo_category" = "Category";
+"promo_disable" = "Disable";
+"promo_enable" = "Enable";

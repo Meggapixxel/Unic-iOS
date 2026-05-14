@@ -32,7 +32,11 @@ struct PromosFeature {
         var promoToDelete: PromoOffer?
         @Presents var destination: Destination.State?
 
-        var displayed: [PromoOffer] { promos.filter { !$0.isPast } }
+        var displayed: [PromoOffer] {
+            canManagePromos
+                ? promos.filter { !$0.isPast }
+                : promos.filter { $0.isActive && $0.isEnabled }
+        }
     }
 
     // MARK: - Action
@@ -44,6 +48,7 @@ struct PromosFeature {
         case openEdit(PromoOffer)
         case openDetail(PromoOffer)
         case closeDetail
+        case toggleEnabled(PromoOffer)
         case deleteTapped(PromoOffer)
         case deleteConfirmed
         case cancelDelete
@@ -109,6 +114,19 @@ struct PromosFeature {
                 return .run { [firebase] send in
                     do {
                         try await firebase.deletePromo(id)
+                    } catch {
+                        await send(.failed(error.localizedDescription))
+                    }
+                }
+
+            case .toggleEnabled(let promo):
+                guard let id = promo.id, let idx = state.promos.firstIndex(where: { $0.id == id }) else { return .none }
+                state.promos[idx].isEnabled.toggle()
+                let updated = state.promos[idx]
+                let firebase = firebase
+                return .run { [firebase] send in
+                    do {
+                        _ = try await firebase.savePromo(updated)
                     } catch {
                         await send(.failed(error.localizedDescription))
                     }

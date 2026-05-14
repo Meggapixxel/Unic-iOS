@@ -397,6 +397,8 @@ extension String {
     static var promo_valid_to:                String { String(localized: "promo_valid_to") }
     static var promo_add:                     String { String(localized: "promo_add") }
     static var promo_category:               String { String(localized: "promo_category") }
+    static var promo_disable:                String { String(localized: "promo_disable") }
+    static var promo_enable:                 String { String(localized: "promo_enable") }
 
     // MARK: - Profile
     static var profile_nav_title:       String { String(localized: "profile_nav_title") }

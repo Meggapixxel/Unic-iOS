@@ -7,6 +7,7 @@ struct PromoFormFeature {
     struct State: Equatable {
         var title: String = ""
         var description: String = ""
+        var category: String = "Other"
         var validFrom: Date = Date()
         var validTo: Date = Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
         var isSaving = false
@@ -19,6 +20,7 @@ struct PromoFormFeature {
             self.existing = existing
             self.title = existing?.title ?? ""
             self.description = existing?.description ?? ""
+            self.category = existing?.category ?? "Other"
             self.validFrom = existing?.validFrom ?? Date()
             self.validTo = existing?.validTo ?? Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
         }
@@ -26,6 +28,7 @@ struct PromoFormFeature {
 
     enum Action: BindableAction {
         case binding(BindingAction<State>)
+        case closeTapped
         case saveTapped
         case saveSucceeded(PromoOffer)
         case saveFailed(String)
@@ -34,6 +37,7 @@ struct PromoFormFeature {
 
     @Dependency(\.firebaseClient) var firebase
     @Dependency(\.authClient) var auth
+    @Dependency(\.dismiss) var dismiss
 
     var body: some Reducer<State, Action> {
         BindingReducer()
@@ -41,6 +45,8 @@ struct PromoFormFeature {
             switch action {
             case .binding:
                 return .none
+            case .closeTapped:
+                return .run { [dismiss] _ in await dismiss() }
             case .saveTapped:
                 guard state.isValid else { return .none }
                 state.isSaving = true
@@ -50,7 +56,8 @@ struct PromoFormFeature {
                     description: state.description.trimmingCharacters(in: .whitespacesAndNewlines),
                     validFrom: state.validFrom,
                     validTo: state.validTo,
-                    createdBy: auth.currentUser()?.id ?? ""
+                    createdBy: auth.currentUser()?.id ?? "",
+                    category: state.category
                 )
                 let firebase = firebase
                 return .run { [firebase] send in

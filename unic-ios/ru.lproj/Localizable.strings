@@ -401,3 +401,5 @@
 "promo_delete_confirm" = "Удалить эту акцию?";
 "promo_created_by" = "Добавил";
 "promo_category" = "Категория";
+"promo_disable" = "Отключить";
+"promo_enable" = "Включить";

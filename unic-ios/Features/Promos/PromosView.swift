@@ -27,8 +27,22 @@ struct PromosView: View {
                             .tint(.orange)
                         }
                     }
+                    .swipeActions(edge: .leading) {
+                        if store.canManagePromos {
+                            Button {
+                                store.send(.toggleEnabled(promo))
+                            } label: {
+                                Label(
+                                    promo.isEnabled ? String.promo_disable : String.promo_enable,
+                                    systemImage: promo.isEnabled ? "eye.slash" : "eye"
+                                )
+                            }
+                            .tint(promo.isEnabled ? .gray : .green)
+                        }
+                    }
                 }
             }
+            .refreshable { await store.send(.onLoad).finish() }
             .listStyle(.insetGrouped)
             .navigationTitle(String.promos_nav_title)
             .navigationBarTitleDisplayMode(.large)
@@ -86,18 +100,29 @@ private struct PromoRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(promo.title)
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text(promo.description)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            HStack {
+                Text(promo.title)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(promo.category)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(promo.isEnabled ? Color.accentColor : Color.gray, in: Capsule())
+            }
+            if !promo.description.isEmpty {
+                Text(promo.description)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
             Text("\(promo.validFrom.formatted(.dateTime.day().month(.abbreviated))) – \(promo.validTo.formatted(.dateTime.day().month(.abbreviated).year()))")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 4)
+        .opacity(promo.isEnabled ? 1 : 0.45)
     }
 }
 
@@ -113,16 +138,26 @@ struct PromoDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 8) {
-                        if promo.isActive {
-                            Text("● Active")
-                                .font(.caption.bold())
-                                .foregroundStyle(.green)
+                        HStack(spacing: 8) {
+                            Text(promo.category)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.white)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 4)
-                                .background(Color.green.opacity(0.1), in: Capsule())
+                                .background(Color.accentColor, in: Capsule())
+                            if promo.isActive {
+                                Text("● Active")
+                                    .font(.caption.bold())
+                                    .foregroundStyle(.green)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Color.green.opacity(0.1), in: Capsule())
+                            }
                         }
-                        Text(promo.description)
-                            .font(.body)
+                        if !promo.description.isEmpty {
+                            Text(promo.description)
+                                .font(.body)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
@@ -169,6 +204,11 @@ struct PromoFormView: View {
             Form {
                 Section {
                     TextField(String.promo_title_placeholder, text: $store.title)
+                    Picker(String.promo_category, selection: $store.category) {
+                        ForEach(PromoOffer.categories, id: \.self) { cat in
+                            Text(cat).tag(cat)
+                        }
+                    }
                 }
                 Section {
                     TextField(String.promo_description_placeholder, text: $store.description, axis: .vertical)
@@ -183,7 +223,7 @@ struct PromoFormView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    CloseButton { store.send(.dismissAlert) }
+                    CloseButton { store.send(.closeTapped) }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button { store.send(.saveTapped) } label: {
