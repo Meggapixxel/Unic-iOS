@@ -44,6 +44,7 @@ final class InvoiceFormViewModel: ObservableObject {
     @Published var productPickerForItemID: UUID?
 
     let editingInvoice: FlexiBeeInvoice?
+    let preSelectClientCode: String?
     private var isPrepared = false
 
     private let fetchFirmsAction: () async -> [FlexiBeeFirm]
@@ -68,12 +69,14 @@ final class InvoiceFormViewModel: ObservableObject {
 
     init(
         editingInvoice: FlexiBeeInvoice? = nil,
+        preSelectClientCode: String? = nil,
         fetchFirms: @escaping () async -> [FlexiBeeFirm],
         reloadFirms: @escaping () async -> [FlexiBeeFirm],
         onSubmit: @escaping (NewInvoice) async throws -> Void,
         onDeleteClient: @escaping (String) async throws -> Void
     ) {
         self.editingInvoice = editingInvoice
+        self.preSelectClientCode = preSelectClientCode
         self.fetchFirmsAction = fetchFirms
         self.reloadFirmsAction = reloadFirms
         self.submitAction = onSubmit
@@ -102,6 +105,8 @@ final class InvoiceFormViewModel: ObservableObject {
                 selectedFirm = firms.first { $0.code == clientCode }
             }
             await loadLineItems(for: invoice.id)
+        } else if let code = preSelectClientCode {
+            selectedFirm = firms.first { $0.code == code }
         }
     }
 

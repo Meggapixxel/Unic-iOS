@@ -14,6 +14,31 @@ struct ClientDetailView: View {
         .listStyle(.insetGrouped)
         .navigationTitle(store.clientName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if store.canEditClient {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(String.edit_client) {
+                        store.send(.editClientTapped)
+                    }
+                }
+            }
+        }
+        .sheet(
+            item: $store.scope(
+                state: \.destination?.createInvoice,
+                action: \.destination.createInvoice
+            )
+        ) { formStore in
+            InvoiceFormBridgeView(store: formStore)
+        }
+        .sheet(
+            item: $store.scope(
+                state: \.destination?.editClient,
+                action: \.destination.editClient
+            )
+        ) { editStore in
+            ClientEditView(store: editStore)
+        }
         .safeAreaInset(edge: .bottom) {
             if store.canEdit {
                 HStack {
@@ -101,6 +126,74 @@ struct ClientDetailView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Client Edit View
+
+struct ClientEditView: View {
+    @Bindable var store: StoreOf<ClientEditFeature>
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(String.create_invoice_client) {
+                    TextField(String.create_client_name_placeholder, text: $store.name)
+                        .autocorrectionDisabled()
+                }
+                Section("IČO / DIČ") {
+                    LabeledContent("IČO") {
+                        TextField("12345678", text: $store.ic)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("DIČ") {
+                        TextField("CZ12345678", text: $store.dic)
+                            .multilineTextAlignment(.trailing)
+                            .autocorrectionDisabled()
+                    }
+                }
+                Section(String.section_contacts) {
+                    LabeledContent("Email") {
+                        TextField("info@company.cz", text: $store.email)
+                            .keyboardType(.emailAddress)
+                            .multilineTextAlignment(.trailing)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                    }
+                    LabeledContent(String.phone_label) {
+                        TextField("+420 123 456 789", text: $store.phone)
+                            .keyboardType(.phonePad)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+                if let err = store.errorMessage {
+                    Section {
+                        Label(err, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                            .font(.callout)
+                    }
+                }
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .navigationTitle(String.edit_client)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String.cancel) { store.send(.dismiss) }
+                        .disabled(store.isSubmitting)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if store.isSubmitting {
+                        ProgressView().scaleEffect(0.8)
+                    } else {
+                        Button(String.save) { store.send(.submitTapped) }
+                            .disabled(!store.isValid)
+                            .fontWeight(.semibold)
+                    }
                 }
             }
         }

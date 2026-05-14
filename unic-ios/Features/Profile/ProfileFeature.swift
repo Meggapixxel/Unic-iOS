@@ -116,9 +116,11 @@ struct ProfileFeature {
                 let allInvoices = flexiBeeClient.invoices()
                 let clientInvoices = allInvoices.filter { $0.clientName == name }
                 let code = clientInvoices.first?.clientCode
-                let canEdit = auth.canEditInvoice()
                 state.path.append(.clientDetail(ClientDetailFeature.State(
-                    clientName: name, clientCode: code, canEdit: canEdit, invoices: clientInvoices
+                    clientName: name, clientCode: code,
+                    canEdit: auth.canEditInvoice(),
+                    canEditClient: auth.canEditClient(),
+                    invoices: clientInvoices
                 )))
                 return .none
 
@@ -150,9 +152,11 @@ struct ProfileFeature {
                     let clientInvoices = allInvoices.filter {
                         code != nil ? $0.clientCode == code : $0.clientName == name
                     }
-                    let canEdit = auth.canEditInvoice()
                     state.path.append(.clientDetail(ClientDetailFeature.State(
-                        clientName: name, clientCode: code, canEdit: canEdit, invoices: clientInvoices
+                        clientName: name, clientCode: code,
+                        canEdit: auth.canEditInvoice(),
+                        canEditClient: auth.canEditClient(),
+                        invoices: clientInvoices
                     )))
                 }
                 return .none
@@ -168,9 +172,11 @@ struct ProfileFeature {
                 let allInvoices = flexiBeeClient.invoices()
                 let clientInvoices = allInvoices.filter { $0.clientName == name }
                 let code = clientInvoices.first?.clientCode
-                let canEdit = auth.canEditInvoice()
                 state.path.append(.clientDetail(ClientDetailFeature.State(
-                    clientName: name, clientCode: code, canEdit: canEdit, invoices: clientInvoices
+                    clientName: name, clientCode: code,
+                    canEdit: auth.canEditInvoice(),
+                    canEditClient: auth.canEditClient(),
+                    invoices: clientInvoices
                 )))
                 return .none
 

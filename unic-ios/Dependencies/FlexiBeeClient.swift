@@ -13,7 +13,9 @@ struct FlexiBeeClient: @unchecked Sendable {
     var isLoading: () -> Bool = { false }
     var lastSyncDate: () -> Date? = { nil }
     var fetchFirms: () async throws -> [FlexiBeeFirm] = { [] }
+    var fetchFirm: (_ code: String) async throws -> FlexiBeeFirm? = { _ in nil }
     var createFirm: (_ firm: NewFirm) async throws -> FlexiBeeFirm = { _ in throw NSError() }
+    var updateFirm: (_ code: String, _ firm: NewFirm) async throws -> Void
     var deleteFirm: (_ id: String) async throws -> Void
     var fetchLineItemsForInvoice: (_ invoiceId: String) async throws -> [FlexiBeeInvoiceItem] = { _ in [] }
     var createInvoice: (_ invoice: NewInvoice) async throws -> String = { _ in throw NSError() }
@@ -44,7 +46,9 @@ extension FlexiBeeClient: DependencyKey {
                 isLoading: { MainActor.assumeIsolated { s.isLoading } },
                 lastSyncDate: { MainActor.assumeIsolated { s.lastSyncDate } },
                 fetchFirms: { try await s.fetchFirms() },
+                fetchFirm: { code in try await s.fetchFirm(code: code) },
                 createFirm: { firm in try await s.createFirm(firm) },
+                updateFirm: { code, firm in try await s.updateFirm(code: code, firm: firm) },
                 deleteFirm: { id in try await s.deleteFirm(id: id) },
                 fetchLineItemsForInvoice: { invoiceId in try await s.fetchLineItemsForInvoice(invoiceId) },
                 createInvoice: { invoice in try await s.createInvoice(invoice) },

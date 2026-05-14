@@ -315,6 +315,7 @@
 "create_invoice_notes_placeholder" = "Optional";
 "create_invoice_pick_product" = "Select product";
 "new_client" = "New Client";
+"edit_client" = "Edit Client";
 "create_client_name_placeholder" = "Company or person name";
 "stock_movement_title" = "Stock Movement";
 "stock_movement_section" = "Warehouse";
@@ -399,3 +400,4 @@
 "promo_delete" = "Delete Offer";
 "promo_delete_confirm" = "Delete this offer?";
 "promo_created_by" = "Added by";
+"promo_category" = "Category";

@@ -17,6 +17,7 @@ struct AuthClient: @unchecked Sendable {
     var canDeleteInvoice: () -> Bool = { false }
     var canEditSalon: () -> Bool = { false }
     var canDeleteSalon: () -> Bool = { false }
+    var canEditClient: () -> Bool = { false }
     var canDeleteClient: () -> Bool = { false }
     var canDeleteActivity: () -> Bool = { false }
     var isAdmin: () -> Bool = { false }
@@ -51,6 +52,7 @@ extension AuthClient: DependencyKey {
                 canDeleteInvoice: { MainActor.assumeIsolated { service.canDeleteInvoice } },
                 canEditSalon: { MainActor.assumeIsolated { service.canEditSalon } },
                 canDeleteSalon: { MainActor.assumeIsolated { service.canDeleteSalon } },
+                canEditClient: { MainActor.assumeIsolated { service.canEditClient } },
                 canDeleteClient: { MainActor.assumeIsolated { service.canDeleteClient } },
                 canDeleteActivity: { MainActor.assumeIsolated { service.canDeleteActivity } },
                 isAdmin: { MainActor.assumeIsolated { service.isAdmin } },

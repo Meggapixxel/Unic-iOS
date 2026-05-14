@@ -40,9 +40,8 @@ struct InvoiceDetailView: View {
                 state: \.destination?.editForm,
                 action: \.destination.editForm
             )
-        ) { _ in
-            // Bridge to existing InvoiceFormScreen MVVM until fully ported to TCA
-            Text(String.edit_invoice_title).padding()
+        ) { formStore in
+            InvoiceFormBridgeView(store: formStore)
         }
         // Stock movement sheet
         .sheet(

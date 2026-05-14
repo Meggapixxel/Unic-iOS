@@ -338,6 +338,23 @@ final class FlexiBeeService: ObservableObject {
         _ = try await execute(method: "DELETE", urlString: baseURL + "/adresar/\(id).json", successRange: 200...204)
     }
 
+    func fetchFirm(code: String) async throws -> FlexiBeeFirm? {
+        let response = try await fetch(
+            FlexiBeeResponse<FlexiBeeFirmWrapper>.self,
+            path: "/adresar/code:\(code).json",
+            fields: FlexiBeeFirm.apiFields,
+            limit: 1
+        )
+        return response.winstrom.firms.first
+    }
+
+    func updateFirm(code: String, firm: NewFirm) async throws {
+        try require(AuthService.shared.canEditClient)
+        let envelope = CreateFirmEnvelope(winstrom: .init(adresar: [firm]))
+        let body = try JSONEncoder().encode(envelope)
+        _ = try await execute(method: "PUT", urlString: baseURL + "/adresar/code:\(code).json", body: body)
+    }
+
     func createFirm(_ firm: NewFirm) async throws -> FlexiBeeFirm {
         try require(AuthService.shared.canCreateClient)
         let envelope = CreateFirmEnvelope(winstrom: .init(adresar: [firm]))

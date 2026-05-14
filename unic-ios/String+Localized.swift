@@ -324,6 +324,7 @@ extension String {
     static var create_invoice_notes_placeholder: String { String(localized: "create_invoice_notes_placeholder") }
     static var create_invoice_pick_product:     String { String(localized: "create_invoice_pick_product") }
     static var new_client:                      String { String(localized: "new_client") }
+    static var edit_client:                     String { String(localized: "edit_client") }
     static var create_client_name_placeholder:  String { String(localized: "create_client_name_placeholder") }
 
     // MARK: - Stock Movement
@@ -395,6 +396,7 @@ extension String {
     static var promo_valid_from:              String { String(localized: "promo_valid_from") }
     static var promo_valid_to:                String { String(localized: "promo_valid_to") }
     static var promo_add:                     String { String(localized: "promo_add") }
+    static var promo_category:               String { String(localized: "promo_category") }
 
     // MARK: - Profile
     static var profile_nav_title:       String { String(localized: "profile_nav_title") }

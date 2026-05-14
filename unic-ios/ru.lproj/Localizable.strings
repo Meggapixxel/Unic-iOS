@@ -315,6 +315,7 @@
 "create_invoice_notes_placeholder" = "Необязательно";
 "create_invoice_pick_product" = "Выберите продукт";
 "new_client" = "Новый клиент";
+"edit_client" = "Редактировать клиента";
 "create_client_name_placeholder" = "Название компании или лица";
 "stock_movement_title" = "Складское движение";
 "stock_movement_section" = "Склад";
@@ -399,3 +400,4 @@
 "promo_delete" = "Удалить акцию";
 "promo_delete_confirm" = "Удалить эту акцию?";
 "promo_created_by" = "Добавил";
+"promo_category" = "Категория";

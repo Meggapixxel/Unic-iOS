@@ -132,7 +132,7 @@ struct InvoiceDetailFeature {
                 return .none
 
             case .editTapped:
-                state.destination = .editForm(InvoiceFormPlaceholderFeature.State())
+                state.destination = .editForm(InvoiceFormPlaceholderFeature.State(editingInvoice: state.invoice))
                 return .none
 
             case .deleteTapped:

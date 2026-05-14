@@ -282,7 +282,15 @@ struct SalesFeature {
 
             case .destination(.presented(.createInvoice(.dismiss))):
                 state.destination = nil
-                return .none
+                state.isLoading = true
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
+                    await flexiBeeClient.forceSync()
+                    let (invoices, syncDate) = await MainActor.run {
+                        (flexiBeeClient.invoices(), flexiBeeClient.lastSyncDate())
+                    }
+                    await send(.syncCompleted(invoices, syncDate))
+                }
 
             case .destination:
                 return .none
@@ -306,7 +314,10 @@ struct SalesFeature {
 @Reducer
 struct InvoiceFormPlaceholderFeature {
     @ObservableState
-    struct State: Equatable {}
+    struct State: Equatable {
+        var editingInvoice: FlexiBeeInvoice? = nil
+        var preSelectClientCode: String? = nil
+    }
 
     enum Action {
         case dismiss
@@ -388,12 +399,21 @@ struct AllTopClientsFeature {
 
 @Reducer
 struct ClientDetailFeature {
+
+    @Reducer
+    enum Destination {
+        case createInvoice(InvoiceFormPlaceholderFeature)
+        case editClient(ClientEditFeature)
+    }
+
     @ObservableState
     struct State: Equatable {
         var clientName: String
         var clientCode: String?
         var canEdit: Bool = false
+        var canEditClient: Bool = false
         var invoices: [FlexiBeeInvoice]
+        @Presents var destination: Destination.State?
 
         var totalRevenue:  Double { invoices.reduce(0) { $0 + $1.total } }
         var paidRevenue:   Double { invoices.filter { $0.paymentStatus == .paid }.reduce(0) { $0 + $1.total } }
@@ -412,18 +432,141 @@ struct ClientDetailFeature {
             lhs.clientName == rhs.clientName &&
             lhs.clientCode == rhs.clientCode &&
             lhs.canEdit == rhs.canEdit &&
-            lhs.invoices.map(\.id) == rhs.invoices.map(\.id)
+            lhs.canEditClient == rhs.canEditClient &&
+            lhs.invoices.map(\.id) == rhs.invoices.map(\.id) &&
+            lhs.destination == rhs.destination
         }
     }
 
     enum Action {
         case invoiceTapped(FlexiBeeInvoice)
         case newInvoiceTapped
+        case editClientTapped
+        case editClientFetched(FlexiBeeFirm?)
+        case destination(PresentationAction<Destination.Action>)
     }
 
+    @Dependency(\.flexiBeeClient) var flexiBeeClient
+
     var body: some Reducer<State, Action> {
-        Reduce { _, _ in .none }
+        Reduce { state, action in
+            switch action {
+            case .newInvoiceTapped:
+                state.destination = .createInvoice(
+                    InvoiceFormPlaceholderFeature.State(preSelectClientCode: state.clientCode)
+                )
+                return .none
+            case .editClientTapped:
+                guard let code = state.clientCode else { return .none }
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
+                    let firm = try? await flexiBeeClient.fetchFirm(code)
+                    await send(.editClientFetched(firm))
+                }
+            case let .editClientFetched(firm):
+                let code = state.clientCode ?? ""
+                state.destination = .editClient(ClientEditFeature.State(
+                    firmCode: code,
+                    name:  firm?.name  ?? state.clientName,
+                    ic:    firm?.ic    ?? "",
+                    dic:   firm?.dic   ?? "",
+                    email: firm?.email ?? "",
+                    phone: firm?.phone ?? ""
+                ))
+                return .none
+            case .invoiceTapped:
+                return .none
+            case .destination(.presented(.createInvoice(.dismiss))):
+                state.destination = nil
+                let name = state.clientName
+                let code = state.clientCode
+                let allInvoices = flexiBeeClient.invoices()
+                state.invoices = allInvoices.filter {
+                    code != nil ? $0.clientCode == code : $0.clientName == name
+                }
+                return .none
+            case .destination(.presented(.editClient(.dismiss))):
+                // Refresh clientName from updated data if available
+                if case let .editClient(editState) = state.destination {
+                    state.clientName = editState.name.trimmingCharacters(in: .whitespaces)
+                }
+                state.destination = nil
+                return .none
+            case .destination:
+                return .none
+            }
+        }
+        .ifLet(\.$destination, action: \.destination)
     }
 }
 
+extension ClientDetailFeature.Destination.State: Equatable {}
+
 extension SalesFeature.Destination.State: Equatable {}
+
+// MARK: - ClientEditFeature
+
+@Reducer
+struct ClientEditFeature {
+    @ObservableState
+    struct State: Equatable {
+        var firmCode: String
+        var name: String
+        var ic: String
+        var dic: String
+        var email: String
+        var phone: String
+        var isSubmitting: Bool = false
+        var errorMessage: String? = nil
+
+        var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+    }
+
+    enum Action: BindableAction {
+        case binding(BindingAction<State>)
+        case submitTapped
+        case submitCompleted(Result<Void, Error>)
+        case dismiss
+    }
+
+    @Dependency(\.flexiBeeClient) var flexiBeeClient
+
+    var body: some Reducer<State, Action> {
+        BindingReducer()
+        Reduce { state, action in
+            switch action {
+            case .submitTapped:
+                guard state.isValid else { return .none }
+                state.isSubmitting = true
+                state.errorMessage = nil
+                let code = state.firmCode
+                let firm = NewFirm(
+                    name:  state.name.trimmingCharacters(in: .whitespaces),
+                    ic:    state.ic.nilIfEmpty,
+                    dic:   state.dic.nilIfEmpty,
+                    email: state.email.nilIfEmpty,
+                    phone: state.phone.nilIfEmpty
+                )
+                return .run { [flexiBeeClient] send in
+                    do {
+                        try await flexiBeeClient.updateFirm(code, firm)
+                        await send(.submitCompleted(.success(())))
+                    } catch {
+                        await send(.submitCompleted(.failure(error)))
+                    }
+                }
+            case .submitCompleted(.success):
+                state.isSubmitting = false
+                return .send(.dismiss)
+            case let .submitCompleted(.failure(err)):
+                state.isSubmitting = false
+                state.errorMessage = err.localizedDescription
+                return .none
+            case .dismiss:
+                return .none
+            case .binding:
+                return .none
+            }
+        }
+    }
+}

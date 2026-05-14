@@ -315,6 +315,7 @@
 "create_invoice_notes_placeholder" = "Необов'язково";
 "create_invoice_pick_product" = "Оберіть продукт";
 "new_client" = "Новий клієнт";
+"edit_client" = "Редагувати клієнта";
 "create_client_name_placeholder" = "Назва компанії або особи";
 "stock_movement_title" = "Складський рух";
 "stock_movement_section" = "Склад";
@@ -399,3 +400,4 @@
 "promo_delete" = "Видалити акцію";
 "promo_delete_confirm" = "Видалити цю акцію?";
 "promo_created_by" = "Додав";
+"promo_category" = "Категорія";

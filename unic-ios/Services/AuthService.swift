@@ -36,6 +36,7 @@ final class AuthService: ObservableObject {
 
     // Clients
     var canCreateClient:       Bool { isAdmin || isManager }
+    var canEditClient:         Bool { isAdmin || isManager }
     var canDeleteClient:       Bool { isAdmin }
 
     // Invoices

@@ -370,14 +370,22 @@ enum PaymentMethod: String, CaseIterable {
 // MARK: - Firm (Client / Address Book)
 
 struct FlexiBeeFirm: Identifiable, Decodable, Equatable {
-    let id:   String
-    let code: String
-    let name: String?
+    let id:    String
+    let code:  String
+    let name:  String?
+    let ic:    String?
+    let dic:   String?
+    let email: String?
+    let phone: String?
 
     enum CodingKeys: String, CodingKey, CaseIterable {
         case id
-        case code = "kod"
-        case name = "nazev"
+        case code  = "kod"
+        case name  = "nazev"
+        case ic    = "ic"
+        case dic   = "dic"
+        case email = "email"
+        case phone = "tel"
     }
 
     static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }

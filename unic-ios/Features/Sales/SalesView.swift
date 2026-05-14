@@ -34,9 +34,8 @@ struct SalesView: View {
                 state: \.destination?.createInvoice,
                 action: \.destination.createInvoice
             )
-        ) { _ in
-            Text("Create Invoice")
-                .padding()
+        ) { formStore in
+            InvoiceFormBridgeView(store: formStore)
         }
     }
 }
@@ -444,6 +443,47 @@ struct AllTopProductsView: View {
                 ContentUnavailableView(String.no_data, systemImage: "shippingbox")
             }
         }
+    }
+}
+
+// MARK: - Invoice Form Bridge View
+
+struct InvoiceFormBridgeView: View {
+    let store: StoreOf<InvoiceFormPlaceholderFeature>
+
+    @StateObject private var viewModel: InvoiceFormViewModel
+
+    init(store: StoreOf<InvoiceFormPlaceholderFeature>) {
+        self.store = store
+        let editingInvoice = store.editingInvoice
+        _viewModel = StateObject(wrappedValue: InvoiceFormViewModel(
+            editingInvoice: editingInvoice,
+            preSelectClientCode: editingInvoice == nil ? store.preSelectClientCode : nil,
+            fetchFirms: { (try? await FlexiBeeService.shared.fetchFirms()) ?? [] },
+            reloadFirms: { (try? await FlexiBeeService.shared.fetchFirms()) ?? [] },
+            onSubmit: { invoice in
+                if let existing = editingInvoice {
+                    try await FlexiBeeService.shared.updateInvoice(id: existing.id, invoice: invoice)
+                } else {
+                    _ = try await FlexiBeeService.shared.createInvoice(invoice)
+                }
+            },
+            onDeleteClient: { id in try await FlexiBeeService.shared.deleteFirm(id: id) }
+        ))
+    }
+
+    var body: some View {
+        InvoiceFormScreen(
+            viewModel: viewModel,
+            onDismiss: {
+                if viewModel.isEditing && viewModel.didSucceed,
+                   let invoice = store.editingInvoice {
+                    store.send(.submitted(invoice))
+                } else {
+                    store.send(.dismiss)
+                }
+            }
+        )
     }
 }
 
