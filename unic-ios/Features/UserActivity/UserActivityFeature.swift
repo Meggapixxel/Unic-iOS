@@ -20,15 +20,17 @@ struct UserActivityFeature {
             Dictionary(grouping: entries, by: { $0.status }).mapValues(\.count)
         }
 
-        var entriesByDay: [(String, [UserActivityEntry])] {
+        nonisolated var entriesByDay: [(String, [UserActivityEntry])] {
             let grouped = Dictionary(grouping: entries) { entry -> String in
-                entry.timestamp.formatted(.dateTime.day().month(.abbreviated).year())
+                let cal = Calendar(identifier: .gregorian)
+                let comps = cal.dateComponents([.day, .month, .year], from: entry.timestamp)
+                return "\(comps.day ?? 0)/\(comps.month ?? 0)/\(comps.year ?? 0)"
             }
             return grouped.sorted { $0.key > $1.key }
         }
 
-        var entriesByWeek: [(String, [UserActivityEntry])] {
-            let cal = Calendar.current
+        nonisolated var entriesByWeek: [(String, [UserActivityEntry])] {
+            let cal = Calendar(identifier: .gregorian)
             let grouped = Dictionary(grouping: entries) { entry -> String in
                 let comps = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: entry.timestamp)
                 return "Week \(comps.weekOfYear ?? 0), \(comps.yearForWeekOfYear ?? 0)"
@@ -37,6 +39,7 @@ struct UserActivityFeature {
         }
     }
 
+    @CasePathable
     enum Action: BindableAction {
         case binding(BindingAction<State>)
         case onLoad
@@ -49,7 +52,7 @@ struct UserActivityFeature {
     @Dependency(\.firebaseClient) var firebase
     @Dependency(\.authClient) var auth
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
         Reduce { state, action in
             switch action {
@@ -59,7 +62,8 @@ struct UserActivityFeature {
                 state.canDeleteActivity = auth.canDeleteActivity()
                 state.isLoading = true
                 let userId = state.user.id
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     do {
                         let entries = try await firebase.fetchUserActivity(userId)
                         await send(.loaded(entries))
@@ -79,9 +83,10 @@ struct UserActivityFeature {
                 return .none
             case .deleteConfirmed(let entry):
                 state.entries.removeAll { $0.id == entry.id }
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     do {
-                        try await firebase.deleteActivityEntry(entry.id)
+                        try await firebase.deleteActivityEntry(entry)
                     } catch {
                         await send(.failed(error.localizedDescription))
                     }

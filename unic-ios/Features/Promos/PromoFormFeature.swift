@@ -35,7 +35,7 @@ struct PromoFormFeature {
     @Dependency(\.firebaseClient) var firebase
     @Dependency(\.authClient) var auth
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
         Reduce { state, action in
             switch action {
@@ -52,7 +52,8 @@ struct PromoFormFeature {
                     validTo: state.validTo,
                     createdBy: auth.currentUser()?.id ?? ""
                 )
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     do {
                         let saved = try await firebase.savePromo(promo)
                         await send(.saveSucceeded(saved))

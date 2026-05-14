@@ -15,13 +15,13 @@ struct TestDriveEntry: Identifiable {
     let note: String?
     let createdBy: String?
 
-    var deadline: Date {
+    @MainActor var deadline: Date {
         let start = salon.testDriveStartDate ?? date
         let days = FirebaseService.shared.testDriveDuration
         return Calendar.current.date(byAdding: .day, value: days, to: start) ?? start
     }
 
-    var deadlineColor: Color {
+    @MainActor var deadlineColor: Color {
         let days = Calendar.current.dateComponents([.day], from: Date(), to: deadline).day ?? 0
         if days < 0 { return .red }
         if days == 0 { return .red }

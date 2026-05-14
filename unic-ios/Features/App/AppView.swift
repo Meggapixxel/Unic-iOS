@@ -5,34 +5,23 @@ struct AppView: View {
     @Bindable var store: StoreOf<AppFeature>
 
     var body: some View {
-        switch store.state {
-        case .loading:
-            ProgressView()
+        Group {
+            switch store.state {
+            case .loading:
+                ProgressView()
 
-        case .auth:
-            if let authStore = store.scope(state: \.auth, action: \.auth) {
-                AuthView(store: authStore)
-            }
+            case .auth:
+                if let authStore = store.scope(state: \.auth, action: \.auth) {
+                    AuthView(store: authStore)
+                }
 
-        case .fetching:
-            ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-        case .locationGate(let user):
-            LocationGateView {
-                store.send(.locationAuthorized(user))
-            }
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-                if LocationManager.shared.isAuthorized {
-                    store.send(.locationAuthorized(user))
+            case .main:
+                if let mainStore = store.scope(state: \.main, action: \.main) {
+                    MainView(store: mainStore)
                 }
             }
-
-        case .main:
-            if let mainStore = store.scope(state: \.main, action: \.main) {
-                MainView(store: mainStore)
-            }
         }
+        .task { store.send(.onAppear) }
     }
 }
 

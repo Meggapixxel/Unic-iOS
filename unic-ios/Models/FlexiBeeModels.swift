@@ -1,5 +1,4 @@
 import Foundation
-import SwiftUI
 
 private let _flexiBeeDateFormatter: DateFormatter = {
     let f = DateFormatter()
@@ -161,14 +160,6 @@ enum PaymentStatus: String, CaseIterable {
         }
     }
 
-    var color: Color {
-        switch self {
-        case .paid:    return .green
-        case .partial: return .orange
-        case .unpaid:  return .secondary
-        case .overdue: return .red
-        }
-    }
 }
 
 // MARK: - Invoice

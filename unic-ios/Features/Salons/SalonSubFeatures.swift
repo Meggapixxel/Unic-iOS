@@ -14,10 +14,8 @@ struct TestDriveFeature {
     struct State: Equatable {
         var salons: IdentifiedArrayOf<Salon>
     }
-    enum Action { }
-    var body: some ReducerOf<Self> {
-        Reduce { _, _ in .none }
-    }
+    enum Action {}
+    var body: some Reducer<State, Action> { Reduce { _, _ in .none } }
 }
 
 // MARK: - RoutePlannerFeature
@@ -28,9 +26,7 @@ struct RoutePlannerFeature {
     struct State: Equatable {
         var salons: IdentifiedArrayOf<Salon>
     }
-    enum Action { }
-    var body: some ReducerOf<Self> {
-        Reduce { _, _ in .none }
-    }
+    enum Action {}
+    var body: some Reducer<State, Action> { Reduce { _, _ in .none } }
 }
 

@@ -9,64 +9,34 @@ struct SalesView: View {
     @Bindable var store: StoreOf<SalesFeature>
 
     var body: some View {
-        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
-            salesRoot
-                .navigationTitle(String.sales_nav_title)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar { salesToolbar }
-                .task { store.send(.onLoad) }
-        } destination: { pathStore in
-            switch pathStore.case {
-            case let .invoice(detailStore):
-                InvoiceDetailView(store: detailStore)
-            case let .allTopProducts(productsStore):
-                AllTopProductsView(store: productsStore)
-            case let .allTopClients(clientsStore):
-                AllTopClientsView(store: clientsStore)
+        TabView(selection: Binding(
+            get: { store.section },
+            set: { store.send(.sectionChanged($0)) }
+        )) {
+            AnalyticsSection(store: store)
+                .tabItem { Label(SalesSection.analytics.label, systemImage: "chart.bar.fill") }
+                .tag(SalesSection.analytics)
+
+            InvoicesSection(store: store)
+                .tabItem { Label(SalesSection.invoices.label, systemImage: "doc.text.fill") }
+                .tag(SalesSection.invoices)
+        }
+        .navigationTitle(String.sales_nav_title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                SyncDateLabel(isLoading: store.isLoading, lastSyncDate: store.lastSyncDate)
             }
         }
+        .task { store.send(.onLoad) }
         .sheet(
             item: $store.scope(
                 state: \.destination?.createInvoice,
                 action: \.destination.createInvoice
             )
         ) { _ in
-            // Bridge to existing InvoiceFormScreen MVVM until it is ported to TCA
             Text("Create Invoice")
                 .padding()
-        }
-    }
-
-    // MARK: - Root body
-
-    @ViewBuilder
-    private var salesRoot: some View {
-        switch store.section {
-        case .analytics:
-            AnalyticsSection(store: store)
-        case .invoices:
-            InvoicesSection(store: store)
-        }
-    }
-
-    // MARK: - Toolbar
-
-    @ToolbarContentBuilder
-    private var salesToolbar: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            Picker("", selection: Binding(
-                get: { store.section },
-                set: { store.send(.sectionChanged($0)) }
-            )) {
-                ForEach(SalesSection.allCases, id: \.self) {
-                    Text($0.label).tag($0)
-                }
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 220)
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            SyncDateLabel(isLoading: store.isLoading, lastSyncDate: store.lastSyncDate)
         }
     }
 }
@@ -133,12 +103,7 @@ private struct AnalyticsSection: View {
                             title: String.sales_top_clients,
                             seeAllLabel: store.topClients.count > 5 ? String.see_all : nil,
                             seeAllAction: {
-                                store.send(.path(.push(
-                                    id: store.path.ids.max().map { $0 + 1 } ?? 0,
-                                    state: .allTopClients(AllTopClientsFeature.State(
-                                        clients: Array(store.topClients)
-                                    ))
-                                )))
+                                store.send(.seeAllTopClientsTapped)
                             }
                         ) {
                             ForEach(Array(clients.enumerated()), id: \.offset) { idx, client in

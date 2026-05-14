@@ -20,7 +20,7 @@ struct AuthFeature {
 
     @Dependency(\.authClient) var auth
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
         Reduce { state, action in
             switch action {
@@ -32,7 +32,8 @@ struct AuthFeature {
                 state.errorMessage = nil
                 let email = state.email
                 let password = state.password
-                return .run { send in
+                let auth = auth
+                return .run { [auth] send in
                     do {
                         try await auth.login(email, password)
                         await send(.loginSucceeded)

@@ -7,8 +7,18 @@ struct PromosFeature {
     // MARK: - Destination
 
     @Reducer
-    enum Destination {
-        case form(PromoFormFeature)
+    struct Destination {
+        @ObservableState
+        enum State: Equatable {
+            case form(PromoFormFeature.State)
+        }
+        enum Action {
+            case form(PromoFormFeature.Action)
+        }
+        var body: some Reducer<State, Action> {
+            Reduce { _, _ in .none }
+                .ifCaseLet(\.form, action: \.form) { PromoFormFeature() }
+        }
     }
 
     // MARK: - State
@@ -48,13 +58,14 @@ struct PromosFeature {
 
     // MARK: - Body
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
 
             case .onLoad:
                 state.canManagePromos = auth.canManagePromos()
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     do {
                         let promos = try await firebase.fetchPromos()
                         await send(.promosLoaded(promos))
@@ -94,7 +105,8 @@ struct PromosFeature {
                 }
                 state.promos.removeAll { $0.id == id }
                 state.promoToDelete = nil
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     do {
                         try await firebase.deletePromo(id)
                     } catch {
@@ -123,6 +135,7 @@ struct PromosFeature {
                 return .none
             }
         }
-        .ifLet(\.$destination, action: \.destination)
+        .ifLet(\.$destination, action: \.destination) { Destination() }
     }
 }
+

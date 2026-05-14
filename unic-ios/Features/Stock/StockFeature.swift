@@ -77,7 +77,7 @@ struct StockFeature {
 
     // MARK: - Body
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
 
         Reduce { state, action in
@@ -91,21 +91,21 @@ struct StockFeature {
                     state.allStock = Array(stock)
                     state.isLoading = false
                 }
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     await flexiBeeClient.loadIfNeeded()
-                    let updated = flexiBeeClient.stockWithPrices()
-                    let date = flexiBeeClient.lastSyncDate()
-                    await send(.syncCompleted(Array(updated), date))
+                    let (updated, syncDate) = await MainActor.run { (Array(flexiBeeClient.stockWithPrices()), flexiBeeClient.lastSyncDate()) }
+                    await send(.syncCompleted(updated, syncDate))
                 }
 
             case .forceSync:
                 state.isLoading = true
                 state.errorMessage = nil
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     await flexiBeeClient.forceSync()
-                    let stock = flexiBeeClient.stockWithPrices()
-                    let date = flexiBeeClient.lastSyncDate()
-                    await send(.syncCompleted(Array(stock), date))
+                    let (stock, syncDate) = await MainActor.run { (Array(flexiBeeClient.stockWithPrices()), flexiBeeClient.lastSyncDate()) }
+                    await send(.syncCompleted(stock, syncDate))
                 }
 
             case let .syncCompleted(stock, date):
@@ -136,14 +136,16 @@ struct StockFeature {
 
             case let .barcodeScanned(barcode):
                 state.destination = nil
-                return .run { [stock = state.allStock] send in
+                let stockIndex = state.allStock.map { (normalized: Self.normalizeKod($0.code), product: $0) }
+                let firebaseClient = firebaseClient
+                return .run { [stockIndex, firebaseClient] send in
                     do {
                         guard let article = try await firebaseClient.lookupBarcodeArticle(barcode) else {
                             await send(.barcodeSearchCompleted(nil))
                             return
                         }
                         let normalized = Self.normalizeKod(article)
-                        let product = stock.first { Self.normalizeKod($0.code) == normalized }
+                        let product = stockIndex.first { $0.normalized == normalized }?.product
                         await send(.barcodeSearchCompleted(product))
                     } catch {
                         await send(.barcodeSearchCompleted(nil))
@@ -173,7 +175,7 @@ struct StockFeature {
         .ifLet(\.$destination, action: \.destination)
     }
 
-    private static func normalizeKod(_ s: String) -> String {
+    nonisolated private static func normalizeKod(_ s: String) -> String {
         s.replacingOccurrences(of: #"[^A-Za-z0-9]+"#, with: "", options: .regularExpression)
          .uppercased()
     }
@@ -194,7 +196,7 @@ struct ProductDetailFeature {
         case togglePurchaseDetails
     }
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
         Reduce { state, action in
             switch action {
@@ -220,7 +222,9 @@ struct BarcodeScannerFeature {
         case dismiss
     }
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { _, _ in .none }
     }
 }
+
+extension StockFeature.Destination.State: Equatable {}

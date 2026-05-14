@@ -19,6 +19,7 @@ struct SalonDetailFeature {
             case deleteConfirmation
         }
 
+        @CasePathable
         enum Action {
             case form(SalonFormFeature.Action)
             case addStatus(AddStatusFeature.Action)
@@ -26,10 +27,11 @@ struct SalonDetailFeature {
             case deleteConfirmation
         }
 
-        var body: some ReducerOf<Self> {
-            Scope(state: \.form, action: \.form) { SalonFormFeature() }
-            Scope(state: \.addStatus, action: \.addStatus) { AddStatusFeature() }
-            Scope(state: \.statusHistory, action: \.statusHistory) { StatusHistoryFeature() }
+        var body: some Reducer<State, Action> {
+            Reduce { _, _ in .none }
+                .ifCaseLet(\.form, action: \.form) { SalonFormFeature() }
+                .ifCaseLet(\.addStatus, action: \.addStatus) { AddStatusFeature() }
+                .ifCaseLet(\.statusHistory, action: \.statusHistory) { StatusHistoryFeature() }
         }
     }
 
@@ -84,7 +86,7 @@ struct SalonDetailFeature {
 
     // MARK: - Body
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
 
@@ -92,7 +94,8 @@ struct SalonDetailFeature {
                 state.canEdit = auth.canEditSalon()
                 state.canDelete = auth.canDeleteSalon()
                 state.canEditHistory = auth.isAdmin()
-                return .run { [salonId = state.salon.salonId] send in
+                let firebase = firebase
+                return .run { [firebase, salonId = state.salon.salonId] send in
                     do {
                         let entry = try await firebase.fetchLatestStatusEntry(salonId)
                         await send(.latestEntryLoaded(entry))
@@ -130,7 +133,8 @@ struct SalonDetailFeature {
             case .deleteConfirmed:
                 state.isSaving = true
                 state.destination = nil
-                return .run { [salonId = state.salon.salonId] send in
+                let firebase = firebase
+                return .run { [firebase, salonId = state.salon.salonId] send in
                     do {
                         try await firebase.deleteSalon(salonId)
                         await send(.deleteFinished)
@@ -163,7 +167,8 @@ struct SalonDetailFeature {
                 return .none
 
             case let .updateNote(note, entryId: entryId):
-                return .run { [salonId = state.salon.salonId] send in
+                let firebase = firebase
+                return .run { [firebase, salonId = state.salon.salonId] send in
                     do {
                         try await firebase.updateStatusEntryNote(salonId, entryId, note)
                         let history = try await firebase.fetchStatusHistory(salonId)
@@ -175,7 +180,8 @@ struct SalonDetailFeature {
 
             case let .deleteEntry(entryId):
                 state.statusHistory.remove(id: entryId)
-                return .run { [salonId = state.salon.salonId] send in
+                let firebase = firebase
+                return .run { [firebase, salonId = state.salon.salonId] send in
                     do {
                         try await firebase.deleteStatusHistoryEntry(salonId, entryId)
                     } catch {
@@ -239,7 +245,8 @@ struct SalonDetailFeature {
     }
 
     private func loadHistory(salonId: String) -> Effect<Action> {
-        .run { send in
+        let firebase = firebase
+        return .run { [firebase] send in
             do {
                 let history = try await firebase.fetchStatusHistory(salonId)
                 await send(.historyLoaded(history))
@@ -281,27 +288,34 @@ struct AddStatusFeature {
     }
 
     @Dependency(\.firebaseClient) var firebase
+    @Dependency(\.date) var date
     @Dependency(\.dismiss) var dismiss
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
         Reduce { state, action in
             switch action {
             case .saveTapped:
                 state.isSaving = true
-                let date: Date? = state.selectedStatus == .demoScheduled ? state.selectedDate : nil
-                return .run { [s = state] send in
+                let salonId = state.salonId
+                let selectedStatus = state.selectedStatus
+                let note = state.note
+                let noteOrNil: String? = note.isEmpty ? nil : note
+                let createdBy = state.currentUserId
+                let scheduledDate: Date? = selectedStatus == .demoScheduled ? state.selectedDate : nil
+                let firebase = firebase
+                return .run { [firebase, date] send in
                     do {
                         try await firebase.addStatusHistoryEntry(
-                            s.salonId, s.selectedStatus, s.note, s.currentUserId, date ?? Date()
+                            salonId, selectedStatus, note, createdBy, scheduledDate ?? date()
                         )
-                        let history = try await firebase.fetchStatusHistory(s.salonId)
+                        let history = try await firebase.fetchStatusHistory(salonId)
                         let entry = history.first ?? StatusHistoryEntry(
-                            status: s.selectedStatus.rawValue,
-                            note: s.note.nilIfEmpty,
-                            timestamp: Date(),
-                            createdBy: s.currentUserId,
-                            date: date
+                            status: selectedStatus.rawValue,
+                            note: noteOrNil,
+                            timestamp: date(),
+                            createdBy: createdBy,
+                            date: scheduledDate
                         )
                         await send(.entryAdded(entry, updatedSalon: nil))
                         await dismiss()
@@ -358,7 +372,7 @@ struct StatusHistoryFeature {
 
     @Dependency(\.authClient) var auth
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
             case .loadHistory:

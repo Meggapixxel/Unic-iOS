@@ -12,17 +12,8 @@ struct UsersFeature {
     }
 
     @Reducer
-    struct Path {
-        @ObservableState
-        enum State: Equatable {
-            case userActivity(UserActivityFeature.State)
-        }
-        enum Action {
-            case userActivity(UserActivityFeature.Action)
-        }
-        var body: some ReducerOf<Self> {
-            Scope(state: \.userActivity, action: \.userActivity) { UserActivityFeature() }
-        }
+    enum Path {
+        case userActivity(UserActivityFeature)
     }
 
     enum Action {
@@ -36,12 +27,13 @@ struct UsersFeature {
     @Dependency(\.firebaseClient) var firebase
     @Dependency(\.authClient) var auth
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
             case .onLoad:
                 state.isLoading = true
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     do {
                         let users = try await firebase.fetchAllUsers()
                         await send(.loaded(users))
@@ -51,9 +43,11 @@ struct UsersFeature {
                 }
             case .loaded(let users):
                 state.isLoading = false
-                state.users = auth.isAdmin()
+                let isAdmin = auth.isAdmin()
+                let role = auth.currentUser()?.role
+                state.users = isAdmin
                     ? users
-                    : users.filter { $0.role == auth.currentUser()?.role }
+                    : users.filter { $0.role == role }
                 return .none
             case .failed(let msg):
                 state.isLoading = false
@@ -66,6 +60,8 @@ struct UsersFeature {
                 return .none
             }
         }
-        .forEach(\.path, action: \.path) { Path() }
+        .forEach(\.path, action: \.path)
     }
 }
+
+extension UsersFeature.Path.State: Equatable {}

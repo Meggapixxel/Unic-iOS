@@ -10,43 +10,17 @@ struct SalonsFeature {
     // MARK: - Path
 
     @Reducer
-    struct Path {
-        @ObservableState
-        enum State: Equatable {
-            case salonDetail(SalonDetailFeature.State)
-            case testDrive(TestDriveFeature.State)
-            case routePlanner(RoutePlannerFeature.State)
-        }
-
-        enum Action {
-            case salonDetail(SalonDetailFeature.Action)
-            case testDrive(TestDriveFeature.Action)
-            case routePlanner(RoutePlannerFeature.Action)
-        }
-
-        var body: some ReducerOf<Self> {
-            Scope(state: \.salonDetail, action: \.salonDetail) { SalonDetailFeature() }
-            Scope(state: \.testDrive, action: \.testDrive) { TestDriveFeature() }
-            Scope(state: \.routePlanner, action: \.routePlanner) { RoutePlannerFeature() }
-        }
+    enum Path {
+        case salonDetail(SalonDetailFeature)
+        case testDrive(TestDriveFeature)
+        case routePlanner(RoutePlannerFeature)
     }
 
     // MARK: - Destination
 
     @Reducer
-    struct Destination {
-        @ObservableState
-        enum State: Equatable {
-            case form(SalonFormFeature.State)
-        }
-
-        enum Action {
-            case form(SalonFormFeature.Action)
-        }
-
-        var body: some ReducerOf<Self> {
-            Scope(state: \.form, action: \.form) { SalonFormFeature() }
-        }
+    enum Destination {
+        case form(SalonFormFeature)
     }
 
     // MARK: - State
@@ -196,7 +170,8 @@ struct SalonsFeature {
                 guard state.salons.isEmpty else { return .none }
                 state.isLoading = true
                 state.errorMessage = nil
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     do {
                         async let salons = firebase.fetchAllSalons()
                         async let _ = firebase.loadWorksOnTags()
@@ -228,11 +203,11 @@ struct SalonsFeature {
                 }
                 state.destination = nil
                 // Propagate update into any open salonDetail path element
-                for index in state.path.indices {
-                    if case var .salonDetail(detail) = state.path[index],
+                for id in state.path.ids {
+                    if case var .salonDetail(detail) = state.path[id: id],
                        detail.salon.salonId == salon.salonId {
                         detail.salon = salon
-                        state.path[index] = .salonDetail(detail)
+                        state.path[id: id] = .salonDetail(detail)
                     }
                 }
                 return .none
@@ -284,7 +259,10 @@ struct SalonsFeature {
                 return .none
             }
         }
-        .forEach(\.path, action: \.path) { Path() }
-        .ifLet(\.$destination, action: \.destination) { Destination() }
+        .forEach(\.path, action: \.path)
+        .ifLet(\.$destination, action: \.destination)
     }
 }
+
+extension SalonsFeature.Path.State: Equatable {}
+extension SalonsFeature.Destination.State: Equatable {}

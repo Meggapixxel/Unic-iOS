@@ -14,7 +14,7 @@ struct MainFeature {
         var planBanner = PlanBannerFeature.State()
         var showGreeting = false
 
-        enum Tab: Equatable { case salons, promos, stock, profile }
+        enum Tab: String, Equatable, Hashable, CaseIterable { case salons, promos, stock, profile }
 
         init(currentUser: AppUser) {
             self.currentUser = currentUser
@@ -35,7 +35,7 @@ struct MainFeature {
 
     @Dependency(\.continuousClock) var clock
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
         Scope(state: \.salons, action: \.salons) { SalonsFeature() }
         Scope(state: \.promos, action: \.promos) { PromosFeature() }

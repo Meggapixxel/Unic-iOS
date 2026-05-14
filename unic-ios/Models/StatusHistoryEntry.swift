@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import FirebaseFirestore
+@preconcurrency import FirebaseFirestore
 
 struct StatusHistoryEntry: Codable, Identifiable, Hashable {
     @DocumentID var id: String?

@@ -12,11 +12,11 @@ enum FlexiBeeError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .networkError(let e): return String.error_network(e.localizedDescription)
-        case .decodingError(let e): return String.error_parsing(e.localizedDescription)
-        case .apiError(let msg):   return String.error_api(msg)
-        case .httpError(let code): return String.error_http(code)
-        case .unauthorized:        return String.error_unauthorized
+        case .networkError(let e): return String(localized: "error_network \(e.localizedDescription)")
+        case .decodingError(let e): return String(localized: "error_parsing \(e.localizedDescription)")
+        case .apiError(let msg):   return String(localized: "error_api \(msg)")
+        case .httpError(let code): return String(localized: "error_http \(code)")
+        case .unauthorized:        return String(localized: "error_unauthorized")
         }
     }
 }
@@ -423,27 +423,20 @@ final class FlexiBeeService: ObservableObject {
 
         guard !outflowIds.isEmpty else { return [] }
 
-        // Step 2: fetch line items for each outflow document concurrently
-        return await withTaskGroup(of: [FlexiBeeStockMovementItem].self) { group in
-            for id in outflowIds {
-                group.addTask {
-                    do {
-                        let response = try await self.fetch(
-                            FlexiBeeResponse<FlexiBeeStockMovementItemsWrapper>.self,
-                            path: "/skladovy-pohyb/\(id)/skladovy-pohyb-polozka.json",
-                            fields: FlexiBeeStockMovementItem.apiFields,
-                            limit: 500
-                        )
-                        return response.winstrom.items.filter { $0.isValid }
-                    } catch {
-                        return []
-                    }
-                }
-            }
-            var all: [FlexiBeeStockMovementItem] = []
-            for await items in group { all.append(contentsOf: items) }
-            return all
+        // Step 2: fetch line items for each outflow document sequentially
+        var all: [FlexiBeeStockMovementItem] = []
+        for id in outflowIds {
+            do {
+                let response = try await fetch(
+                    FlexiBeeResponse<FlexiBeeStockMovementItemsWrapper>.self,
+                    path: "/skladovy-pohyb/\(id)/skladovy-pohyb-polozka.json",
+                    fields: FlexiBeeStockMovementItem.apiFields,
+                    limit: 500
+                )
+                all.append(contentsOf: response.winstrom.items.filter { $0.isValid })
+            } catch { }
         }
+        return all
     }
 
     func fetchPriceList() async throws -> [FlexiBeeCenikItem] {

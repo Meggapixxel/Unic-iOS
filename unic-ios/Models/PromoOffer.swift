@@ -1,5 +1,5 @@
 import Foundation
-import FirebaseFirestore
+@preconcurrency import FirebaseFirestore
 
 struct PromoOffer: Codable, Identifiable, Equatable {
     @DocumentID var id: String?

@@ -35,11 +35,27 @@ struct InvoiceDetailFeature {
     // MARK: - Destination
 
     @Reducer
-    enum Destination {
-        case editForm(InvoiceFormPlaceholderFeature)
-        case stockMovement(StockMovementPlaceholderFeature)
-        case statusChange(StatusChangeFeature)
-        case deleteAlert(ConfirmationDialogFeature)
+    struct Destination {
+        @ObservableState
+        enum State: Equatable {
+            case editForm(InvoiceFormPlaceholderFeature.State)
+            case stockMovement(StockMovementPlaceholderFeature.State)
+            case statusChange(StatusChangeFeature.State)
+            case deleteAlert(ConfirmationDialogFeature.State)
+        }
+        enum Action {
+            case editForm(InvoiceFormPlaceholderFeature.Action)
+            case stockMovement(StockMovementPlaceholderFeature.Action)
+            case statusChange(StatusChangeFeature.Action)
+            case deleteAlert(ConfirmationDialogFeature.Action)
+        }
+        var body: some Reducer<State, Action> {
+            Reduce { _, _ in .none }
+                .ifCaseLet(\.editForm, action: \.editForm) { InvoiceFormPlaceholderFeature() }
+                .ifCaseLet(\.stockMovement, action: \.stockMovement) { StockMovementPlaceholderFeature() }
+                .ifCaseLet(\.statusChange, action: \.statusChange) { StatusChangeFeature() }
+                .ifCaseLet(\.deleteAlert, action: \.deleteAlert) { ConfirmationDialogFeature() }
+        }
     }
 
     // MARK: - Action
@@ -79,7 +95,7 @@ struct InvoiceDetailFeature {
 
     // MARK: - Body
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
 
@@ -87,10 +103,11 @@ struct InvoiceDetailFeature {
                 state.isLoading = true
                 let invoiceId = state.invoice.id
                 let invoiceNumber = state.invoice.invoiceNumber
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     do {
-                        let items = try await flexiBeeClient.fetchLineItemsForInvoice(state.invoice)
-                            .filter { !$0.productName.isEmpty && $0.quantity > 0 }
+                        let rawItems = try await flexiBeeClient.fetchLineItemsForInvoice(invoiceId)
+                        let items = await MainActor.run { rawItems.filter { !$0.productName.isEmpty && $0.quantity > 0 } }
                         let movementResult = try? await flexiBeeClient.fetchStockMovement(invoiceNumber)
                         let cashId = try? await flexiBeeClient.fetchCashReceiptId(invoiceId)
                         await send(.loaded(
@@ -123,7 +140,8 @@ struct InvoiceDetailFeature {
             case .deleteConfirmed:
                 let invoiceId = state.invoice.id
                 let invoiceNumber = state.invoice.invoiceNumber
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     do {
                         try await flexiBeeClient.deleteStockMovement(invoiceNumber)
                         try await flexiBeeClient.deleteInvoice(invoiceId)
@@ -134,6 +152,9 @@ struct InvoiceDetailFeature {
                 }
 
             case .deleteCompleted:
+                return .none
+
+            case .deleteCancelled:
                 return .none
 
             case let .setPaymentStatus(status, method):
@@ -147,13 +168,14 @@ struct InvoiceDetailFeature {
                 state.destination = nil
                 let invoiceId = state.invoice.id
                 let invoice = state.invoice
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     do {
                         if status == .paid, method == .hotove {
-                            try await flexiBeeClient.createCashReceipt(invoiceId)
+                            try await flexiBeeClient.createCashReceipt(invoice)
                         }
                         try await flexiBeeClient.updateInvoicePaymentStatus(invoiceId, status, method)
-                        let updated = try await flexiBeeClient.fetchSingleInvoice(invoiceId)
+                        let updated = try await flexiBeeClient.fetchSingleInvoice(invoiceId) ?? invoice
                         await send(.statusChangeCompleted(updated))
                     } catch {
                         // Fallback: treat current invoice as unchanged
@@ -181,7 +203,8 @@ struct InvoiceDetailFeature {
                 state.isLoadingPDF = true
                 let path = "/faktura-vydana/\(state.invoice.id).pdf"
                 let filename = "\(state.invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     do {
                         let data = try await flexiBeeClient.fetchPDF(path)
                         await send(.pdfLoaded(PDFShareItem(data: data, filename: filename)))
@@ -195,7 +218,8 @@ struct InvoiceDetailFeature {
                 state.isLoadingPDF = true
                 let path = "/pokladni-pohyb/\(rid).pdf"
                 let filename = "receipt-\(state.invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     do {
                         let data = try await flexiBeeClient.fetchPDF(path)
                         await send(.pdfLoaded(PDFShareItem(data: data, filename: filename)))
@@ -213,7 +237,8 @@ struct InvoiceDetailFeature {
                 let receiptPath = "/pokladni-pohyb/\(rid).pdf"
                 let invoiceName = "\(state.invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
                 let receiptName = "receipt-\(state.invoice.invoiceNumber.replacingOccurrences(of: "/", with: "-")).pdf"
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     do {
                         async let invData = flexiBeeClient.fetchPDF(invoicePath)
                         async let recData = flexiBeeClient.fetchPDF(receiptPath)
@@ -240,7 +265,8 @@ struct InvoiceDetailFeature {
             case .destination(.presented(.editForm(.submitted))):
                 state.destination = nil
                 let id = state.invoice.id
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     if let updated = try? await flexiBeeClient.fetchSingleInvoice(id) {
                         await send(.invoiceRefreshed(updated))
                     }
@@ -286,7 +312,7 @@ struct InvoiceDetailFeature {
                 return .none
             }
         }
-        .ifLet(\.$destination, action: \.destination)
+        .ifLet(\.$destination, action: \.destination) { Destination() }
     }
 }
 
@@ -306,7 +332,7 @@ struct StatusChangeFeature {
         case methodChanged(PaymentMethod)
     }
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
             case let .methodChanged(method):
@@ -334,7 +360,7 @@ struct StockMovementPlaceholderFeature {
         case skipped
     }
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { _, _ in .none }
     }
 }
@@ -351,7 +377,7 @@ struct ConfirmationDialogFeature {
         case cancelled
     }
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { _, _ in .none }
     }
 }

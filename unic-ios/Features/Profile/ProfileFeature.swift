@@ -9,28 +9,13 @@ struct ProfileFeature {
     // MARK: - Path
 
     @Reducer
-    struct Path {
-        @ObservableState
-        enum State: Equatable {
-            case userActivity(UserActivityFeature.State)
-            case sales(SalesFeature.State)
-            case users(UsersFeature.State)
-            case plans(PlansFeature.State)
-        }
-
-        enum Action {
-            case userActivity(UserActivityFeature.Action)
-            case sales(SalesFeature.Action)
-            case users(UsersFeature.Action)
-            case plans(PlansFeature.Action)
-        }
-
-        var body: some ReducerOf<Self> {
-            Scope(state: \.userActivity, action: \.userActivity) { UserActivityFeature() }
-            Scope(state: \.sales, action: \.sales) { SalesFeature() }
-            Scope(state: \.users, action: \.users) { UsersFeature() }
-            Scope(state: \.plans, action: \.plans) { PlansFeature() }
-        }
+    enum Path {
+        case userActivity(UserActivityFeature)
+        case sales(SalesFeature)
+        case invoiceDetail(InvoiceDetailFeature)
+        case allTopClients(AllTopClientsFeature)
+        case users(UsersFeature)
+        case plans(PlansFeature)
     }
 
     // MARK: - State
@@ -68,10 +53,11 @@ struct ProfileFeature {
     // MARK: - Dependencies
 
     @Dependency(\.authClient) var auth
+    @Dependency(\.flexiBeeClient) var flexiBeeClient
 
     // MARK: - Body
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
 
         Reduce { state, action in
@@ -111,6 +97,25 @@ struct ProfileFeature {
                 state.path.append(.plans(PlansFeature.State()))
                 return .none
 
+            // MARK: Sales sub-navigation (flat stack)
+
+            case .path(.element(_, .sales(.invoiceTapped(let invoice)))):
+                state.path.append(.invoiceDetail(InvoiceDetailFeature.State(invoice: invoice)))
+                return .none
+
+            case .path(.element(let id, .sales(.seeAllTopClientsTapped))):
+                if case let .sales(salesState) = state.path[id: id] {
+                    state.path.append(.allTopClients(AllTopClientsFeature.State(clients: salesState.topClients)))
+                }
+                return .none
+
+            case .path(.element(_, .invoiceDetail(.deleteCompleted))):
+                state.path.removeLast()
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
+                    await flexiBeeClient.forceSync()
+                }
+
             case .path:
                 return .none
 
@@ -118,7 +123,9 @@ struct ProfileFeature {
                 return .none
             }
         }
-        .forEach(\.path, action: \.path) { Path() }
+        .forEach(\.path, action: \.path)
     }
 }
+
+extension ProfileFeature.Path.State: Equatable {}
 

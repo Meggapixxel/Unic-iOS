@@ -47,7 +47,7 @@ struct PlansFeature {
 
     // MARK: - Body
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
         Reduce { state, action in
             switch action {
@@ -55,7 +55,8 @@ struct PlansFeature {
             case .onLoad:
                 state.canManagePlans = auth.canManagePlans()
                 state.isLoading = true
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     do {
                         let plans = try await firebase.fetchAllPlans()
                         await send(.loaded(plans))
@@ -93,7 +94,8 @@ struct PlansFeature {
                 }
                 state.plans.removeAll { $0.id == id }
                 state.pendingDeletePlan = nil
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     do {
                         try await firebase.deletePlan(id)
                     } catch {
@@ -158,7 +160,7 @@ struct PlansFormFeature {
     @Dependency(\.firebaseClient) var firebase
     @Dependency(\.authClient) var auth
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
         Reduce { state, action in
             switch action {
@@ -173,7 +175,8 @@ struct PlansFormFeature {
                     endDate: state.endDate,
                     createdBy: auth.currentUser()?.id ?? ""
                 )
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     do {
                         let saved = try await firebase.savePlan(plan)
                         await send(.saved(saved))
@@ -194,3 +197,5 @@ struct PlansFormFeature {
         }
     }
 }
+
+extension PlansFeature.Destination.State: Equatable {}

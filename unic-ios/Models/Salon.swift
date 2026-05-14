@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import FirebaseFirestore
+@preconcurrency import FirebaseFirestore
 
 struct Location: Codable, Hashable {
     let lat: Double

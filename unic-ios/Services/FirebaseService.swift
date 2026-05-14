@@ -9,7 +9,7 @@ import Foundation
 import Combine
 import CoreLocation
 import FirebaseCore
-import FirebaseFirestore
+@preconcurrency import FirebaseFirestore
 
 struct TagItem: Identifiable, Hashable {
     let id: String
@@ -19,6 +19,7 @@ struct TagItem: Identifiable, Hashable {
 typealias WorksOnTag = TagItem
 typealias ArticleTag = TagItem
 
+@MainActor
 final class FirebaseService: ObservableObject {
     static let shared = FirebaseService()
 
@@ -147,7 +148,8 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Works On Tags
 
-    func loadWorksOnTags() async {
+    @discardableResult
+    func loadWorksOnTags() async -> [WorksOnTag] {
         do {
             let snapshot = try await db.collection("worksOnTags")
                 .order(by: "name")
@@ -157,10 +159,12 @@ final class FirebaseService: ObservableObject {
                 return WorksOnTag(id: doc.documentID, name: name)
             }
             AppLogger.log(.debug, "Firebase", "loadWorksOnTags → \(tags.count) tags")
-            await MainActor.run { worksOnTags = tags }
+            worksOnTags = tags
+            return tags
         } catch {
             AppLogger.log(.error, "Firebase", "loadWorksOnTags failed: \(error.localizedDescription)")
-            await MainActor.run { self.error = error }
+            self.error = error
+            return worksOnTags
         }
     }
 
@@ -532,11 +536,12 @@ final class FirebaseService: ObservableObject {
 
         var salonNames: [String: String] = [:]
         let salonIds = Set(snapshot.documents.compactMap { salonId(from: $0.reference.path) })
+        let db = self.db
         await withTaskGroup(of: (String, String).self) { group in
             for id in salonIds {
                 group.addTask {
                     do {
-                        let doc = try await self.db.collection("salons").document(id).getDocument()
+                        let doc = try await db.collection("salons").document(id).getDocument()
                         return (id, doc.data()?["name"] as? String ?? id)
                     } catch {
                         return (id, id)
@@ -587,18 +592,21 @@ final class FirebaseService: ObservableObject {
 
     @Published private(set) var bundleCodes: Set<String> = []
 
-    func loadBundleCodes() async {
+    @discardableResult
+    func loadBundleCodes() async -> Set<String> {
         do {
             let doc = try await db.collection("config").document("bundleCodes").getDocument()
             guard let codes = doc.data()?["codes"] as? [String] else {
                 AppLogger.log(.warning, "Firebase", "loadBundleCodes: document missing or has no 'codes' field")
-                return
+                return bundleCodes
             }
             AppLogger.log(.info, "Firebase", "loadBundleCodes → \(codes.count) bundle codes: \(codes.joined(separator: ", "))")
-            await MainActor.run { bundleCodes = Set(codes) }
+            bundleCodes = Set(codes)
+            return bundleCodes
         } catch {
             AppLogger.log(.error, "Firebase", "loadBundleCodes failed: \(error.localizedDescription)")
-            await MainActor.run { self.error = error }
+            self.error = error
+            return bundleCodes
         }
     }
 
@@ -629,7 +637,7 @@ final class FirebaseService: ObservableObject {
             .order(by: "endDate")
             .limit(to: 5)
             .getDocuments()
-        let plans = try snapshot.documents.compactMap { try? $0.data(as: Plan.self) }
+        let plans = snapshot.documents.compactMap { try? $0.data(as: Plan.self) }
         return plans.first { $0.isActive }
     }
 

@@ -102,19 +102,23 @@ struct ProfileView: View {
                 Button(String.cancel, role: .cancel) { }
             }
         } destination: { pathStore in
-            switch pathStore.case {
-            case let .userActivity(activityStore):
-                UserActivityView(store: activityStore)
-
-            case let .sales(salesStore):
-                SalesView(store: salesStore)
-
-            case let .users(usersStore):
-                UsersView(store: usersStore)
-
-            case let .plans(plansStore):
-                PlansView(store: plansStore)
+            Group {
+                switch pathStore.case {
+                case let .userActivity(activityStore):
+                    UserActivityView(store: activityStore)
+                case let .sales(salesStore):
+                    SalesView(store: salesStore)
+                case let .invoiceDetail(detailStore):
+                    InvoiceDetailView(store: detailStore)
+                case let .allTopClients(clientsStore):
+                    AllTopClientsView(store: clientsStore)
+                case let .users(usersStore):
+                    UsersView(store: usersStore)
+                case let .plans(plansStore):
+                    PlansView(store: plansStore)
+                }
             }
+            .toolbar(.hidden, for: .tabBar)
         }
     }
 

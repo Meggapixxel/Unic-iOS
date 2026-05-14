@@ -2,6 +2,7 @@
 
 import ComposableArchitecture
 import Foundation
+import SwiftUI
 
 @Reducer
 struct SalonFormFeature {
@@ -113,14 +114,15 @@ struct SalonFormFeature {
 
     // MARK: - Body
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
 
         Reduce { state, action in
             switch action {
 
             case .onLoad:
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     let tags = await firebase.loadWorksOnTags()
                     await send(.tagsLoaded(tags))
                 }
@@ -133,42 +135,54 @@ struct SalonFormFeature {
                 let trimmedName = state.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedName.isEmpty else { return .none }
                 state.isSaving = true
-                let capturedState = state
+                let originalSalon = state.originalSalon
+                let city = state.city
+                let address = state.address
+                let phone = state.phone
+                let instagram = state.instagram
+                let website = state.website
+                let facebook = state.facebook
+                let notes = state.notes
+                let selectedLanguage = state.selectedLanguage
+                let selectedLeadTemp = state.selectedLeadTemp
+                let selectedWorksOn = state.selectedWorksOn
+                let createdBy = auth.currentUser()?.id
+                let dismiss = dismiss
 
-                return .run { send in
+                return .run { [dismiss] send in
                     do {
                         let result: Salon
-                        if let existing = capturedState.originalSalon {
+                        if let existing = originalSalon {
                             result = try await FirebaseService.shared.updateSalonBasicInfo(
                                 salonId: existing.salonId,
                                 name: trimmedName,
-                                city: capturedState.city.trimmedOrNil,
-                                address: capturedState.address.trimmedOrNil,
-                                phone: capturedState.phone.trimmedOrNil,
-                                instagram: capturedState.instagram.trimmedOrNil,
-                                website: capturedState.website.trimmedOrNil,
-                                facebook: capturedState.facebook.trimmedOrNil,
-                                notes: capturedState.notes.trimmedOrNil,
-                                language: capturedState.selectedLanguage,
-                                leadTemp: capturedState.selectedLeadTemp,
-                                worksOn: capturedState.selectedWorksOn,
+                                city: city.trimmedOrNil,
+                                address: address.trimmedOrNil,
+                                phone: phone.trimmedOrNil,
+                                instagram: instagram.trimmedOrNil,
+                                website: website.trimmedOrNil,
+                                facebook: facebook.trimmedOrNil,
+                                notes: notes.trimmedOrNil,
+                                language: selectedLanguage,
+                                leadTemp: selectedLeadTemp,
+                                worksOn: selectedWorksOn,
                                 previousAddress: existing.address,
                                 previousCity: existing.city
                             )
                         } else {
                             result = try await FirebaseService.shared.createSalon(
                                 name: trimmedName,
-                                city: capturedState.city.trimmedOrNil,
-                                address: capturedState.address.trimmedOrNil,
-                                phone: capturedState.phone.trimmedOrNil,
-                                instagram: capturedState.instagram.trimmedOrNil,
-                                website: capturedState.website.trimmedOrNil,
-                                facebook: capturedState.facebook.trimmedOrNil,
-                                language: capturedState.selectedLanguage,
-                                worksOn: capturedState.selectedWorksOn,
-                                leadTemp: capturedState.selectedLeadTemp,
-                                notes: capturedState.notes.trimmedOrNil,
-                                createdBy: AuthService.shared.currentUser?.id
+                                city: city.trimmedOrNil,
+                                address: address.trimmedOrNil,
+                                phone: phone.trimmedOrNil,
+                                instagram: instagram.trimmedOrNil,
+                                website: website.trimmedOrNil,
+                                facebook: facebook.trimmedOrNil,
+                                language: selectedLanguage,
+                                worksOn: selectedWorksOn,
+                                leadTemp: selectedLeadTemp,
+                                notes: notes.trimmedOrNil,
+                                createdBy: createdBy
                             )
                         }
                         await send(.saveSucceeded(result))

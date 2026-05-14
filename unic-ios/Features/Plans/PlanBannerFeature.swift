@@ -18,11 +18,12 @@ struct PlanBannerFeature {
 
     @Dependency(\.firebaseClient) var firebase
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
             case .load:
-                return .run { send in
+                let firebase = firebase
+                return .run { [firebase] send in
                     do {
                         let plan = try await firebase.fetchActivePlan()
                         await send(.loaded(plan))

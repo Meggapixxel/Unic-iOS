@@ -10,6 +10,7 @@ import CoreLocation
 
 // MARK: - Location Manager
 
+@MainActor
 final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = LocationManager()
     private let manager = CLLocationManager()
@@ -30,8 +31,9 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
         authStatus == .authorizedWhenInUse || authStatus == .authorizedAlways
     }
 
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        authStatus = manager.authorizationStatus
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        MainActor.assumeIsolated { authStatus = status }
     }
 }
 

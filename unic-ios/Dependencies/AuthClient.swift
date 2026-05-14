@@ -1,9 +1,10 @@
+@preconcurrency import Combine
 import ComposableArchitecture
 import Foundation
 
 @DependencyClient
-struct AuthClient {
-    var login: (_ email: String, _ password: String) async throws -> Void
+struct AuthClient: @unchecked Sendable {
+    var login: @Sendable (_ email: String, _ password: String) async throws -> Void
     var logout: () -> Void
     var currentUser: () -> AppUser? = { nil }
     var observeAuthState: () -> AsyncStream<AppUser?> = { .finished }
@@ -25,40 +26,43 @@ struct AuthClient {
 
 extension AuthClient: DependencyKey {
     static var liveValue: Self {
-        let service = AuthService.shared
-        return Self(
-            login: { email, password in try await service.login(email: email, password: password) },
-            logout: { service.logout() },
-            currentUser: { service.currentUser },
-            observeAuthState: {
-                AsyncStream { continuation in
-                    // Use NotificationCenter or Timer-based polling since AuthService uses @Published
-                    let timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
-                        continuation.yield(service.currentUser)
+        MainActor.assumeIsolated {
+            let service = AuthService.shared
+            return Self(
+                login: { email, password in try await service.login(email: email, password: password) },
+                logout: { MainActor.assumeIsolated { service.logout() } },
+                currentUser: { MainActor.assumeIsolated { service.currentUser } },
+                observeAuthState: {
+                    MainActor.assumeIsolated {
+                        AsyncStream { continuation in
+                            let cancellable = service.$currentUser.sink { user in
+                                continuation.yield(user)
+                            }
+                            continuation.onTermination = { _ in cancellable.cancel() }
+                        }
                     }
-                    continuation.onTermination = { _ in timer.invalidate() }
-                }
-            },
-            canViewSales: { service.canViewSales },
-            canViewUsers: { service.canViewUsers },
-            canManagePlans: { service.canManagePlans },
-            canManagePromos: { service.canManagePromos },
-            canCreateInvoice: { service.canCreateInvoice },
-            canEditInvoice: { service.canEditInvoice },
-            canDeleteInvoice: { service.canDeleteInvoice },
-            canEditSalon: { service.canEditSalon },
-            canDeleteSalon: { service.canDeleteSalon },
-            canDeleteClient: { service.canDeleteClient },
-            canDeleteActivity: { service.canDeleteActivity },
-            isAdmin: { service.isAdmin },
-            isManager: { service.isManager },
-            isSales: { service.isSales }
-        )
+                },
+                canViewSales: { MainActor.assumeIsolated { service.canViewSales } },
+                canViewUsers: { MainActor.assumeIsolated { service.canViewUsers } },
+                canManagePlans: { MainActor.assumeIsolated { service.canManagePlans } },
+                canManagePromos: { MainActor.assumeIsolated { service.canManagePromos } },
+                canCreateInvoice: { MainActor.assumeIsolated { service.canCreateInvoice } },
+                canEditInvoice: { MainActor.assumeIsolated { service.canEditInvoice } },
+                canDeleteInvoice: { MainActor.assumeIsolated { service.canDeleteInvoice } },
+                canEditSalon: { MainActor.assumeIsolated { service.canEditSalon } },
+                canDeleteSalon: { MainActor.assumeIsolated { service.canDeleteSalon } },
+                canDeleteClient: { MainActor.assumeIsolated { service.canDeleteClient } },
+                canDeleteActivity: { MainActor.assumeIsolated { service.canDeleteActivity } },
+                isAdmin: { MainActor.assumeIsolated { service.isAdmin } },
+                isManager: { MainActor.assumeIsolated { service.isManager } },
+                isSales: { MainActor.assumeIsolated { service.isSales } }
+            )
+        }
     }
 }
 
 extension DependencyValues {
-    var authClient: AuthClient {
+    nonisolated var authClient: AuthClient {
         get { self[AuthClient.self] }
         set { self[AuthClient.self] = newValue }
     }

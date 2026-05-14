@@ -1,4 +1,5 @@
 import Combine
+import ComposableArchitecture
 import SwiftUI
 
 // MARK: - Plan ViewModel (used in MainScreen)
@@ -31,7 +32,7 @@ final class PlanViewModel: ObservableObject {
     }
 }
 
-// MARK: - Plan Banner View
+// MARK: - Plan Banner View (MVVM — used in MainScreen)
 
 struct PlanBannerView: View {
     @ObservedObject var viewModel: PlanViewModel
@@ -39,55 +40,84 @@ struct PlanBannerView: View {
 
     var body: some View {
         if let plan = viewModel.activePlan, viewModel.shouldShow {
-            VStack(alignment: .leading, spacing: 0) {
-                Button {
-                    withAnimation(.spring(response: 0.3)) { isExpanded.toggle() }
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "target")
-                            .foregroundStyle(.white)
-                            .font(.subheadline.bold())
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(plan.title)
-                                .font(.subheadline.bold())
-                                .foregroundStyle(.white)
-                                .lineLimit(1)
-                            Text("\(String(localized: "plan_active_until")) \(plan.endDate.formatted(.dateTime.day().month(.abbreviated)))")
-                                .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.8))
-                        }
-                        Spacer()
-                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .foregroundStyle(.white.opacity(0.8))
-                            .font(.caption.bold())
-                        Button {
-                            withAnimation { viewModel.isDismissed = true }
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.caption.bold())
-                                .foregroundStyle(.white.opacity(0.7))
-                                .padding(6)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                }
-                .buttonStyle(.plain)
-
-                if isExpanded {
-                    Text(plan.description)
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.9))
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 12)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
+            _PlanBannerContent(plan: plan, isExpanded: $isExpanded) {
+                withAnimation { viewModel.isDismissed = true }
             }
-            .background(Color.accentColor.gradient)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 4)
-            .padding(.horizontal)
-            .padding(.top, 8)
         }
+    }
+}
+
+// MARK: - Plan Banner View (TCA — used in MainView)
+
+struct TCAPlankBannerView: View {
+    let store: StoreOf<PlanBannerFeature>
+    @State private var isExpanded = false
+    @State private var isDismissed = false
+
+    var body: some View {
+        if let plan = store.plan, store.shouldShow, !isDismissed {
+            _PlanBannerContent(plan: plan, isExpanded: $isExpanded) {
+                withAnimation { isDismissed = true }
+            }
+            .onAppear { store.send(.load) }
+        }
+    }
+}
+
+// MARK: - Shared content
+
+private struct _PlanBannerContent: View {
+    let plan: Plan
+    @Binding var isExpanded: Bool
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.spring(response: 0.3)) { isExpanded.toggle() }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "target")
+                        .foregroundStyle(.white)
+                        .font(.subheadline.bold())
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(plan.title)
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                        Text("\(String(localized: "plan_active_until")) \(plan.endDate.formatted(.dateTime.day().month(.abbreviated)))")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    Spacer()
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .foregroundStyle(.white.opacity(0.8))
+                        .font(.caption.bold())
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark")
+                            .font(.caption.bold())
+                            .foregroundStyle(.white.opacity(0.7))
+                            .padding(6)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                Text(plan.description)
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(Color.accentColor.gradient)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 4)
+        .padding(.horizontal)
+        .padding(.top, 8)
     }
 }

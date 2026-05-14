@@ -360,29 +360,43 @@ private struct PaymentMethodPickerView: View {
                 .padding(.top, 20)
                 .padding(.bottom, 12)
             Divider()
-            ForEach(PaymentMethod.allCases, id: \.self) { method in
-                Button {
-                    store.send(.confirmed(store.status, method))
-                } label: {
-                    HStack {
-                        Image(systemName: method.icon)
-                        Text(method.displayName)
-                        Spacer()
-                        if store.method == method {
-                            Image(systemName: "checkmark").foregroundStyle(.accentColor)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 14)
-                }
-                .buttonStyle(.plain)
+            ForEach(Array(PaymentMethod.allCases), id: \.self) { (method: PaymentMethod) in
+                _PaymentMethodRow(
+                    method: method,
+                    isSelected: store.method == method,
+                    onTap: { store.send(.confirmed(store.status, method)) }
+                )
                 Divider()
             }
-            Button(String.cancel, role: .cancel) {
+            Button(role: .cancel) {
                 store.send(.cancelled)
+            } label: {
+                Text(String.cancel)
             }
             .padding(.vertical, 14)
         }
+    }
+}
+
+private struct _PaymentMethodRow: View {
+    let method: PaymentMethod
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack {
+                Image(systemName: method.icon)
+                Text(method.displayName)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .buttonStyle(.plain)
     }
 }
 

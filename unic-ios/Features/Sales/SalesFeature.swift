@@ -28,7 +28,6 @@ struct SalesFeature {
         var statusFilter: PaymentStatus?
         var isLoading: Bool = false
         var lastSyncDate: Date?
-        var path: StackState<Path.State> = StackState()
         @Presents var destination: Destination.State?
 
         // Backing data
@@ -118,15 +117,6 @@ struct SalesFeature {
         }()
     }
 
-    // MARK: - Path
-
-    @Reducer
-    enum Path {
-        case invoice(InvoiceDetailFeature)
-        case allTopProducts(AllTopProductsFeature)
-        case allTopClients(AllTopClientsFeature)
-    }
-
     // MARK: - Destination
 
     @Reducer
@@ -151,7 +141,7 @@ struct SalesFeature {
         case createInvoiceTapped
         case invoiceCreated(FlexiBeeInvoice)
         case invoiceTapped(FlexiBeeInvoice)
-        case path(StackActionOf<Path>)
+        case seeAllTopClientsTapped
         case destination(PresentationAction<Destination.Action>)
         case failed(String)
     }
@@ -159,10 +149,11 @@ struct SalesFeature {
     // MARK: - Dependencies
 
     @Dependency(\.flexiBeeClient) var flexiBeeClient
+    @Dependency(\.date) var date
 
     // MARK: - Body
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
 
         Reduce { state, action in
@@ -175,20 +166,20 @@ struct SalesFeature {
                 if !cached.isEmpty {
                     state.allInvoices = cached
                 }
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     await flexiBeeClient.loadIfNeeded()
-                    let invoices = flexiBeeClient.invoices()
-                    let date = flexiBeeClient.lastSyncDate()
-                    await send(.syncCompleted(invoices, date))
+                    let (invoices, syncDate) = await MainActor.run { (flexiBeeClient.invoices(), flexiBeeClient.lastSyncDate()) }
+                    await send(.syncCompleted(invoices, syncDate))
                 }
 
             case .forceSync:
                 state.isLoading = true
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     await flexiBeeClient.forceSync()
-                    let invoices = flexiBeeClient.invoices()
-                    let date = flexiBeeClient.lastSyncDate()
-                    await send(.syncCompleted(invoices, date))
+                    let (invoices, syncDate) = await MainActor.run { (flexiBeeClient.invoices(), flexiBeeClient.lastSyncDate()) }
+                    await send(.syncCompleted(invoices, syncDate))
                 }
 
             case let .syncCompleted(invoices, date):
@@ -228,8 +219,9 @@ struct SalesFeature {
                 guard state.canGoNext else { return .none }
                 let cal = Calendar.current
                 let component: Calendar.Component = state.period == .month ? .month : .year
+                let now = date()
                 let next = cal.date(byAdding: component, value: 1, to: state.selectedDate) ?? state.selectedDate
-                state.selectedDate = cal.isDate(next, equalTo: Date(), toGranularity: component) ? Date() : next
+                state.selectedDate = cal.isDate(next, equalTo: now, toGranularity: component) ? now : next
                 return .none
 
             case .createInvoiceTapped:
@@ -238,40 +230,22 @@ struct SalesFeature {
 
             case let .invoiceCreated(invoice):
                 state.destination = nil
-                // Refresh invoices after creation
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     await flexiBeeClient.forceSync()
-                    let invoices = flexiBeeClient.invoices()
-                    let date = flexiBeeClient.lastSyncDate()
-                    await send(.syncCompleted(invoices, date))
+                    let (invoices, syncDate) = await MainActor.run { (flexiBeeClient.invoices(), flexiBeeClient.lastSyncDate()) }
+                    await send(.syncCompleted(invoices, syncDate))
                     if let created = invoices.first(where: { $0.id == invoice.id }) {
                         await send(.invoiceTapped(created))
                     }
                 }
 
-            case let .invoiceTapped(invoice):
-                state.path.append(.invoice(InvoiceDetailFeature.State(invoice: invoice)))
+            case .invoiceTapped:
+                // Navigation handled by parent (ProfileFeature)
                 return .none
 
-            case .path(.element(_, action: .invoice(.deleteConfirmed))):
-                state.path.removeLast()
-                return .run { send in
-                    await flexiBeeClient.forceSync()
-                    let invoices = flexiBeeClient.invoices()
-                    let date = flexiBeeClient.lastSyncDate()
-                    await send(.syncCompleted(invoices, date))
-                }
-
-            case .path(.element(_, action: .invoice(.stockMovementCreated))):
-                // Refresh invoices when a stock movement is created from invoice detail
-                return .run { send in
-                    await flexiBeeClient.forceSync()
-                    let invoices = flexiBeeClient.invoices()
-                    let date = flexiBeeClient.lastSyncDate()
-                    await send(.syncCompleted(invoices, date))
-                }
-
-            case .path:
+            case .seeAllTopClientsTapped:
+                // Navigation handled by parent (ProfileFeature)
                 return .none
 
             case .destination(.presented(.createInvoice(.dismiss))):
@@ -290,7 +264,6 @@ struct SalesFeature {
                 return .none
             }
         }
-        .forEach(\.path, action: \.path)
         .ifLet(\.$destination, action: \.destination)
     }
 }
@@ -308,7 +281,7 @@ struct InvoiceFormPlaceholderFeature {
         case submitted(FlexiBeeInvoice)
     }
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { _, _ in .none }
     }
 }
@@ -340,7 +313,7 @@ struct AllTopProductsFeature {
         case binding(BindingAction<State>)
     }
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
         Reduce { _, _ in .none }
     }
@@ -371,8 +344,10 @@ struct AllTopClientsFeature {
         case binding(BindingAction<State>)
     }
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         BindingReducer()
         Reduce { _, _ in .none }
     }
 }
+
+extension SalesFeature.Destination.State: Equatable {}

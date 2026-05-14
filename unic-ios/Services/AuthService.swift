@@ -10,8 +10,8 @@ enum AuthError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .userNotFound:      return String.auth_error_user_not_found
-        case .wrongPassword:     return String.auth_error_wrong_password
+        case .userNotFound:      return String(localized: "auth_error_user_not_found")
+        case .wrongPassword:     return String(localized: "auth_error_wrong_password")
         case .unknown(let e):    return e.localizedDescription
         }
     }
@@ -69,6 +69,8 @@ final class AuthService: ObservableObject {
     private static let cacheAgeKey   = "auth_cache_date"
     private static let cacheTTL: TimeInterval = 7 * 24 * 3600 // 1 week
 
+    private var authStateListener: AuthStateDidChangeListenerHandle?
+
     private init() {
         if let data = UserDefaults.standard.data(forKey: Self.storageKey) {
             do {
@@ -87,7 +89,7 @@ final class AuthService: ObservableObject {
     }
 
     private func observeAuthState() {
-        Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
+        authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
             guard let self else { return }
             Task { @MainActor in
                 if let uid = firebaseUser?.uid {

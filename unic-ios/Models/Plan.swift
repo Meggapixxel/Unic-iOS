@@ -1,5 +1,5 @@
 import Foundation
-import FirebaseFirestore
+@preconcurrency import FirebaseFirestore
 
 struct Plan: Codable, Identifiable, Equatable {
     @DocumentID var id: String?

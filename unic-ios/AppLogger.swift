@@ -12,7 +12,7 @@ import os.log
 ///
 /// Log file location (visible in Finder via connected device or Files app):
 ///   <Documents>/app.log
-final class AppLogger {
+final class AppLogger: @unchecked Sendable {
 
     // MARK: - Level
 
@@ -78,21 +78,22 @@ final class AppLogger {
     // MARK: - Private
 
     private func write(level: Level, category: String, message: String) {
-        let timestamp = Self.formatter.string(from: Date())
-        let line = "[\(timestamp)] [\(level.rawValue)] [\(category)] \(message)"
+        let lvlRaw    = level.rawValue
+        let osType    = level.osType
+        let log       = osLog
+        let formatter = Self.formatter
+        let maxBytes  = Self.maxBytes
+        queue.async { [fileURL, backupURL, formatter, maxBytes] in
+            let timestamp = formatter.string(from: Date())
+            let line = "[\(timestamp)] [\(lvlRaw)] [\(category)] \(message)"
 
-        // Console via unified logging (visible in Console.app and Xcode debug area)
-        os_log("%{public}@", log: osLog, type: level.osType, line)
+            os_log("%{public}@", log: log, type: osType, line as NSString)
 
-        // File (off main thread)
-        queue.async { [fileURL, backupURL] in
+            let fm = FileManager()
             guard let data = (line + "\n").data(using: .utf8) else { return }
 
-            let fm = FileManager.default
-
-            // Rotate if over limit
             if let attrs = try? fm.attributesOfItem(atPath: fileURL.path),
-               let size = attrs[.size] as? UInt64, size >= Self.maxBytes {
+               let size = attrs[.size] as? UInt64, size >= maxBytes {
                 try? fm.removeItem(at: backupURL)
                 try? fm.moveItem(at: fileURL, to: backupURL)
             }

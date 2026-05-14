@@ -1,6 +1,6 @@
 import Foundation
 
-struct UserActivityEntry: Identifiable {
+struct UserActivityEntry: Identifiable, Equatable {
     let id: String
     let salonId: String
     let salonName: String

@@ -82,8 +82,8 @@ private struct ActivityEntryRow: View {
                     .font(.caption.bold())
                     .foregroundStyle(entry.status.color)
             }
-            if !entry.note.isEmpty {
-                Text(entry.note)
+            if !(entry.note ?? "").isEmpty {
+                Text(entry.note ?? "")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)

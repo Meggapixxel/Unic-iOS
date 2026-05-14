@@ -55,13 +55,14 @@ struct StockChecklistFeature {
     @Dependency(\.flexiBeeClient) var flexiBeeClient
     @Dependency(\.firebaseClient) var firebaseClient
 
-    var body: some ReducerOf<Self> {
+    var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
 
             case .onLoad:
                 state.isLoading = true
-                return .run { send in
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
                     await flexiBeeClient.loadIfNeeded()
                     // Items start empty — they are added via scanning or manual entry
                     await send(.loaded([]))
@@ -93,15 +94,17 @@ struct StockChecklistFeature {
             case let .barcodeScanned(barcode):
                 state.showScanner = false
                 state.isLoading = true
-                let allStock = Array(flexiBeeClient.stockWithPrices())
-                return .run { send in
+                let stockIndex: [(normalized: String, code: String, name: String)] =
+                    Array(flexiBeeClient.stockWithPrices()).map { (normalize($0.code), $0.code, $0.name) }
+                let firebaseClient = firebaseClient
+                return .run { [stockIndex, firebaseClient] send in
                     do {
                         guard let article = try await firebaseClient.lookupBarcodeArticle(barcode) else {
                             await send(.barcodeSearchCompleted(.success(nil)))
                             return
                         }
                         let normalized = normalize(article)
-                        guard let match = allStock.first(where: { normalize($0.code) == normalized }) else {
+                        guard let match = stockIndex.first(where: { $0.normalized == normalized }) else {
                             await send(.barcodeSearchCompleted(.success(nil)))
                             return
                         }
@@ -145,7 +148,7 @@ struct StockChecklistFeature {
     }
 }
 
-private func normalize(_ s: String) -> String {
+nonisolated private func normalize(_ s: String) -> String {
     s.replacingOccurrences(of: #"[^A-Za-z0-9]+"#, with: "", options: .regularExpression)
      .uppercased()
 }

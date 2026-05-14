@@ -193,7 +193,7 @@ private struct StockListContent: View {
 // MARK: - Preference Key
 
 private struct StockScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+    static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
@@ -392,7 +392,10 @@ struct StockChecklistView: View {
             .overlay { if store.isLoading { LoadingOverlay(text: String.barcode_searching) } }
             .task { store.send(.onLoad) }
         }
-        .fullScreenCover(isPresented: $store.showScanner.sending(\.scannerDismissed)) {
+        .fullScreenCover(isPresented: Binding(
+            get: { store.showScanner },
+            set: { if !$0 { store.send(.scannerDismissed) } }
+        )) {
             BarcodeScannerScreen(
                 onScan: { barcode in store.send(.barcodeScanned(barcode)) },
                 onDismiss: { store.send(.scannerDismissed) }

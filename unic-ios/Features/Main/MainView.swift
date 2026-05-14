@@ -25,7 +25,7 @@ struct MainView: View {
             }
 
             VStack(spacing: 0) {
-                PlanBannerView(store: store.scope(state: \.planBanner, action: \.planBanner))
+                TCAPlankBannerView(store: store.scope(state: \.planBanner, action: \.planBanner))
 
                 if store.showGreeting {
                     Text("👋 \(store.currentUser.firstName)")

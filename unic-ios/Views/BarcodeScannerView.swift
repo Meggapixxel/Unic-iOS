@@ -1,6 +1,6 @@
 import SwiftUI
 import UIKit
-import AVFoundation
+@preconcurrency import AVFoundation
 import AudioToolbox
 
 struct BarcodeScannerView: UIViewControllerRepresentable {
@@ -34,7 +34,8 @@ final class BarcodeScannerViewController: UIViewController, AVCaptureMetadataOut
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         hasScanned = false
-        DispatchQueue.global(qos: .userInitiated).async { self.captureSession?.startRunning() }
+        let session = captureSession
+        DispatchQueue.global(qos: .userInitiated).async { session?.startRunning() }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -104,18 +105,19 @@ final class BarcodeScannerViewController: UIViewController, AVCaptureMetadataOut
         }
     }
 
-    func metadataOutput(
+    nonisolated func metadataOutput(
         _ output: AVCaptureMetadataOutput,
         didOutput metadataObjects: [AVMetadataObject],
         from connection: AVCaptureConnection
     ) {
-        guard !hasScanned,
-              let obj = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
-              let value = obj.stringValue else { return }
-        hasScanned = true
-        AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
-        captureSession?.stopRunning()
-        onScan?(value)
+        let value = (metadataObjects.first as? AVMetadataMachineReadableCodeObject)?.stringValue
+        MainActor.assumeIsolated {
+            guard !hasScanned, let value else { return }
+            hasScanned = true
+            AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
+            captureSession?.stopRunning()
+            onScan?(value)
+        }
     }
 }
 
