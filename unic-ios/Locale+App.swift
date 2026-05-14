@@ -1,8 +1,25 @@
 import Foundation
 
+enum AppLanguage: String, CaseIterable, Equatable {
+    case en = "en"
+    case ua = "uk"
+    case ru = "ru"
+
+    var label: String {
+        switch self {
+        case .en: return "EN"
+        case .ua: return "UA"
+        case .ru: return "RU"
+        }
+    }
+}
+
 extension Locale {
-    var appLanguage: String {
-        let code = language.languageCode?.identifier ?? "uk"
-        return ["en", "uk", "ru"].contains(code) ? code : "uk"
+    var appLanguage: AppLanguage {
+        switch language.languageCode?.identifier {
+        case "uk": return .ua
+        case "ru": return .ru
+        default:   return .en
+        }
     }
 }

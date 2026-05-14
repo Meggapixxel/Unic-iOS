@@ -27,12 +27,12 @@ struct PromoOffer: Codable, Identifiable, Equatable {
     var title: String { content["en"]?.title ?? content.values.first?.title ?? "" }
     var description: String { content["en"]?.description ?? content.values.first?.description ?? "" }
 
-    func localizedTitle(for lang: String) -> String {
-        content[lang]?.title ?? content["en"]?.title ?? content.values.first?.title ?? ""
+    func localizedTitle(for lang: AppLanguage) -> String {
+        content[lang.rawValue]?.title ?? content[AppLanguage.en.rawValue]?.title ?? content.values.first?.title ?? ""
     }
 
-    func localizedDescription(for lang: String) -> String {
-        content[lang]?.description ?? content["en"]?.description ?? content.values.first?.description ?? ""
+    func localizedDescription(for lang: AppLanguage) -> String {
+        content[lang.rawValue]?.description ?? content[AppLanguage.en.rawValue]?.description ?? content.values.first?.description ?? ""
     }
 
     init(

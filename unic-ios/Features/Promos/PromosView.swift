@@ -74,9 +74,9 @@ struct PromosView: View {
                         get: { store.language },
                         set: { store.send(.setLanguage($0)) }
                     )) {
-                        Text("EN").tag("en")
-                        Text("UK").tag("uk")
-                        Text("RU").tag("ru")
+                        ForEach(AppLanguage.allCases, id: \.self) { lang in
+                            Text(lang.label).tag(lang)
+                        }
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 120)
@@ -128,7 +128,7 @@ struct PromosView: View {
 
 private struct PromoRowView: View {
     let promo: PromoOffer
-    let language: String
+    let language: AppLanguage
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {

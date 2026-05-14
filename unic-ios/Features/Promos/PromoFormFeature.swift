@@ -22,12 +22,12 @@ struct PromoFormFeature {
 
         init(existing: PromoOffer? = nil) {
             self.existing = existing
-            self.titleEn       = existing?.content["en"]?.title ?? ""
-            self.titleUk       = existing?.content["uk"]?.title ?? ""
-            self.titleRu       = existing?.content["ru"]?.title ?? ""
-            self.descriptionEn = existing?.content["en"]?.description ?? ""
-            self.descriptionUk = existing?.content["uk"]?.description ?? ""
-            self.descriptionRu = existing?.content["ru"]?.description ?? ""
+            self.titleEn       = existing?.content[AppLanguage.en.rawValue]?.title ?? ""
+            self.titleUk       = existing?.content[AppLanguage.ua.rawValue]?.title ?? ""
+            self.titleRu       = existing?.content[AppLanguage.ru.rawValue]?.title ?? ""
+            self.descriptionEn = existing?.content[AppLanguage.en.rawValue]?.description ?? ""
+            self.descriptionUk = existing?.content[AppLanguage.ua.rawValue]?.description ?? ""
+            self.descriptionRu = existing?.content[AppLanguage.ru.rawValue]?.description ?? ""
             self.category  = existing?.category ?? "Other"
             self.validFrom = existing?.validFrom ?? Date()
             self.validTo   = existing?.validTo ?? Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
@@ -59,9 +59,9 @@ struct PromoFormFeature {
                 guard state.isValid else { return .none }
                 state.isSaving = true
                 var promoContent: [String: PromoContent] = [:]
-                let langs = [("en", state.titleEn, state.descriptionEn),
-                             ("uk", state.titleUk, state.descriptionUk),
-                             ("ru", state.titleRu, state.descriptionRu)]
+                let langs = [(AppLanguage.en.rawValue, state.titleEn, state.descriptionEn),
+                             (AppLanguage.ua.rawValue, state.titleUk, state.descriptionUk),
+                             (AppLanguage.ru.rawValue, state.titleRu, state.descriptionRu)]
                 for (lang, t, d) in langs {
                     let title = t.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !title.isEmpty {

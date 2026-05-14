@@ -32,7 +32,7 @@ struct PromosFeature {
         var error: String?
         var canManagePromos = false
         var showAll = false
-        var language: String = Locale.current.appLanguage
+        var language: AppLanguage = Locale.current.appLanguage
         var selectedCategories: Set<String> = []
         var promoToDelete: PromoOffer?
         @Presents var destination: Destination.State?
@@ -69,7 +69,7 @@ struct PromosFeature {
         case openDetail(PromoOffer)
         case toggleEnabled(PromoOffer)
         case toggleShowDisabled
-        case setLanguage(String)
+        case setLanguage(AppLanguage)
         case toggleCategory(String)
         case deleteTapped(PromoOffer)
         case deleteConfirmed
@@ -119,6 +119,7 @@ struct PromosFeature {
                     canManagePromos: state.canManagePromos,
                     language: state.language
                 ))
+
                 return .none
 
             case .toggleShowDisabled:
