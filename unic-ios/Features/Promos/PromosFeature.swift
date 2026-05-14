@@ -10,13 +10,16 @@ struct PromosFeature {
     struct Destination {
         @ObservableState
         enum State: Equatable {
+            case detail(PromoDetailFeature.State)
             case form(PromoFormFeature.State)
         }
         enum Action {
+            case detail(PromoDetailFeature.Action)
             case form(PromoFormFeature.Action)
         }
         var body: some Reducer<State, Action> {
             Reduce { _, _ in .none }
+                .ifCaseLet(\.detail, action: \.detail) { PromoDetailFeature() }
                 .ifCaseLet(\.form, action: \.form) { PromoFormFeature() }
         }
     }
@@ -28,7 +31,6 @@ struct PromosFeature {
         var promos: [PromoOffer] = []
         var error: String?
         var canManagePromos = false
-        var selectedPromo: PromoOffer?
         var promoToDelete: PromoOffer?
         @Presents var destination: Destination.State?
 
@@ -47,7 +49,6 @@ struct PromosFeature {
         case openAdd
         case openEdit(PromoOffer)
         case openDetail(PromoOffer)
-        case closeDetail
         case toggleEnabled(PromoOffer)
         case deleteTapped(PromoOffer)
         case deleteConfirmed
@@ -92,12 +93,24 @@ struct PromosFeature {
                 return .none
 
             case .openDetail(let promo):
-                state.selectedPromo = promo
+                state.destination = .detail(PromoDetailFeature.State(
+                    promo: promo,
+                    canManagePromos: state.canManagePromos
+                ))
                 return .none
 
-            case .closeDetail:
-                state.selectedPromo = nil
-                return .none
+            case .toggleEnabled(let promo):
+                guard let id = promo.id, let idx = state.promos.firstIndex(where: { $0.id == id }) else { return .none }
+                state.promos[idx].isEnabled.toggle()
+                let updated = state.promos[idx]
+                let firebase = firebase
+                return .run { [firebase] send in
+                    do {
+                        _ = try await firebase.savePromo(updated)
+                    } catch {
+                        await send(.failed(error.localizedDescription))
+                    }
+                }
 
             case .deleteTapped(let promo):
                 state.promoToDelete = promo
@@ -119,21 +132,20 @@ struct PromosFeature {
                     }
                 }
 
-            case .toggleEnabled(let promo):
-                guard let id = promo.id, let idx = state.promos.firstIndex(where: { $0.id == id }) else { return .none }
-                state.promos[idx].isEnabled.toggle()
-                let updated = state.promos[idx]
-                let firebase = firebase
-                return .run { [firebase] send in
-                    do {
-                        _ = try await firebase.savePromo(updated)
-                    } catch {
-                        await send(.failed(error.localizedDescription))
-                    }
-                }
-
             case .cancelDelete:
                 state.promoToDelete = nil
+                return .none
+
+            case .destination(.presented(.detail(.delegate(.editRequested)))):
+                guard case .detail(let detailState) = state.destination else { return .none }
+                let promo = detailState.promo
+                state.destination = .form(PromoFormFeature.State(existing: promo))
+                return .none
+
+            case .destination(.presented(.detail(.delegate(.didToggle(let promo))))):
+                if let idx = state.promos.firstIndex(where: { $0.id == promo.id }) {
+                    state.promos[idx] = promo
+                }
                 return .none
 
             case .destination(.presented(.form(.saveSucceeded(let promo)))):
@@ -156,4 +168,3 @@ struct PromosFeature {
         .ifLet(\.$destination, action: \.destination) { Destination() }
     }
 }
-

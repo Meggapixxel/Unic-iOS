@@ -69,19 +69,10 @@ struct PromosView: View {
                 Button(String.promo_delete, role: .destructive) { store.send(.deleteConfirmed) }
                 Button(String.cancel, role: .cancel) { store.send(.cancelDelete) }
             }
-            .sheet(isPresented: Binding(
-                get: { store.selectedPromo != nil },
-                set: { if !$0 { store.send(.closeDetail) } }
-            )) {
-                if let promo = store.selectedPromo {
-                    PromoDetailView(
-                        promo: promo,
-                        onEdit: store.canManagePromos ? {
-                            store.send(.closeDetail)
-                            store.send(.openEdit(promo))
-                        } : nil
-                    )
-                }
+            .sheet(
+                item: $store.scope(state: \.destination?.detail, action: \.destination.detail)
+            ) { detailStore in
+                PromoDetailView(store: detailStore)
             }
             .sheet(
                 item: $store.scope(state: \.destination?.form, action: \.destination.form)
@@ -129,9 +120,7 @@ private struct PromoRowView: View {
 // MARK: - Promo Detail
 
 struct PromoDetailView: View {
-    let promo: PromoOffer
-    let onEdit: (() -> Void)?
-    @Environment(\.dismiss) private var dismiss
+    @Bindable var store: StoreOf<PromoDetailFeature>
 
     var body: some View {
         NavigationStack {
@@ -139,13 +128,13 @@ struct PromoDetailView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 8) {
-                            Text(promo.category)
+                            Text(store.promo.category)
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 4)
                                 .background(Color.accentColor, in: Capsule())
-                            if promo.isActive {
+                            if store.promo.isActive {
                                 Text("● Active")
                                     .font(.caption.bold())
                                     .foregroundStyle(.green)
@@ -153,9 +142,17 @@ struct PromoDetailView: View {
                                     .padding(.vertical, 4)
                                     .background(Color.green.opacity(0.1), in: Capsule())
                             }
+                            if !store.promo.isEnabled {
+                                Text("● Disabled")
+                                    .font(.caption.bold())
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Color(.systemGray5), in: Capsule())
+                            }
                         }
-                        if !promo.description.isEmpty {
-                            Text(promo.description)
+                        if !store.promo.description.isEmpty {
+                            Text(store.promo.description)
                                 .font(.body)
                         }
                     }
@@ -164,19 +161,26 @@ struct PromoDetailView: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(12)
 
-                    PromoPeriodView(promo: promo)
+                    PromoPeriodView(promo: store.promo)
                 }
                 .padding()
             }
-            .navigationTitle(promo.title)
+            .navigationTitle(store.promo.title)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    CloseButton { dismiss() }
+                    CloseButton { store.send(.closeTapped) }
                 }
-                if let onEdit {
+                if store.canManagePromos {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button { onEdit(); dismiss() } label: {
+                        Button { store.send(.toggleEnabled) } label: {
+                            Image(systemName: store.promo.isEnabled ? "eye.slash" : "eye")
+                        }
+                        .tint(store.promo.isEnabled ? .gray : .green)
+                        .disabled(store.isTogglingEnabled)
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { store.send(.editTapped) } label: {
                             Image(systemName: "pencil")
                         }
                     }
