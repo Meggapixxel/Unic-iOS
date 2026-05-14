@@ -229,29 +229,34 @@ struct InvoiceRowView: View {
     let invoice: FlexiBeeInvoice
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(invoice.invoiceNumber).font(.callout.bold())
-                Spacer()
-                if let method = invoice.paymentMethod {
-                    Image(systemName: method.icon)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+        HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(invoice.invoiceNumber).font(.callout.bold())
+                    Spacer()
+                    if let method = invoice.paymentMethod {
+                        Image(systemName: method.icon)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    InvoiceStatusBadge(status: invoice.paymentStatus)
                 }
-                InvoiceStatusBadge(status: invoice.paymentStatus)
-            }
-            Text(invoice.clientName)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-            HStack {
-                if let date = invoice.issueDate {
-                    Text(date.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption).foregroundStyle(.secondary)
+                Text(invoice.clientName)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                HStack {
+                    if let date = invoice.issueDate {
+                        Text(date.formatted(date: .abbreviated, time: .omitted))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text(czk(invoice.total)).font(.subheadline.bold())
                 }
-                Spacer()
-                Text(czk(invoice.total)).font(.subheadline.bold())
             }
+            Image(systemName: "chevron.right")
+                .font(.caption2.bold())
+                .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 4)
     }

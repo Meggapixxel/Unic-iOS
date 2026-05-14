@@ -120,7 +120,12 @@ private struct StockListContent: View {
                         Button {
                             store.send(.openProduct(item))
                         } label: {
-                            StockWithPriceRow(item: item)
+                            HStack(spacing: 8) {
+                                StockWithPriceRow(item: item)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2.bold())
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
                         .buttonStyle(.plain)
                     }

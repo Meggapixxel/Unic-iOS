@@ -140,7 +140,10 @@ struct ProfileFeature {
                     let clientInvoices = allInvoices.filter {
                         code != nil ? $0.clientCode == code : $0.clientName == name
                     }
-                    state.path.append(.clientDetail(ClientDetailFeature.State(clientName: name, invoices: clientInvoices)))
+                    let canEdit = auth.canEditInvoice()
+                    state.path.append(.clientDetail(ClientDetailFeature.State(
+                        clientName: name, clientCode: code, canEdit: canEdit, invoices: clientInvoices
+                    )))
                 }
                 return .none
 
@@ -154,7 +157,11 @@ struct ProfileFeature {
             case .path(.element(_, .allTopClients(.clientTapped(let name)))):
                 let allInvoices = flexiBeeClient.invoices()
                 let clientInvoices = allInvoices.filter { $0.clientName == name }
-                state.path.append(.clientDetail(ClientDetailFeature.State(clientName: name, invoices: clientInvoices)))
+                let code = clientInvoices.first?.clientCode
+                let canEdit = auth.canEditInvoice()
+                state.path.append(.clientDetail(ClientDetailFeature.State(
+                    clientName: name, clientCode: code, canEdit: canEdit, invoices: clientInvoices
+                )))
                 return .none
 
             case .path(.element(_, .clientDetail(.invoiceTapped(let invoice)))):

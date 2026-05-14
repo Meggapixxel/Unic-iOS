@@ -386,20 +386,34 @@ struct ClientDetailFeature {
     @ObservableState
     struct State: Equatable {
         var clientName: String
+        var clientCode: String?
+        var canEdit: Bool = false
         var invoices: [FlexiBeeInvoice]
 
-        var totalRevenue: Double { invoices.reduce(0) { $0 + $1.total } }
-        var paidRevenue:  Double { invoices.filter { $0.paymentStatus == .paid }.reduce(0) { $0 + $1.total } }
-        var unpaidRevenue: Double { totalRevenue - paidRevenue }
+        var totalRevenue:  Double { invoices.reduce(0) { $0 + $1.total } }
+        var paidRevenue:   Double { invoices.filter { $0.paymentStatus == .paid }.reduce(0) { $0 + $1.total } }
+        var unpaidRevenue: Double { invoices.filter { $0.paymentStatus == .unpaid || $0.paymentStatus == .partial }.reduce(0) { $0 + $1.total } }
+        var overdueRevenue: Double { invoices.filter { $0.paymentStatus == .overdue }.reduce(0) { $0 + $1.total } }
+        var overdueCount:  Int    { invoices.filter { $0.paymentStatus == .overdue }.count }
+
+        var firstOrderDate: Date? { invoices.compactMap(\.issueDate).min() }
+        var lastOrderDate:  Date? { invoices.compactMap(\.issueDate).max() }
+
+        var sortedInvoices: [FlexiBeeInvoice] {
+            invoices.sorted { ($0.issueDate ?? .distantPast) > ($1.issueDate ?? .distantPast) }
+        }
 
         static func == (lhs: Self, rhs: Self) -> Bool {
             lhs.clientName == rhs.clientName &&
+            lhs.clientCode == rhs.clientCode &&
+            lhs.canEdit == rhs.canEdit &&
             lhs.invoices.map(\.id) == rhs.invoices.map(\.id)
         }
     }
 
     enum Action {
         case invoiceTapped(FlexiBeeInvoice)
+        case newInvoiceTapped
     }
 
     var body: some Reducer<State, Action> {

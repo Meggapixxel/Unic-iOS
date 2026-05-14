@@ -36,6 +36,10 @@ struct UsersView: View {
                     Text(user.fullName).font(.callout)
                     Text(user.role.displayName).font(.caption).foregroundStyle(.secondary)
                 }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.tertiary)
             }
             .padding(.vertical, 4)
         }
