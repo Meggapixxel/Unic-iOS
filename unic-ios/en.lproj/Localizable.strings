@@ -403,3 +403,7 @@
 "promo_category" = "Category";
 "promo_disable" = "Disable";
 "promo_enable" = "Enable";
+
+// Catalog
+"catalog_nav_title" = "Catalog";
+"catalog_unavailable" = "Catalog not available";

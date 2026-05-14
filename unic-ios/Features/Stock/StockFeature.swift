@@ -50,6 +50,7 @@ struct StockFeature {
     @Reducer
     enum Path {
         case productDetail(ProductDetailFeature)
+        case catalog(CatalogFeature)
     }
 
     // MARK: - Destination
@@ -72,6 +73,7 @@ struct StockFeature {
         case openProduct(FlexiBeeStockWithPrice)
         case openChecklist
         case openBarcodeScanner
+        case openCatalog
         case barcodeScanned(String)
         case barcodeSearchCompleted(FlexiBeeStockWithPrice?)
         case destination(PresentationAction<Destination.Action>)
@@ -132,6 +134,10 @@ struct StockFeature {
 
             case let .openProduct(product):
                 state.path.append(.productDetail(ProductDetailFeature.State(product: product)))
+                return .none
+
+            case .openCatalog:
+                state.path.append(.catalog(CatalogFeature.State()))
                 return .none
 
             case .openChecklist:

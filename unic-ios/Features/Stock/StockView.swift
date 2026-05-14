@@ -25,6 +25,8 @@ struct StockView: View {
             switch pathStore.case {
             case let .productDetail(productStore):
                 ProductDetailView(store: productStore)
+            case let .catalog(catalogStore):
+                CatalogView(store: catalogStore)
             }
         }
         .sheet(
@@ -85,6 +87,11 @@ struct StockView: View {
         ToolbarItem(placement: .topBarLeading) {
             Button { store.send(.openChecklist) } label: {
                 Image(systemName: "list.bullet.clipboard").imageScale(.large)
+            }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button { store.send(.openCatalog) } label: {
+                Image(systemName: "book.pages").imageScale(.large)
             }
         }
         ToolbarItem(placement: .topBarTrailing) {

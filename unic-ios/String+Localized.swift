@@ -229,7 +229,9 @@ extension String {
     static var barcode_hint:      String { String(localized: "barcode_hint") }
     static var barcode_no_camera: String { String(localized: "barcode_no_camera") }
     static var barcode_searching: String { String(localized: "barcode_searching") }
-    static var stock_nav_title:   String { String(localized: "stock_nav_title") }
+    static var stock_nav_title:     String { String(localized: "stock_nav_title") }
+    static var catalog_nav_title:   String { String(localized: "catalog_nav_title") }
+    static var catalog_unavailable: String { String(localized: "catalog_unavailable") }
     static var stock_no_data:     String { String(localized: "stock_no_data") }
     static var search_stock:      String { String(localized: "search_stock") }
     static func barcode_not_found(_ value: String) -> String {
