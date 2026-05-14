@@ -46,7 +46,7 @@ struct WelcomeFeature {
                         }
                     },
                     .run { [clock] send in
-                        try? await clock.sleep(for: .seconds(2))
+                        try? await clock.sleep(for: .seconds(1))
                         await send(.minTimeElapsed)
                     }
                 )
