@@ -107,13 +107,19 @@ private struct AnalyticsSection: View {
                             }
                         ) {
                             ForEach(Array(clients.enumerated()), id: \.offset) { idx, client in
-                                SalesRankingRow(
-                                    rank: idx + 1,
-                                    title: client.name,
-                                    subtitle: nil,
-                                    value: czk(client.revenue),
-                                    isLast: idx == clients.count - 1
-                                )
+                                Button {
+                                    store.send(.clientTapped(client.name))
+                                } label: {
+                                    SalesRankingRow(
+                                        rank: idx + 1,
+                                        title: client.name,
+                                        subtitle: nil,
+                                        value: czk(client.revenue),
+                                        isLast: idx == clients.count - 1,
+                                        showChevron: true
+                                    )
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -346,6 +352,7 @@ private struct SalesRankingRow: View {
     let subtitle: String?
     let value: String
     let isLast: Bool
+    var showChevron: Bool = false
 
     var body: some View {
         VStack(spacing: 6) {
@@ -362,6 +369,11 @@ private struct SalesRankingRow: View {
                 }
                 Spacer(minLength: 8)
                 Text(value).font(.callout.bold())
+                if showChevron {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.tertiary)
+                }
             }
             if !isLast { Divider() }
         }

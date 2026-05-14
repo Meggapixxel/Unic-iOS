@@ -112,6 +112,16 @@ struct ProfileFeature {
                 }
                 return .none
 
+            case .path(.element(_, .sales(.clientTapped(let name)))):
+                let allInvoices = flexiBeeClient.invoices()
+                let clientInvoices = allInvoices.filter { $0.clientName == name }
+                let code = clientInvoices.first?.clientCode
+                let canEdit = auth.canEditInvoice()
+                state.path.append(.clientDetail(ClientDetailFeature.State(
+                    clientName: name, clientCode: code, canEdit: canEdit, invoices: clientInvoices
+                )))
+                return .none
+
             case .path(.element(let id, .sales(.seeAllTopProductsTapped))):
                 if case let .sales(salesState) = state.path[id: id] {
                     state.path.append(.allTopProducts(AllTopProductsFeature.State(products: salesState.topProducts)))

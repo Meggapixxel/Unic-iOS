@@ -158,6 +158,7 @@ struct SalesFeature {
         case invoiceTapped(FlexiBeeInvoice)
         case seeAllTopClientsTapped
         case seeAllTopProductsTapped
+        case clientTapped(String)
         case destination(PresentationAction<Destination.Action>)
         case failed(String)
     }
@@ -272,6 +273,10 @@ struct SalesFeature {
                 return .none
 
             case .seeAllTopProductsTapped:
+                // Navigation handled by parent (ProfileFeature)
+                return .none
+
+            case .clientTapped:
                 // Navigation handled by parent (ProfileFeature)
                 return .none
 
