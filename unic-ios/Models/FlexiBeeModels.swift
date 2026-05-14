@@ -94,6 +94,8 @@ struct FlexiBeeResponse<T: Decodable>: Decodable {
     let winstrom: T
 }
 
+extension FlexiBeeResponse: Sendable where T: Sendable {}
+
 struct FlexiBeeCenikWrapper: Decodable {
     let cenik: [FlexiBeeCenikItem]
 }
@@ -281,20 +283,21 @@ struct FlexiBeeInvoiceItemsWrapper: Decodable {
 
 // MARK: - Stock Movement (Warehouse outflow header)
 
-struct FlexiBeeStockMovement: Decodable {
-    let id:   String
-    let code: String
-    enum CodingKeys: String, CodingKey { case id; case code = "kod" }
+struct FlexiBeeStockMovement: Decodable, Sendable {
+    let id:    String
+    let code:  String
+    let notes: String?
+    enum CodingKeys: String, CodingKey { case id; case code = "kod"; case notes = "popis" }
 }
 
-struct FlexiBeeStockMovementWrapper: Decodable {
+struct FlexiBeeStockMovementWrapper: Decodable, Sendable {
     let movements: [FlexiBeeStockMovement]
     enum CodingKeys: String, CodingKey { case movements = "skladovy-pohyb" }
 }
 
 // MARK: - Stock Movement Item (Warehouse outflow line)
 
-struct FlexiBeeStockMovementItem: Identifiable, Codable {
+struct FlexiBeeStockMovementItem: Identifiable, Codable, Sendable {
     let id:              String
     private let codeRaw: String?
     private let nameRaw: String?
@@ -335,7 +338,7 @@ struct FlexiBeeStockMovementItem: Identifiable, Codable {
     var isValid: Bool { !productCode.isEmpty && quantityIssued > 0 }
 }
 
-struct FlexiBeeStockMovementItemsWrapper: Decodable {
+struct FlexiBeeStockMovementItemsWrapper: Decodable, Sendable {
     let items: [FlexiBeeStockMovementItem]
     enum CodingKeys: String, CodingKey { case items = "skladovy-pohyb-polozka" }
 }

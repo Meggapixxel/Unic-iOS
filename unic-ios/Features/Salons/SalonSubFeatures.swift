@@ -15,7 +15,7 @@ struct TestDriveFeature {
         var salons: IdentifiedArrayOf<Salon>
     }
     enum Action {}
-    var body: some Reducer<State, Action> { Reduce { _, _ in .none } }
+    var body: some Reducer<State, Action> { EmptyReducer() }
 }
 
 // MARK: - RoutePlannerFeature
@@ -27,6 +27,6 @@ struct RoutePlannerFeature {
         var salons: IdentifiedArrayOf<Salon>
     }
     enum Action {}
-    var body: some Reducer<State, Action> { Reduce { _, _ in .none } }
+    var body: some Reducer<State, Action> { EmptyReducer() }
 }
 

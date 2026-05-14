@@ -44,6 +44,12 @@ final class FlexiBeeService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
+    // In-memory caches (session-lifetime, cleared on forceSync)
+    private(set) var movementHeaders: [FlexiBeeStockMovement] = []
+    private var movementItemsById: [String: [FlexiBeeStockMovementItem]] = [:]
+    private var lineItemsByInvoiceId: [String: [FlexiBeeInvoiceItem]] = [:]
+    private var cashReceiptCache: [String: String?] = [:]
+
     @Published private(set) var lastSyncDate: Date? = UserDefaults.standard.object(forKey: "flexibee_lastSync") as? Date
 
     private static let cacheTTL: TimeInterval = 60 * 60
@@ -83,6 +89,7 @@ final class FlexiBeeService: ObservableObject {
     /// Lightweight refresh after invoice mutations — only reloads invoices + line items,
     /// leaving stock/prices/movements untouched. Use instead of forceSync() for create/update/delete.
     func refreshInvoicesData() async {
+        lineItemsByInvoiceId = [:]
         async let invoicesTask  = fetchInvoices()
         async let itemsTask     = fetchInvoiceItems()
         do { invoices     = try await invoicesTask } catch { }
@@ -122,6 +129,10 @@ final class FlexiBeeService: ObservableObject {
     // MARK: - Network
 
     private func fetchAll() async {
+        movementHeaders = []
+        movementItemsById = [:]
+        lineItemsByInvoiceId = [:]
+        cashReceiptCache = [:]
         isLoading = true
         errorMessage = nil
 
@@ -194,12 +205,14 @@ final class FlexiBeeService: ObservableObject {
     }
 
     func fetchLineItemsForInvoice(_ invoiceId: String) async throws -> [FlexiBeeInvoiceItem] {
+        if let cached = lineItemsByInvoiceId[invoiceId] { return cached }
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeInvoiceItemsWrapper>.self,
             path: "/faktura-vydana/\(invoiceId)/faktura-vydana-polozka.json",
             fields: FlexiBeeInvoiceItem.apiFields,
             limit: 100
         )
+        lineItemsByInvoiceId[invoiceId] = response.winstrom.items
         return response.winstrom.items
     }
 
@@ -278,13 +291,16 @@ final class FlexiBeeService: ObservableObject {
     }
 
     func fetchCashReceiptId(for invoiceNumber: String) async throws -> String? {
+        if cashReceiptCache.keys.contains(invoiceNumber) { return cashReceiptCache[invoiceNumber]! }
         let response = try await fetch(
             FlexiBeeResponse<CashReceiptListWrapper>.self,
             path: "/pokladni-pohyb.json",
             fields: "id,popis",
             limit: 200
         )
-        return response.winstrom.items.first(where: { $0.popis?.contains(invoiceNumber) == true })?.id
+        let found = response.winstrom.items.first(where: { $0.popis?.contains(invoiceNumber) == true })?.id
+        cashReceiptCache[invoiceNumber] = found
+        return found
     }
 
     // Creates a STANDARD stock movement (vydej). typDokl must be "code:STANDARD".
@@ -366,10 +382,15 @@ final class FlexiBeeService: ObservableObject {
     /// Fetches the stock movement for an invoice by description, plus its line items.
     /// Returns nil when no movement exists yet (e.g. before "Paid" is pressed).
     func fetchStockMovement(for invoiceNumber: String) async throws -> (movement: FlexiBeeStockMovement, items: [FlexiBeeStockMovementItem])? {
+        let expectedNotes = "Vydej k \(invoiceNumber)"
+        if let cached = movementHeaders.first(where: { $0.notes == expectedNotes }),
+           let items = movementItemsById[cached.id] {
+            return (cached, items)
+        }
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeStockMovementWrapper>.self,
             path: "/skladovy-pohyb.json",
-            fields: "id,kod",
+            fields: "id,kod,popis",
             limit: 1,
             filterBy: "popis='Vydej k \(invoiceNumber)'"
         )
@@ -381,6 +402,10 @@ final class FlexiBeeService: ObservableObject {
             limit: 500
         )
         let items = itemsResponse.winstrom.items.filter { $0.isValid }
+        movementItemsById[header.id] = items
+        if !movementHeaders.contains(where: { $0.id == header.id }) {
+            movementHeaders.append(header)
+        }
         return (header, items)
     }
 
@@ -410,33 +435,40 @@ final class FlexiBeeService: ObservableObject {
     }
 
     func fetchStockMovementItems() async throws -> [FlexiBeeStockMovementItem] {
-        // Step 1: fetch all movement headers, keep only outflows (S- prefix)
         let headers = try await fetch(
             FlexiBeeResponse<FlexiBeeStockMovementWrapper>.self,
             path: "/skladovy-pohyb.json",
-            fields: "id,kod",
+            fields: "id,kod,popis",
             limit: 1000
         )
-        let outflowIds = headers.winstrom.movements
-            .filter { $0.code.hasPrefix("S-") }
-            .map { $0.id }
+        movementHeaders = headers.winstrom.movements
+        let outflows = headers.winstrom.movements.filter { $0.code.hasPrefix("S-") }
+        guard !outflows.isEmpty else { return [] }
 
-        guard !outflowIds.isEmpty else { return [] }
-
-        // Step 2: fetch line items for each outflow document sequentially
-        var all: [FlexiBeeStockMovementItem] = []
-        for id in outflowIds {
-            do {
-                let response = try await fetch(
-                    FlexiBeeResponse<FlexiBeeStockMovementItemsWrapper>.self,
-                    path: "/skladovy-pohyb/\(id)/skladovy-pohyb-polozka.json",
-                    fields: FlexiBeeStockMovementItem.apiFields,
-                    limit: 500
-                )
-                all.append(contentsOf: response.winstrom.items.filter { $0.isValid })
-            } catch { }
+        return await withTaskGroup(of: (String, [FlexiBeeStockMovementItem]).self) { group in
+            for movement in outflows {
+                let id = movement.id
+                group.addTask {
+                    do {
+                        let response = try await self.fetch(
+                            FlexiBeeResponse<FlexiBeeStockMovementItemsWrapper>.self,
+                            path: "/skladovy-pohyb/\(id)/skladovy-pohyb-polozka.json",
+                            fields: FlexiBeeStockMovementItem.apiFields,
+                            limit: 500
+                        )
+                        return (id, response.winstrom.items.filter { $0.isValid })
+                    } catch {
+                        return (id, [])
+                    }
+                }
+            }
+            var all: [FlexiBeeStockMovementItem] = []
+            for await (id, items) in group {
+                self.movementItemsById[id] = items
+                all.append(contentsOf: items)
+            }
+            return all
         }
-        return all
     }
 
     func fetchPriceList() async throws -> [FlexiBeeCenikItem] {

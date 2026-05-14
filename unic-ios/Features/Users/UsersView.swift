@@ -3,22 +3,8 @@ import SwiftUI
 
 struct UsersView: View {
     @Bindable var store: StoreOf<UsersFeature>
-
+    
     var body: some View {
-        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
-            userList
-        } destination: { store in
-            Group {
-                switch store.case {
-                case .userActivity(let store):
-                    UserActivityView(store: store)
-                }
-            }
-            .toolbar(.hidden, for: .tabBar)
-        }
-    }
-
-    private var userList: some View {
         List {
             ForEach(store.users) { user in
                 userRow(user)

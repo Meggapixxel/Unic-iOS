@@ -236,7 +236,7 @@ struct SalonsFeature {
             case let .path(.element(id: _, action: .salonDetail(.salonUpdated(salon)))):
                 return .send(.salonSaved(salon))
 
-            case let .path(.element(id: _, action: .salonDetail(.deleteFinished))):
+            case .path(.element(id: _, action: .salonDetail(.deleteFinished))):
                 // The detail reducer already dismissed itself via @Dependency(\.dismiss).
                 // Remove the salon from the list.
                 if let last = state.path.last,

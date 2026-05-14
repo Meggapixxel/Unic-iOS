@@ -116,6 +116,10 @@ struct ProfileFeature {
                     await flexiBeeClient.forceSync()
                 }
 
+            case .path(.element(_, .users(.userTapped(let user)))):
+                state.path.append(.userActivity(UserActivityFeature.State(user: user)))
+                return .none
+
             case .path:
                 return .none
 
