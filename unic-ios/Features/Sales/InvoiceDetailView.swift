@@ -163,54 +163,56 @@ struct InvoiceDetailView: View {
 
     @ViewBuilder
     private var bottomBar: some View {
-        // Delete
-        Button {
-            store.send(.deleteTapped)
-        } label: {
-            Image(systemName: "trash")
-        }
-        .tint(.red)
-        .disabled(store.isLoading)
-
-        Spacer()
-
-        // Stock movement
-        Button {
-            store.send(.openStockMovement)
-        } label: {
-            Image(systemName: store.stockMovementCreated ? "shippingbox.fill" : "shippingbox")
-        }
-        .disabled(store.isLoading || store.invoice.paymentStatus == .paid)
-
-        Spacer()
-
-        // Payment status
-        Button {
-            store.send(.setPaymentStatus(.paid, nil))
-        } label: {
-            Image(systemName: "checkmark.circle.fill")
-        }
-        .tint(store.invoice.paymentStatus == .paid ? .secondary : .green)
-        .disabled(store.isLoading || store.invoice.paymentStatus == .paid)
-
-        Spacer()
-
-        // Documents / PDF
-        Button {
-            let isCash = store.invoice.paymentMethod == .hotove && store.cashReceiptId != nil
-            if isCash {
-                store.send(.shareBothPDFs)
-            } else {
-                store.send(.shareInvoicePDF)
+        if !store.isLoading {
+            // Delete
+            Button {
+                store.send(.deleteTapped)
+            } label: {
+                Image(systemName: "trash")
             }
-        } label: {
-            if store.isLoadingPDF {
-                ProgressView().scaleEffect(0.8)
-            } else {
-                Image(systemName: "doc.text.fill")
+            .tint(.red)
+
+            Spacer()
+
+            HStack(spacing: 20) {
+                // Stock movement
+                if !store.stockMovementCreated {
+                    Button {
+                        store.send(.openStockMovement)
+                    } label: {
+                        Image(systemName: "shippingbox")
+                    }
+                    .disabled(store.invoice.paymentStatus == .paid)
+                }
+
+                // Payment status
+                Button {
+                    store.send(.setPaymentStatus(.paid, nil))
+                } label: {
+                    Image(systemName: "checkmark.circle.fill")
+                }
+                .tint(store.invoice.paymentStatus == .paid ? .secondary : .green)
+                .disabled(store.invoice.paymentStatus == .paid)
+
+                // Documents / PDF
+                Button {
+                    let isCash = store.invoice.paymentMethod == .hotove && store.cashReceiptId != nil
+                    if isCash {
+                        store.send(.shareBothPDFs)
+                    } else {
+                        store.send(.shareInvoicePDF)
+                    }
+                } label: {
+                    if store.isLoadingPDF {
+                        ProgressView().scaleEffect(0.8)
+                    } else {
+                        Image(systemName: "doc.text.fill")
+                    }
+                }
+                .disabled(store.isLoadingPDF)
             }
+            .padding(.trailing, 8)
         }
-        .disabled(store.isLoadingPDF)
     }
 
     // MARK: - Items Section
