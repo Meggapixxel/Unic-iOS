@@ -134,7 +134,7 @@ struct SalonNativeMapView: UIViewRepresentable {
             view.glyphText = nil
             view.titleVisibility = .hidden
             view.clusteringIdentifier = SalonNativeMapView.clusterPrefix
-            view.displayPriority = .required
+            view.displayPriority = .defaultLow
             view.canShowCallout = true
 
             // Left: open details
