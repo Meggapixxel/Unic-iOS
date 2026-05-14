@@ -342,10 +342,13 @@
 "activity_today" = "Сьогодні";
 "activity_yesterday" = "Вчора";
 "activity_empty" = "Активність відсутня";
-"activity_group_day" = "По дням";
-"activity_group_week" = "По тижням";
+"activity_group_day" = "День";
+"activity_group_custom" = "Діапазон";
 "activity_this_week" = "Цього тижня";
 "activity_last_week" = "Минулого тижня";
+"activity_no_data" = "Немає активності за цей період";
+"activity_from" = "З";
+"activity_to" = "По";
 
 /* Users */
 "users_nav_title" = "Користувачі";

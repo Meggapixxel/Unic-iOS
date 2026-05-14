@@ -10,32 +10,44 @@ struct UserActivityFeature {
         var isLoading = false
         var error: String?
         var groupMode: GroupMode = .day
+        var selectedDate: Date = Date()
+        var customStart: Date = Calendar.current.date(byAdding: .day, value: -6, to: Date()) ?? Date()
+        var customEnd: Date = Date()
         var canDeleteActivity = false
 
         enum GroupMode: String, CaseIterable, Equatable {
-            case day, week
+            case day, custom
         }
 
-        var statusCounts: [SalonStatus: Int] {
-            Dictionary(grouping: entries, by: { $0.status }).mapValues(\.count)
-        }
-
-        nonisolated var entriesByDay: [(String, [UserActivityEntry])] {
-            let grouped = Dictionary(grouping: entries) { entry -> String in
-                let cal = Calendar(identifier: .gregorian)
-                let comps = cal.dateComponents([.day, .month, .year], from: entry.timestamp)
-                return "\(comps.day ?? 0)/\(comps.month ?? 0)/\(comps.year ?? 0)"
-            }
-            return grouped.sorted { $0.key > $1.key }
-        }
-
-        nonisolated var entriesByWeek: [(String, [UserActivityEntry])] {
+        var filteredEntries: [UserActivityEntry] {
             let cal = Calendar(identifier: .gregorian)
-            let grouped = Dictionary(grouping: entries) { entry -> String in
-                let comps = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: entry.timestamp)
-                return "Week \(comps.weekOfYear ?? 0), \(comps.yearForWeekOfYear ?? 0)"
+            switch groupMode {
+            case .day:
+                return entries.filter { cal.isDate($0.timestamp, inSameDayAs: selectedDate) }
+            case .custom:
+                let start = cal.startOfDay(for: customStart)
+                let end = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: customEnd)) ?? customEnd
+                return entries.filter { $0.timestamp >= start && $0.timestamp < end }
             }
+        }
+
+        var filteredStatusCounts: [SalonStatus: Int] {
+            Dictionary(grouping: filteredEntries, by: \.status).mapValues(\.count)
+        }
+
+        var filteredEntriesByDay: [(Date, [UserActivityEntry])] {
+            let cal = Calendar(identifier: .gregorian)
+            let grouped = Dictionary(grouping: filteredEntries) { cal.startOfDay(for: $0.timestamp) }
             return grouped.sorted { $0.key > $1.key }
+        }
+
+        var dayLabel: String {
+            let cal = Calendar(identifier: .gregorian)
+            if cal.isDateInToday(selectedDate) { return "Today" }
+            if cal.isDateInYesterday(selectedDate) { return "Yesterday" }
+            let fmt = DateFormatter()
+            fmt.dateFormat = "d MMM"
+            return fmt.string(from: selectedDate)
         }
     }
 
@@ -91,7 +103,7 @@ struct UserActivityFeature {
                         await send(.failed(error.localizedDescription))
                     }
                 }
-            }
+}
         }
     }
 }

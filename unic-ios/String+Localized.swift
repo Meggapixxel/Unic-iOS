@@ -363,10 +363,13 @@ extension String {
     static var activity_today:      String { String(localized: "activity_today") }
     static var activity_yesterday:  String { String(localized: "activity_yesterday") }
     static var activity_empty:      String { String(localized: "activity_empty") }
-    static var activity_group_day:  String { String(localized: "activity_group_day") }
-    static var activity_group_week: String { String(localized: "activity_group_week") }
-    static var activity_this_week:  String { String(localized: "activity_this_week") }
-    static var activity_last_week:  String { String(localized: "activity_last_week") }
+    static var activity_group_day:    String { String(localized: "activity_group_day") }
+    static var activity_group_custom: String { String(localized: "activity_group_custom") }
+    static var activity_this_week:    String { String(localized: "activity_this_week") }
+    static var activity_last_week:    String { String(localized: "activity_last_week") }
+    static var activity_no_data:      String { String(localized: "activity_no_data") }
+    static var activity_from:         String { String(localized: "activity_from") }
+    static var activity_to:           String { String(localized: "activity_to") }
 
     // MARK: - Users
     static var users_nav_title: String { String(localized: "users_nav_title") }

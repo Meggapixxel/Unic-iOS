@@ -342,10 +342,13 @@
 "activity_today" = "Сегодня";
 "activity_yesterday" = "Вчера";
 "activity_empty" = "Активность отсутствует";
-"activity_group_day" = "По дням";
-"activity_group_week" = "По неделям";
+"activity_group_day" = "День";
+"activity_group_custom" = "Диапазон";
 "activity_this_week" = "На этой неделе";
 "activity_last_week" = "На прошлой неделе";
+"activity_no_data" = "Нет активности за этот период";
+"activity_from" = "С";
+"activity_to" = "По";
 
 /* Users */
 "users_nav_title" = "Пользователи";

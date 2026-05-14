@@ -6,9 +6,29 @@ struct UserActivityView: View {
 
     var body: some View {
         List {
+            // MARK: Mode picker + period navigation
             Section {
-                let counts = store.statusCounts
-                if !counts.isEmpty {
+                Picker(String.activity_group_day, selection: $store.groupMode) {
+                    Text(String.activity_group_day).tag(UserActivityFeature.State.GroupMode.day)
+                    Text(String.activity_group_custom).tag(UserActivityFeature.State.GroupMode.custom)
+                }
+                .pickerStyle(.segmented)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
+                if store.groupMode == .day {
+                    DatePicker(String.activity_group_day, selection: $store.selectedDate, in: ...Date(), displayedComponents: .date)
+                } else {
+                    DatePicker(String.activity_from, selection: $store.customStart, in: ...store.customEnd, displayedComponents: .date)
+                    DatePicker(String.activity_to, selection: $store.customEnd, in: store.customStart...Date(), displayedComponents: .date)
+                }
+            }
+
+            // MARK: Stats for selected period
+            let counts = store.filteredStatusCounts
+            if !counts.isEmpty {
+                Section {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             ForEach(SalonStatus.allCases, id: \.self) { status in
@@ -33,40 +53,42 @@ struct UserActivityView: View {
                 }
             }
 
-            Picker(String.activity_group_day, selection: $store.groupMode) {
-                Text(String.activity_group_day).tag(UserActivityFeature.State.GroupMode.day)
-                Text(String.activity_group_week).tag(UserActivityFeature.State.GroupMode.week)
-            }
-            .pickerStyle(.segmented)
-            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-
-            let groups = store.groupMode == .day ? store.entriesByDay : store.entriesByWeek
-            ForEach(groups, id: \.0) { title, entries in
-                Section(title) {
-                    ForEach(entries) { entry in
-                        ActivityEntryRow(entry: entry)
-                            .swipeActions(edge: .trailing) {
-                                if store.canDeleteActivity {
-                                    Button(role: .destructive) {
-                                        store.send(.deleteConfirmed(entry))
-                                    } label: {
-                                        Label(String.delete, systemImage: "trash")
-                                    }
-                                }
-                            }
+            // MARK: Entries — always grouped by day
+            ForEach(store.filteredEntriesByDay, id: \.0) { date, dayEntries in
+                Section(date.formatted(.dateTime.weekday(.abbreviated).day().month())) {
+                    ForEach(dayEntries) { entry in
+                        entryRow(entry)
                     }
                 }
             }
         }
+        .listStyle(.insetGrouped)
         .navigationTitle(store.user.fullName)
         .navigationBarTitleDisplayMode(.large)
         .overlay {
-            if store.isLoading { ProgressView() }
-            else if store.entries.isEmpty && !store.isLoading {
+            if store.isLoading {
+                ProgressView()
+            } else if store.filteredEntries.isEmpty && !store.isLoading && !store.entries.isEmpty {
+                ContentUnavailableView(String.activity_no_data, systemImage: "calendar.badge.minus")
+            } else if store.entries.isEmpty && !store.isLoading {
                 ContentUnavailableView(String.activity_empty, systemImage: "clock.arrow.circlepath")
             }
         }
         .task { store.send(.onLoad) }
+    }
+
+    @ViewBuilder
+    private func entryRow(_ entry: UserActivityEntry) -> some View {
+        ActivityEntryRow(entry: entry)
+            .swipeActions(edge: .trailing) {
+                if store.canDeleteActivity {
+                    Button(role: .destructive) {
+                        store.send(.deleteConfirmed(entry))
+                    } label: {
+                        Label(String.delete, systemImage: "trash")
+                    }
+                }
+            }
     }
 }
 

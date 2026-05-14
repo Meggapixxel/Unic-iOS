@@ -342,10 +342,13 @@
 "activity_today" = "Today";
 "activity_yesterday" = "Yesterday";
 "activity_empty" = "No Activity";
-"activity_group_day" = "By Days";
-"activity_group_week" = "By Weeks";
+"activity_group_day" = "Day";
+"activity_group_custom" = "Custom";
 "activity_this_week" = "This Week";
 "activity_last_week" = "Last Week";
+"activity_no_data" = "No activity for this period";
+"activity_from" = "From";
+"activity_to" = "To";
 
 /* Users */
 "users_nav_title" = "Users";
