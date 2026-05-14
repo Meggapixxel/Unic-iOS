@@ -8,7 +8,7 @@ struct StockView: View {
     @Bindable var store: StoreOf<StockFeature>
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
             StockListContent(store: store)
                 .navigationTitle(String.stock_nav_title)
                 .navigationBarTitleDisplayMode(.large)
@@ -21,6 +21,11 @@ struct StockView: View {
                 }
                 .task { store.send(.onLoad) }
                 .refreshable { store.send(.forceSync) }
+        } destination: { pathStore in
+            switch pathStore.case {
+            case let .productDetail(productStore):
+                ProductDetailView(store: productStore)
+            }
         }
         .sheet(
             item: $store.scope(
@@ -37,17 +42,6 @@ struct StockView: View {
             )
         ) { checklistStore in
             StockChecklistView(store: checklistStore)
-        }
-        .sheet(
-            item: $store.scope(
-                state: \.destination?.product,
-                action: \.destination.product
-            )
-        ) { productStore in
-            NavigationStack {
-                ProductDetailView(store: productStore)
-                    .navigationBarTitleDisplayMode(.inline)
-            }
         }
         .alert(
             String.barcode_title,

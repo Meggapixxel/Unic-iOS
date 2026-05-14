@@ -15,6 +15,7 @@ struct StockFeature {
         var isLoading: Bool = false
         var errorMessage: String?
         var lastSyncDate: Date?
+        var path: StackState<Path.State> = StackState()
         @Presents var destination: Destination.State?
 
         // Backing store — populated on load/sync
@@ -44,11 +45,17 @@ struct StockFeature {
         var lowStockCount: Int { allStock.filter { $0.quantity <= 2 }.count }
     }
 
+    // MARK: - Path
+
+    @Reducer
+    enum Path {
+        case productDetail(ProductDetailFeature)
+    }
+
     // MARK: - Destination
 
     @Reducer
     enum Destination {
-        case product(ProductDetailFeature)
         case checklist(StockChecklistFeature)
         case barcodeScanner(BarcodeScannerFeature)
     }
@@ -68,6 +75,7 @@ struct StockFeature {
         case barcodeScanned(String)
         case barcodeSearchCompleted(FlexiBeeStockWithPrice?)
         case destination(PresentationAction<Destination.Action>)
+        case path(StackActionOf<Path>)
     }
 
     // MARK: - Dependencies
@@ -123,7 +131,7 @@ struct StockFeature {
                 return .none
 
             case let .openProduct(product):
-                state.destination = .product(ProductDetailFeature.State(product: product))
+                state.path.append(.productDetail(ProductDetailFeature.State(product: product)))
                 return .none
 
             case .openChecklist:
@@ -154,7 +162,7 @@ struct StockFeature {
 
             case let .barcodeSearchCompleted(product):
                 if let product {
-                    state.destination = .product(ProductDetailFeature.State(product: product))
+                    state.path.append(.productDetail(ProductDetailFeature.State(product: product)))
                 }
                 return .none
 
@@ -170,9 +178,13 @@ struct StockFeature {
 
             case .binding:
                 return .none
+
+            case .path:
+                return .none
             }
         }
         .ifLet(\.$destination, action: \.destination)
+        .forEach(\.path, action: \.path)
     }
 
     nonisolated private static func normalizeKod(_ s: String) -> String {
@@ -180,6 +192,8 @@ struct StockFeature {
          .uppercased()
     }
 }
+
+extension StockFeature.Path.State: Equatable {}
 
 // MARK: - Product Detail Feature (leaf)
 
