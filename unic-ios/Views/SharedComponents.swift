@@ -145,6 +145,34 @@ struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
 }
 
+// MARK: - Sync Status Row
+
+struct SyncStatusRow: View {
+    let isLoading: Bool
+    let lastSyncDate: Date?
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if isLoading {
+                ProgressView().scaleEffect(0.7)
+                Text(String.loading)
+            } else {
+                Image(systemName: "arrow.clockwise")
+                    .font(.caption2)
+                if let date = lastSyncDate {
+                    Text(date.formatted(date: .abbreviated, time: .shortened))
+                } else {
+                    Text(String.never)
+                }
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+    }
+}
+
 // MARK: - SalonSortOption
 
 enum SalonSortOption: String, CaseIterable, Identifiable {

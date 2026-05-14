@@ -94,9 +94,6 @@ struct StockView: View {
                 Image(systemName: "book.pages").imageScale(.large)
             }
         }
-        ToolbarItem(placement: .topBarTrailing) {
-            SyncDateLabel(isLoading: store.isLoading, lastSyncDate: store.lastSyncDate)
-        }
     }
 }
 
@@ -110,17 +107,10 @@ private struct StockListContent: View {
         ScrollViewReader { proxy in
             List {
                 Section {
-                    statsRow
-                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                        .id("top")
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear.preference(
-                                    key: StockScrollOffsetPreferenceKey.self,
-                                    value: geo.frame(in: .global).minY
-                                )
-                            }
-                        )
+                    header
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                 }
                 Section {
                     ForEach(store.filteredStock) { item in
@@ -169,30 +159,34 @@ private struct StockListContent: View {
             }
         }
     }
-
-    private var statsRow: some View {
-        HStack(spacing: 12) {
-            StatCard(
-                value: "\(store.allStock.count)",
-                label: "SKU",
-                icon: "shippingbox",
-                color: .blue,
-                compact: true
-            )
-            StatCard(
-                value: "\(Int(store.totalStockUnits))",
-                label: String.stock_units,
-                icon: "number.circle",
-                color: .green,
-                compact: true
-            )
-            StatCard(
-                value: "\(store.lowStockCount)",
-                label: String.stock_low,
-                icon: "exclamationmark.triangle",
-                color: store.lowStockCount > 0 ? .orange : .secondary,
-                compact: true
-            )
+    
+    private var header: some View {
+        VStack {
+            SyncStatusRow(isLoading: false, lastSyncDate: store.lastSyncDate)
+                
+            HStack(spacing: 12) {
+                StatCard(
+                    value: "\(store.allStock.count)",
+                    label: "SKU",
+                    icon: "shippingbox",
+                    color: .blue,
+                    compact: true
+                )
+                StatCard(
+                    value: "\(Int(store.totalStockUnits))",
+                    label: String.stock_units,
+                    icon: "number.circle",
+                    color: .green,
+                    compact: true
+                )
+                StatCard(
+                    value: "\(store.lowStockCount)",
+                    label: String.stock_low,
+                    icon: "exclamationmark.triangle",
+                    color: store.lowStockCount > 0 ? .orange : .secondary,
+                    compact: true
+                )
+            }
         }
     }
 }

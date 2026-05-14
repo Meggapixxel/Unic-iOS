@@ -23,11 +23,6 @@ struct SalesView: View {
         }
         .navigationTitle(String.sales_nav_title)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                SyncDateLabel(isLoading: store.isLoading, lastSyncDate: store.lastSyncDate)
-            }
-        }
         .task { store.send(.onLoad) }
         .sheet(
             item: $store.scope(
@@ -49,6 +44,9 @@ private struct AnalyticsSection: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                SyncStatusRow(isLoading: store.isLoading, lastSyncDate: store.lastSyncDate)
+                    .padding(.horizontal, 16)
+
                 // Period picker
                 Picker("", selection: Binding(
                     get: { store.period },
@@ -169,6 +167,11 @@ private struct InvoicesSection: View {
 
     var body: some View {
         List {
+            SyncStatusRow(isLoading: store.isLoading, lastSyncDate: store.lastSyncDate)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
             // Status filter chips
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
