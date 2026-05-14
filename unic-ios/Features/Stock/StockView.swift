@@ -81,16 +81,22 @@ struct StockView: View {
                 Image(systemName: "arrow.up.arrow.down").imageScale(.large)
             }
         }
+        
+        if #available(iOS 26.0, *) {
+            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+        }
+        
         ToolbarItem(placement: .topBarLeading) {
-            Button { store.send(.openBarcodeScanner) } label: {
-                Image(systemName: "barcode.viewfinder").imageScale(.large)
+            HStack(spacing: 16) {
+                Button { store.send(.openBarcodeScanner) } label: {
+                    Image(systemName: "barcode.viewfinder").imageScale(.large)
+                }
+                Button { store.send(.openChecklist) } label: {
+                    Image(systemName: "list.bullet.clipboard").imageScale(.large)
+                }
             }
         }
-        ToolbarItem(placement: .topBarLeading) {
-            Button { store.send(.openChecklist) } label: {
-                Image(systemName: "list.bullet.clipboard").imageScale(.large)
-            }
-        }
+        
         ToolbarItem(placement: .topBarTrailing) {
             Button { store.send(.openCatalog) } label: {
                 Image(systemName: "book.pages").imageScale(.large)

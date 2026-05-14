@@ -94,7 +94,13 @@ private struct PDFKitView: UIViewRepresentable {
         pdfView.autoScales = true
         pdfView.displayMode = .singlePageContinuous
         pdfView.displayDirection = .vertical
-        pdfView.document = PDFDocument(url: url)
+        let url = url
+        DispatchQueue.global(qos: .userInitiated).async {
+            let document = PDFDocument(url: url)
+            DispatchQueue.main.async {
+                pdfView.document = document
+            }
+        }
         return pdfView
     }
 
