@@ -392,6 +392,8 @@ extension String {
     static var plan_targets:              String { String(localized: "plan_targets") }
     static var plan_target_salons:        String { String(localized: "plan_target_salons") }
     static var plan_target_test_drives:   String { String(localized: "plan_target_test_drives") }
+    static var plan_goal_per_day:         String { String(localized: "plan_goal_per_day") }
+    static var plan_goal_total:           String { String(localized: "plan_goal_total") }
     static var plan_untitled:             String { String(localized: "plan_untitled") }
     static var profile_plans_progress:    String { String(localized: "profile_plans_progress") }
 

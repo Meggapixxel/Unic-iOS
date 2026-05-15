@@ -35,7 +35,7 @@ struct ProfileView: View {
 
                 // MARK: Progress
                 Section(String.profile_plans_progress) {
-                    if let plan = store.activePlan {
+                    if let plan = store.currentUser.activePlan, plan.isActive {
                         VStack(alignment: .leading, spacing: 10) {
                             if let title = plan.title {
                                 Text(title)
@@ -44,7 +44,7 @@ struct ProfileView: View {
                             HStack(spacing: 24) {
                                 if let target = plan.targetSalons, target > 0 {
                                     RingProgressView(
-                                        value: store.currentUser.planProgress?.salonsVisited ?? 0,
+                                        value: plan.salonsVisited,
                                         target: target,
                                         label: String.plan_target_salons,
                                         color: .blue
@@ -52,7 +52,7 @@ struct ProfileView: View {
                                 }
                                 if let target = plan.targetTestDrives, target > 0 {
                                     RingProgressView(
-                                        value: store.currentUser.planProgress?.testDriveCount ?? 0,
+                                        value: plan.testDriveCount,
                                         target: target,
                                         label: String.plan_target_test_drives,
                                         color: .green

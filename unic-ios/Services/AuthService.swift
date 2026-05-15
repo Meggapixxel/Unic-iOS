@@ -147,16 +147,55 @@ final class AuthService: ObservableObject {
         AppLogger.log(.info, "Auth", "Fetching user profile: uid=\(uid)")
         let doc = try await db.collection("users").document(uid).getDocument()
         let data = doc.data() ?? [:]
-        let firstName = data["first_name"] as? String ?? ""
-        let lastName  = data["last_name"]  as? String ?? ""
+        let firstName  = data["first_name"] as? String ?? ""
+        let lastName   = data["last_name"]  as? String ?? ""
         let roleString = data["role"] as? String ?? ""
-        let role = UserRole(rawValue: roleString) ?? .sales
-        let visitedSalonIds = data["visitedSalonIds"] as? [String] ?? []
-        let testDriveCount  = data["testDriveCount"]  as? Int ?? 0
-        let planProgress: UserPlanProgress? = (visitedSalonIds.isEmpty && testDriveCount == 0)
-            ? nil
-            : UserPlanProgress(visitedSalonIds: visitedSalonIds, testDriveCount: testDriveCount)
-        let user = AppUser(id: uid, firstName: firstName, lastName: lastName, role: role, planProgress: planProgress)
+        let role       = UserRole(rawValue: roleString) ?? .sales
+
+        // Fetch current active plan from plans collection
+        let currentPlan = try? await fetchActivePlan()
+
+        // Read existing plan data from user doc
+        let existingPlanData = data["activePlan"] as? [String: Any]
+        let existingPlanId   = existingPlanData?["id"] as? String
+
+        var userActivePlan: UserActivePlan?
+        if let plan = currentPlan {
+            let planChanged    = existingPlanId != plan.id
+            let salonsVisited  = planChanged ? 0 : (existingPlanData?["salonsVisited"]  as? Int ?? 0)
+            let testDriveCount = planChanged ? 0 : (existingPlanData?["testDriveCount"] as? Int ?? 0)
+
+            userActivePlan = UserActivePlan(
+                id: plan.id, title: plan.title,
+                startDate: plan.startDate, endDate: plan.endDate,
+                targetSalons: plan.targetSalons, targetSalonsPerDay: plan.targetSalonsPerDay,
+                targetTestDrives: plan.targetTestDrives, targetTestDrivesPerDay: plan.targetTestDrivesPerDay,
+                salonsVisited: salonsVisited, testDriveCount: testDriveCount
+            )
+
+            // Write plan snapshot to user doc (dot-notation preserves counters unless plan changed)
+            var planUpdate: [String: Any] = [
+                "activePlan.id":                   plan.id ?? NSNull(),
+                "activePlan.title":                plan.title as Any,
+                "activePlan.startDate":            Timestamp(date: plan.startDate),
+                "activePlan.endDate":              Timestamp(date: plan.endDate),
+                "activePlan.targetSalons":         plan.targetSalons as Any,
+                "activePlan.targetSalonsPerDay":   plan.targetSalonsPerDay as Any,
+                "activePlan.targetTestDrives":     plan.targetTestDrives as Any,
+                "activePlan.targetTestDrivesPerDay": plan.targetTestDrivesPerDay as Any
+            ]
+            if planChanged {
+                planUpdate["activePlan.salonsVisited"]  = 0
+                planUpdate["activePlan.testDriveCount"] = 0
+            }
+            try? await db.collection("users").document(uid).updateData(planUpdate)
+
+        } else if existingPlanData != nil {
+            // Plan expired — clear from user doc
+            try? await db.collection("users").document(uid).updateData(["activePlan": FieldValue.delete()])
+        }
+
+        let user = AppUser(id: uid, firstName: firstName, lastName: lastName, role: role, activePlan: userActivePlan)
         AppLogger.log(.info, "Auth", "User loaded: \(firstName) \(lastName), role=\(roleString)")
 
         do {
@@ -167,5 +206,16 @@ final class AuthService: ObservableObject {
             // JSONEncoder failure for a simple Codable struct is unexpected; session remains active
         }
         currentUser = user
+    }
+
+    private func fetchActivePlan() async throws -> Plan? {
+        let now = Timestamp(date: Date())
+        let snapshot = try await db.collection("plans")
+            .whereField("endDate", isGreaterThanOrEqualTo: now)
+            .order(by: "endDate")
+            .limit(to: 5)
+            .getDocuments()
+        let plans = snapshot.documents.compactMap { try? $0.data(as: Plan.self) }
+        return plans.first { $0.isActive }
     }
 }

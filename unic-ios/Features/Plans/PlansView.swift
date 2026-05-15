@@ -91,19 +91,35 @@ struct PlansFormView: View {
                     DatePicker(String.plan_start_date, selection: $store.startDate, displayedComponents: .date)
                     DatePicker(String.plan_end_date, selection: $store.endDate, in: store.startDate..., displayedComponents: .date)
                 }
-                Section(String.plan_targets) {
-                    Stepper(value: $store.targetSalons, in: 0...999) {
+                Section(String.plan_goal_per_day) {
+                    Stepper(value: $store.salonsPerDay, in: 0...99) {
                         HStack {
                             Label(String.plan_target_salons, systemImage: "storefront")
                             Spacer()
-                            Text("\(store.targetSalons)").foregroundStyle(.secondary)
+                            Text("\(store.salonsPerDay)").foregroundStyle(.secondary)
                         }
                     }
-                    Stepper(value: $store.targetTestDrives, in: 0...999) {
+                    Stepper(value: $store.testDrivesPerDay, in: 0...99) {
                         HStack {
                             Label(String.plan_target_test_drives, systemImage: "car.side")
                             Spacer()
-                            Text("\(store.targetTestDrives)").foregroundStyle(.secondary)
+                            Text("\(store.testDrivesPerDay)").foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                Section(String.plan_goal_total) {
+                    Stepper(value: $store.salonsTotal, in: 0...999) {
+                        HStack {
+                            Label(String.plan_target_salons, systemImage: "storefront")
+                            Spacer()
+                            Text("\(store.salonsTotal)").foregroundStyle(.secondary)
+                        }
+                    }
+                    Stepper(value: $store.testDrivesTotal, in: 0...999) {
+                        HStack {
+                            Label(String.plan_target_test_drives, systemImage: "car.side")
+                            Spacer()
+                            Text("\(store.testDrivesTotal)").foregroundStyle(.secondary)
                         }
                     }
                 }

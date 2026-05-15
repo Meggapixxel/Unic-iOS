@@ -393,10 +393,10 @@ final class FirebaseService: ObservableObject {
 
         if let userId = createdBy {
             var userUpdate: [String: Any] = [
-                "visitedSalonIds": FieldValue.arrayUnion([salonId])
+                "activePlan.salonsVisited": FieldValue.increment(Int64(1))
             ]
             if status == .testDrive {
-                userUpdate["testDriveCount"] = FieldValue.increment(Int64(1))
+                userUpdate["activePlan.testDriveCount"] = FieldValue.increment(Int64(1))
             }
             try? await db.collection("users").document(userId).updateData(userUpdate)
         }
@@ -529,17 +529,29 @@ final class FirebaseService: ObservableObject {
         return snapshot.documents.compactMap { doc in
             let d = doc.data()
             guard let role = UserRole(rawValue: d["role"] as? String ?? "") else { return nil }
-            let visitedSalonIds = d["visitedSalonIds"] as? [String] ?? []
-            let testDriveCount  = d["testDriveCount"]  as? Int ?? 0
-            let planProgress: UserPlanProgress? = (visitedSalonIds.isEmpty && testDriveCount == 0)
-                ? nil
-                : UserPlanProgress(visitedSalonIds: visitedSalonIds, testDriveCount: testDriveCount)
+            var activePlan: UserActivePlan?
+            if let pd = d["activePlan"] as? [String: Any],
+               let startTs = pd["startDate"] as? Timestamp,
+               let endTs   = pd["endDate"]   as? Timestamp {
+                activePlan = UserActivePlan(
+                    id: pd["id"] as? String,
+                    title: pd["title"] as? String,
+                    startDate: startTs.dateValue(),
+                    endDate: endTs.dateValue(),
+                    targetSalons: pd["targetSalons"] as? Int,
+                    targetSalonsPerDay: pd["targetSalonsPerDay"] as? Int,
+                    targetTestDrives: pd["targetTestDrives"] as? Int,
+                    targetTestDrivesPerDay: pd["targetTestDrivesPerDay"] as? Int,
+                    salonsVisited: pd["salonsVisited"] as? Int ?? 0,
+                    testDriveCount: pd["testDriveCount"] as? Int ?? 0
+                )
+            }
             return AppUser(
                 id: doc.documentID,
                 firstName: d["first_name"] as? String ?? "",
                 lastName: d["last_name"] as? String ?? "",
                 role: role,
-                planProgress: planProgress
+                activePlan: activePlan
             )
         }
     }

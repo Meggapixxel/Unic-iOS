@@ -135,8 +135,10 @@ struct PlansFormFeature {
         var description: String
         var startDate: Date
         var endDate: Date
-        var targetSalons: Int
-        var targetTestDrives: Int
+        var salonsPerDay: Int = 0
+        var salonsTotal: Int = 0
+        var testDrivesPerDay: Int = 0
+        var testDrivesTotal: Int = 0
         var isSaving = false
         var error: String?
 
@@ -144,12 +146,14 @@ struct PlansFormFeature {
 
         init(existing: Plan? = nil) {
             self.existing = existing
-            title = existing?.title ?? ""
+            title       = existing?.title ?? ""
             description = existing?.description ?? ""
-            startDate = existing?.startDate ?? Date()
-            endDate = existing?.endDate ?? Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
-            targetSalons = existing?.targetSalons ?? 0
-            targetTestDrives = existing?.targetTestDrives ?? 0
+            startDate   = existing?.startDate ?? Date()
+            endDate     = existing?.endDate ?? Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+            salonsPerDay     = existing?.targetSalonsPerDay ?? 0
+            salonsTotal      = existing?.targetSalons ?? 0
+            testDrivesPerDay = existing?.targetTestDrivesPerDay ?? 0
+            testDrivesTotal  = existing?.targetTestDrives ?? 0
         }
     }
 
@@ -180,8 +184,10 @@ struct PlansFormFeature {
                     startDate: state.startDate,
                     endDate: state.endDate,
                     createdBy: auth.currentUser()?.id ?? "",
-                    targetSalons: state.targetSalons > 0 ? state.targetSalons : nil,
-                    targetTestDrives: state.targetTestDrives > 0 ? state.targetTestDrives : nil
+                    targetSalons: state.salonsTotal > 0 ? state.salonsTotal : nil,
+                    targetSalonsPerDay: state.salonsPerDay > 0 ? state.salonsPerDay : nil,
+                    targetTestDrives: state.testDrivesTotal > 0 ? state.testDrivesTotal : nil,
+                    targetTestDrivesPerDay: state.testDrivesPerDay > 0 ? state.testDrivesPerDay : nil
                 )
                 let firebase = firebase
                 return .run { [firebase] send in
