@@ -372,6 +372,9 @@
 "location_required_title" = "Требуется доступ к геолокации";
 "location_required_description" = "Для работы с приложением необходим доступ к вашей геолокации. Пожалуйста, предоставьте доступ в настройках.";
 "open_settings" = "Открыть настройки";
+"location_fetching" = "Определение локации...";
+"location_obtained" = "Локация подтверждена";
+"location_unavailable" = "Локация недоступна — сохранение невозможно";
 
 /* Weekly stats */
 "activity_new_salons" = "🆕 Новые";

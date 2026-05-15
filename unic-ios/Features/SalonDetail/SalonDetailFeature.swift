@@ -270,6 +270,10 @@ struct AddStatusFeature {
         var note: String = ""
         var selectedDate: Date = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
         var isSaving = false
+        var userLocation: Location?
+        var isFetchingLocation = false
+
+        var canSave: Bool { !isSaving && userLocation != nil }
 
         init(salonId: String, currentStatus: SalonStatus, currentUserId: String) {
             self.salonId = salonId
@@ -281,6 +285,8 @@ struct AddStatusFeature {
 
     enum Action: BindableAction {
         case binding(BindingAction<State>)
+        case onAppear
+        case locationFetched(Location?)
         case saveTapped
         case entryAdded(StatusHistoryEntry, updatedSalon: Salon?)
         case failed(String)
@@ -288,6 +294,7 @@ struct AddStatusFeature {
     }
 
     @Dependency(\.firebaseClient) var firebase
+    @Dependency(\.locationClient) var locationClient
     @Dependency(\.date) var date
     @Dependency(\.dismiss) var dismiss
 
@@ -295,7 +302,20 @@ struct AddStatusFeature {
         BindingReducer()
         Reduce { state, action in
             switch action {
+            case .onAppear:
+                state.isFetchingLocation = true
+                return .run { send in
+                    let location = await locationClient.fetchLocation()
+                    await send(.locationFetched(location))
+                }
+
+            case .locationFetched(let location):
+                state.isFetchingLocation = false
+                state.userLocation = location
+                return .none
+
             case .saveTapped:
+                guard state.canSave else { return .none }
                 state.isSaving = true
                 let salonId = state.salonId
                 let selectedStatus = state.selectedStatus
@@ -303,11 +323,12 @@ struct AddStatusFeature {
                 let noteOrNil: String? = note.isEmpty ? nil : note
                 let createdBy = state.currentUserId
                 let scheduledDate: Date? = selectedStatus == .demoScheduled ? state.selectedDate : nil
+                let userLocation = state.userLocation
                 let firebase = firebase
                 return .run { [firebase, date] send in
                     do {
                         try await firebase.addStatusHistoryEntry(
-                            salonId, selectedStatus, note, createdBy, scheduledDate ?? date()
+                            salonId, selectedStatus, note, createdBy, scheduledDate ?? date(), userLocation
                         )
                         let history = try await firebase.fetchStatusHistory(salonId)
                         let entry = history.first ?? StatusHistoryEntry(
@@ -315,7 +336,8 @@ struct AddStatusFeature {
                             note: noteOrNil,
                             timestamp: date(),
                             createdBy: createdBy,
-                            date: scheduledDate
+                            date: scheduledDate,
+                            userLocation: userLocation
                         )
                         await send(.entryAdded(entry, updatedSalon: nil))
                         await dismiss()

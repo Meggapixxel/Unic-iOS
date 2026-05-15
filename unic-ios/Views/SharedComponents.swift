@@ -645,19 +645,44 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
     static let shared = LocationManager()
     private let manager = CLLocationManager()
     @Published private(set) var authStatus: CLAuthorizationStatus = .notDetermined
+    private var locationContinuation: CheckedContinuation<CLLocationCoordinate2D?, Never>?
 
     override init() {
         super.init()
         manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
         authStatus = manager.authorizationStatus
     }
 
     func requestPermission() { manager.requestWhenInUseAuthorization() }
     var isAuthorized: Bool { authStatus == .authorizedWhenInUse || authStatus == .authorizedAlways }
 
+    func fetchCurrentLocation() async -> CLLocationCoordinate2D? {
+        guard isAuthorized else { return nil }
+        return await withCheckedContinuation { continuation in
+            locationContinuation = continuation
+            manager.requestLocation()
+        }
+    }
+
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let status = manager.authorizationStatus
         MainActor.assumeIsolated { authStatus = status }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        let coord = locations.last?.coordinate
+        MainActor.assumeIsolated {
+            locationContinuation?.resume(returning: coord)
+            locationContinuation = nil
+        }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        MainActor.assumeIsolated {
+            locationContinuation?.resume(returning: nil)
+            locationContinuation = nil
+        }
     }
 }
 

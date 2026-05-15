@@ -356,7 +356,7 @@ final class FirebaseService: ObservableObject {
         }
     }
 
-    func addStatusHistoryEntry(salonId: String, status: SalonStatus, note: String?, createdBy: String?, date: Date? = nil) async throws {
+    func addStatusHistoryEntry(salonId: String, status: SalonStatus, note: String?, createdBy: String?, date: Date? = nil, userLocation: Location? = nil) async throws {
         AppLogger.log(.info, "Firebase", "addStatusEntry: salonId=\(salonId) status=\(status.rawValue)")
         let now = Timestamp(date: Date())
         var entry: [String: Any] = [
@@ -366,6 +366,7 @@ final class FirebaseService: ObservableObject {
             "createdBy": createdBy as Any
         ]
         if let date { entry["date"] = Timestamp(date: date) }
+        if let loc = userLocation { entry["userLocation"] = ["lat": loc.lat, "lng": loc.lng] }
 
         try await db.collection("salons")
             .document(salonId)

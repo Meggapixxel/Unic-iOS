@@ -472,6 +472,22 @@ struct AddStatusView: View {
                     TextField(String.add_comment, text: $store.note, axis: .vertical)
                         .lineLimit(3...6)
                 }
+
+                Section {
+                    HStack(spacing: 10) {
+                        if store.isFetchingLocation {
+                            ProgressView().controlSize(.small)
+                            Text(String.location_fetching).foregroundStyle(.secondary)
+                        } else if store.userLocation != nil {
+                            Image(systemName: "location.fill").foregroundStyle(.green)
+                            Text(String.location_obtained).foregroundStyle(.secondary)
+                        } else {
+                            Image(systemName: "location.slash.fill").foregroundStyle(.red)
+                            Text(String.location_unavailable).foregroundStyle(.red)
+                        }
+                    }
+                    .font(.footnote)
+                }
             }
             .navigationTitle(String.add_status)
             .navigationBarTitleDisplayMode(.inline)
@@ -483,7 +499,7 @@ struct AddStatusView: View {
                     Button { store.send(.saveTapped) } label: {
                         Image(systemName: "checkmark")
                     }
-                    .disabled(store.isSaving)
+                    .disabled(!store.canSave)
                 }
             }
             .overlay {
@@ -494,6 +510,7 @@ struct AddStatusView: View {
                         .cornerRadius(8)
                 }
             }
+            .task { store.send(.onAppear) }
         }
     }
 }

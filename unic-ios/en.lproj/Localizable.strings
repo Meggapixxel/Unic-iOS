@@ -372,6 +372,9 @@
 "location_required_title" = "Location Access Required";
 "location_required_description" = "Location access is required to use this app. Please grant access in Settings.";
 "open_settings" = "Open Settings";
+"location_fetching" = "Getting location...";
+"location_obtained" = "Location confirmed";
+"location_unavailable" = "Location unavailable — cannot save";
 
 /* Weekly stats */
 "activity_new_salons" = "🆕 New";

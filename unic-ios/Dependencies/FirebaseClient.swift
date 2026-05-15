@@ -15,7 +15,7 @@ struct FirebaseClient: @unchecked Sendable {
     // Status History
     var fetchStatusHistory: (_ salonId: String) async throws -> [StatusHistoryEntry] = { _ in [] }
     var fetchLatestStatusEntry: (_ salonId: String) async throws -> StatusHistoryEntry? = { _ in nil }
-    var addStatusHistoryEntry: (_ salonId: String, _ status: SalonStatus, _ note: String, _ createdBy: String, _ date: Date) async throws -> Void
+    var addStatusHistoryEntry: (_ salonId: String, _ status: SalonStatus, _ note: String, _ createdBy: String, _ date: Date, _ userLocation: Location?) async throws -> Void
     var updateStatusEntryNote: (_ salonId: String, _ entryId: String, _ note: String) async throws -> Void
     var deleteStatusHistoryEntry: (_ salonId: String, _ entryId: String) async throws -> Void
     // Users
@@ -54,8 +54,8 @@ extension FirebaseClient: DependencyKey {
                 deleteSalon: { id in try await s.deleteSalon(salonId: id) },
                 fetchStatusHistory: { id in try await s.fetchStatusHistory(salonId: id) },
                 fetchLatestStatusEntry: { id in try await s.fetchLatestStatusEntry(salonId: id) },
-                addStatusHistoryEntry: { id, status, note, by, date in
-                    try await s.addStatusHistoryEntry(salonId: id, status: status, note: note, createdBy: by, date: date)
+                addStatusHistoryEntry: { id, status, note, by, date, location in
+                    try await s.addStatusHistoryEntry(salonId: id, status: status, note: note, createdBy: by, date: date, userLocation: location)
                 },
                 updateStatusEntryNote: { id, entryId, note in
                     try await s.updateStatusEntryNote(salonId: id, entryId: entryId, note: note)
