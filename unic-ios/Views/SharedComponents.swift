@@ -466,9 +466,6 @@ struct StatusHistoryRow: View {
                 if let note = entry.note, !note.isEmpty {
                     Text(note).font(.caption).foregroundColor(.secondary)
                 }
-                if let by = entry.createdBy {
-                    Text(by).font(.caption2).foregroundColor(.secondary.opacity(0.7))
-                }
             }
         }
         .padding(.vertical, 8).padding(.horizontal, 12)

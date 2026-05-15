@@ -7,6 +7,7 @@ struct AuthClient: @unchecked Sendable {
     var login: @Sendable (_ email: String, _ password: String) async throws -> Void
     var logout: () -> Void
     var currentUser: () -> AppUser? = { nil }
+    var refreshCurrentUser: () async -> AppUser? = { nil }
     var observeAuthState: () -> AsyncStream<AppUser?> = { .finished }
     var canViewSales: () -> Bool = { false }
     var canViewUsers: () -> Bool = { false }
@@ -33,6 +34,7 @@ extension AuthClient: DependencyKey {
                 login: { email, password in try await service.login(email: email, password: password) },
                 logout: { MainActor.assumeIsolated { service.logout() } },
                 currentUser: { MainActor.assumeIsolated { service.currentUser } },
+                refreshCurrentUser: { await service.refreshCurrentUser() },
                 observeAuthState: {
                     MainActor.assumeIsolated {
                         AsyncStream { continuation in

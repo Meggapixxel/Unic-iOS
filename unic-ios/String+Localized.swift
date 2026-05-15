@@ -218,9 +218,6 @@ extension String {
         String(format: String(localized: "notif_testdrive_deadline_body"), name)
     }
 
-    // MARK: - Created by
-    static var created_by_label: String { String(localized: "created_by_label") }
-
     // MARK: - Salon model
     static var unnamed_salon: String { String(localized: "unnamed_salon") }
 
@@ -370,6 +367,8 @@ extension String {
     static var activity_no_data:      String { String(localized: "activity_no_data") }
     static var activity_from:         String { String(localized: "activity_from") }
     static var activity_to:           String { String(localized: "activity_to") }
+    static var activity_new_salons:   String { String(localized: "activity_new_salons") }
+    static var activity_old_salons:   String { String(localized: "activity_old_salons") }
 
     // MARK: - Users
     static var users_nav_title: String { String(localized: "users_nav_title") }
@@ -396,10 +395,18 @@ extension String {
     static var plan_goal_total:           String { String(localized: "plan_goal_total") }
     static var plan_untitled:             String { String(localized: "plan_untitled") }
     static var plan_ended:                String { String(localized: "plan_ended") }
+    static var plan_history:              String { String(localized: "plan_history") }
+    static var plan_default:              String { String(localized: "plan_default") }
+    static var plan_default_edit:         String { String(localized: "plan_default_edit") }
+    static var plan_banner_title:         String { String(localized: "plan_banner_title") }
+    static var plan_active_until:         String { String(localized: "plan_active_until") }
     static var profile_plans_progress:    String { String(localized: "profile_plans_progress") }
-    static var location_fetching:          String { String(localized: "location_fetching") }
-    static var location_obtained:          String { String(localized: "location_obtained") }
-    static var location_unavailable:       String { String(localized: "location_unavailable") }
+    static var location_fetching:              String { String(localized: "location_fetching") }
+    static var location_obtained:              String { String(localized: "location_obtained") }
+    static var location_unavailable:           String { String(localized: "location_unavailable") }
+    static var location_required_title:        String { String(localized: "location_required_title") }
+    static var location_required_description:  String { String(localized: "location_required_description") }
+    static var open_settings:                  String { String(localized: "open_settings") }
 
     // MARK: - Promos
     static var promos_nav_title:              String { String(localized: "promos_nav_title") }
@@ -422,6 +429,9 @@ extension String {
     static var profile_logout_confirm:  String { String(localized: "profile_logout_confirm") }
     static var profile_activity:        String { String(localized: "profile_activity") }
     static var profile_activity_history:String { String(localized: "profile_activity_history") }
+
+    // MARK: - Units
+    static var day_abbr: String { String(localized: "day_abbr") }
 
     // MARK: - Utilities
 

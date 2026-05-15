@@ -126,10 +126,17 @@ final class AuthService: ObservableObject {
         currentUser = nil
     }
 
+    func refreshCurrentUser() async -> AppUser? {
+        guard let uid = Auth.auth().currentUser?.uid else { return currentUser }
+        AppLogger.log(.debug, "Auth", "Refreshing current user: uid=\(uid)")
+        try? await fetchAndStoreUser(uid: uid)
+        return currentUser
+    }
+
     // MARK: - Private
 
     private func fetchAndStoreUser(uid: String) async throws {
-        AppLogger.log(.info, "Auth", "Fetching user profile: uid=\(uid)")
+        AppLogger.log(.debug, "Auth", "Fetching user profile: uid=\(uid)")
         let doc = try await db.collection("users").document(uid).getDocument()
         let data = doc.data() ?? [:]
         let firstName  = data["first_name"] as? String ?? ""
@@ -137,50 +144,10 @@ final class AuthService: ObservableObject {
         let roleString = data["role"] as? String ?? ""
         let role       = UserRole(rawValue: roleString) ?? .sales
 
-        // Fetch current active plan from plans collection
-        let currentPlan = try? await fetchActivePlan()
-
-        // Read existing plan data from user doc
-        let existingPlanData = data["activePlan"] as? [String: Any]
-        let existingPlanId   = existingPlanData?["id"] as? String
-
-        var userActivePlan: UserActivePlan?
-        if let plan = currentPlan {
-            userActivePlan = UserActivePlan(
-                id: plan.id,
-                startDate: plan.startDate, endDate: plan.endDate,
-                targetSalons: plan.targetSalons, targetSalonsPerDay: plan.targetSalonsPerDay,
-                targetTestDrives: plan.targetTestDrives, targetTestDrivesPerDay: plan.targetTestDrivesPerDay
-            )
-
-            let planUpdate: [String: Any] = [
-                "activePlan.id":                     plan.id ?? NSNull(),
-                "activePlan.startDate":              Timestamp(date: plan.startDate),
-                "activePlan.endDate":                Timestamp(date: plan.endDate),
-                "activePlan.targetSalons":           plan.targetSalons as Any,
-                "activePlan.targetSalonsPerDay":     plan.targetSalonsPerDay as Any,
-                "activePlan.targetTestDrives":       plan.targetTestDrives as Any,
-                "activePlan.targetTestDrivesPerDay": plan.targetTestDrivesPerDay as Any
-            ]
-            try? await db.collection("users").document(uid).updateData(planUpdate)
-
-        } else if let pd = existingPlanData,
-                  let startTs = pd["startDate"] as? Timestamp,
-                  let endTs   = pd["endDate"]   as? Timestamp {
-            // No new active plan — keep the last known plan displayed (frozen)
-            userActivePlan = UserActivePlan(
-                id: pd["id"] as? String,
-                startDate: startTs.dateValue(),
-                endDate: endTs.dateValue(),
-                targetSalons: pd["targetSalons"] as? Int,
-                targetSalonsPerDay: pd["targetSalonsPerDay"] as? Int,
-                targetTestDrives: pd["targetTestDrives"] as? Int,
-                targetTestDrivesPerDay: pd["targetTestDrivesPerDay"] as? Int
-            )
-        }
+        let userActivePlan = try? await fetchCurrentPlanEntry(uid: uid)
 
         let user = AppUser(id: uid, firstName: firstName, lastName: lastName, role: role, activePlan: userActivePlan)
-        AppLogger.log(.info, "Auth", "User loaded: \(firstName) \(lastName), role=\(roleString)")
+        AppLogger.log(.debug, "Auth", "User loaded: \(firstName) \(lastName), role=\(roleString)")
 
         do {
             let encoded = try JSONEncoder().encode(user)
@@ -191,14 +158,30 @@ final class AuthService: ObservableObject {
         currentUser = user
     }
 
-    private func fetchActivePlan() async throws -> Plan? {
-        let now = Timestamp(date: Date())
-        let snapshot = try await db.collection("plans")
-            .whereField("endDate", isGreaterThanOrEqualTo: now)
-            .order(by: "endDate")
-            .limit(to: 5)
+    private func fetchCurrentPlanEntry(uid: String) async throws -> UserActivePlan? {
+        let snapshot = try await db.collection("users").document(uid).collection("planHistory")
+            .order(by: "startDate", descending: true)
+            .limit(to: 1)
             .getDocuments()
-        let plans = snapshot.documents.compactMap { try? $0.data(as: Plan.self) }
-        return plans.first { $0.isActive }
+        guard let doc = snapshot.documents.first else {
+            AppLogger.log(.debug, "Auth", "No plan entry found for uid=\(uid)")
+            return nil
+        }
+        let d = doc.data()
+        guard let startTs = d["startDate"] as? Timestamp,
+              let endTs   = d["endDate"]   as? Timestamp
+        else { return nil }
+        let plan = UserActivePlan(
+            id: doc.documentID,
+            startDate: startTs.dateValue(),
+            endDate: endTs.dateValue(),
+            targetSalons: d["targetSalons"] as? Int,
+            targetSalonsPerDay: d["targetSalonsPerDay"] as? Int ?? 0,
+            targetTestDrives: d["targetTestDrives"] as? Int,
+            targetTestDrivesPerDay: d["targetTestDrivesPerDay"] as? Int ?? 0
+        )
+        AppLogger.log(.debug, "Auth", "Plan entry loaded: \(doc.documentID), active=\(plan.isActive), past=\(plan.isPast)")
+        return plan
     }
+
 }

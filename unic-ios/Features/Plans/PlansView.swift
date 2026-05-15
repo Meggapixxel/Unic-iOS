@@ -155,16 +155,57 @@ struct PlansFormView: View {
 private struct PlanRow: View {
     let plan: Plan
 
+    private var period: String {
+        "\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))"
+    }
+
+    private var durationDays: Int {
+        max(1, Calendar.current.dateComponents([.day], from: plan.startDate, to: plan.endDate).day ?? 1)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
+                Text(period)
                     .font(.headline)
                 Spacer()
                 statusBadge
             }
+
+            HStack(spacing: 0) {
+                Text("\(durationDays) \(String.day_abbr)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                let hasSalons = plan.targetSalonsPerDay > 0 || (plan.targetSalons ?? 0) > 0
+                let hasTestDrives = plan.targetTestDrivesPerDay > 0 || (plan.targetTestDrives ?? 0) > 0
+
+                if hasSalons {
+                    Text("  ·  ").font(.caption).foregroundStyle(.tertiary)
+                    targetChip(icon: "storefront", perDay: plan.targetSalonsPerDay, total: plan.targetSalons)
+                }
+                if hasTestDrives {
+                    Text("  ·  ").font(.caption).foregroundStyle(.tertiary)
+                    targetChip(icon: "car.side", perDay: plan.targetTestDrivesPerDay, total: plan.targetTestDrives)
+                }
+            }
         }
         .padding(.vertical, 4)
+    }
+
+    @ViewBuilder
+    private func targetChip(icon: String, perDay: Int, total: Int?) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon)
+            if perDay > 0 {
+                Text("\(perDay)/\(String.day_abbr)")
+            }
+            if let t = total, t > 0 {
+                Text("(\(t))")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .font(.caption)
     }
 
     @ViewBuilder

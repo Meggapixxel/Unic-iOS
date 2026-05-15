@@ -18,6 +18,7 @@ struct PlansFeature {
     @ObservableState
     struct State: Equatable {
         var plans: [Plan] = []
+        var defaultPlan: DefaultPlan?
         var isLoading = false
         var error: String?
         var canManagePlans = false
@@ -31,6 +32,7 @@ struct PlansFeature {
         case binding(BindingAction<State>)
         case onLoad
         case loaded([Plan])
+        case defaultPlanLoaded(DefaultPlan?)
         case failed(String)
         case addTapped
         case editTapped(Plan)
@@ -63,11 +65,17 @@ struct PlansFeature {
                     } catch {
                         await send(.failed(error.localizedDescription))
                     }
+                    let dp = try? await firebase.fetchDefaultPlan()
+                    await send(.defaultPlanLoaded(dp))
                 }
 
             case .loaded(let plans):
                 state.isLoading = false
                 state.plans = plans.sorted { $0.startDate > $1.startDate }
+                return .none
+
+            case .defaultPlanLoaded(let dp):
+                state.defaultPlan = dp
                 return .none
 
             case .failed(let msg):
@@ -76,7 +84,7 @@ struct PlansFeature {
                 return .none
 
             case .addTapped:
-                state.destination = .form(PlansFormFeature.State())
+                state.destination = .form(PlansFormFeature.State(defaults: state.defaultPlan))
                 return .none
 
             case .editTapped(let plan):
@@ -108,13 +116,18 @@ struct PlansFeature {
                 return .none
 
             case .destination(.presented(.form(.saved(let plan)))):
+                let isNew = !state.plans.contains(where: { $0.id == plan.id })
                 state.destination = nil
                 if let idx = state.plans.firstIndex(where: { $0.id == plan.id }) {
                     state.plans[idx] = plan
                 } else {
                     state.plans.insert(plan, at: 0)
                 }
-                return .none
+                guard isNew else { return .none }
+                let firebase = firebase
+                return .run { [firebase] _ in
+                    try? await firebase.setPlanForAllUsers(plan)
+                }
 
             case .binding, .destination:
                 return .none
@@ -142,16 +155,16 @@ struct PlansFormFeature {
 
         var isValid: Bool { endDate > startDate }
 
-        init(existing: Plan? = nil) {
+        init(existing: Plan? = nil, defaults: DefaultPlan? = nil) {
             @Dependency(\.date) var date
             let now = date()
             self.existing = existing
             startDate   = existing?.startDate ?? now
             endDate     = existing?.endDate ?? Calendar.current.date(byAdding: .day, value: 7, to: now) ?? now
-            salonsPerDay     = existing?.targetSalonsPerDay ?? 0
-            salonsTotal      = existing?.targetSalons ?? 0
-            testDrivesPerDay = existing?.targetTestDrivesPerDay ?? 0
-            testDrivesTotal  = existing?.targetTestDrives ?? 0
+            salonsPerDay     = existing?.targetSalonsPerDay ?? defaults?.targetSalonsPerDay ?? 0
+            salonsTotal      = existing?.targetSalons ?? defaults?.targetSalons ?? 0
+            testDrivesPerDay = existing?.targetTestDrivesPerDay ?? defaults?.targetTestDrivesPerDay ?? 0
+            testDrivesTotal  = existing?.targetTestDrives ?? defaults?.targetTestDrives ?? 0
         }
     }
 
@@ -179,9 +192,9 @@ struct PlansFormFeature {
                     endDate: state.endDate,
                     createdBy: auth.currentUser()?.id ?? "",
                     targetSalons: state.salonsTotal > 0 ? state.salonsTotal : nil,
-                    targetSalonsPerDay: state.salonsPerDay > 0 ? state.salonsPerDay : nil,
+                    targetSalonsPerDay: state.salonsPerDay,
                     targetTestDrives: state.testDrivesTotal > 0 ? state.testDrivesTotal : nil,
-                    targetTestDrivesPerDay: state.testDrivesPerDay > 0 ? state.testDrivesPerDay : nil
+                    targetTestDrivesPerDay: state.testDrivesPerDay
                 )
                 let firebase = firebase
                 return .run { [firebase] send in

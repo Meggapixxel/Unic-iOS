@@ -5,115 +5,196 @@ struct UserActivityView: View {
     @Bindable var store: StoreOf<UserActivityFeature>
 
     var body: some View {
-        List {
-            // MARK: Mode picker + period navigation
-            Section {
-                Picker(String.activity_group_day, selection: $store.groupMode) {
-                    Text(String.activity_group_day).tag(UserActivityFeature.State.GroupMode.day)
-                    Text(String.activity_group_custom).tag(UserActivityFeature.State.GroupMode.custom)
-                }
-                .pickerStyle(.segmented)
-                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
+        ScrollView {
+            VStack(spacing: 16) {
 
-                if store.groupMode == .day {
-                    DatePicker(String.activity_group_day, selection: $store.selectedDate, in: ...store.maxDate, displayedComponents: .date)
-                } else {
-                    DatePicker(String.activity_from, selection: $store.customStart, in: ...store.customEnd, displayedComponents: .date)
-                    DatePicker(String.activity_to, selection: $store.customEnd, in: store.customStart...store.maxDate, displayedComponents: .date)
-                }
-            }
+                // MARK: Date controls
+                VStack(spacing: 10) {
+                    Picker("", selection: $store.groupMode) {
+                        Text(String.activity_group_day).tag(UserActivityFeature.State.GroupMode.day)
+                        Text(String.activity_group_custom).tag(UserActivityFeature.State.GroupMode.custom)
+                    }
+                    .pickerStyle(.segmented)
 
-            // MARK: Stats for selected period
-            let counts = store.filteredStatusCounts
-            if !counts.isEmpty {
-                Section {
+                    if store.groupMode == .day {
+                        DatePicker(
+                            String.activity_group_day,
+                            selection: $store.selectedDate,
+                            in: ...store.maxDate,
+                            displayedComponents: .date
+                        )
+                        .labelsHidden()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        HStack(spacing: 0) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(String.activity_from)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                DatePicker("", selection: $store.customStart, in: ...store.customEnd, displayedComponents: .date)
+                                    .labelsHidden()
+                            }
+                            Spacer()
+                            Image(systemName: "arrow.right")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text(String.activity_to)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                DatePicker("", selection: $store.customEnd, in: store.customStart...store.maxDate, displayedComponents: .date)
+                                    .labelsHidden()
+                            }
+                        }
+                    }
+                }
+                .padding(14)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+
+                // MARK: Stats
+                let counts = store.filteredStatusCounts
+                if !counts.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(SalonStatus.allCases, id: \.self) { status in
+                        HStack(spacing: 10) {
+                            ForEach(SalonStatus.allCases) { status in
                                 if let count = counts[status] {
-                                    VStack(spacing: 4) {
-                                        Text("\(count)")
-                                            .font(.title3.bold())
-                                            .foregroundStyle(status.color)
-                                        Text(status.displayName)
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(status.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                                    StatChip(status: status, count: count)
                                 }
                             }
                         }
-                        .padding(.horizontal, 4)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 2)
                     }
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .padding(.horizontal, -16)
+                }
+
+                // MARK: Entries
+                if store.filteredEntriesByDay.isEmpty && !store.isLoading {
+                    ContentUnavailableView(
+                        store.entries.isEmpty ? String.activity_empty : String.activity_no_data,
+                        systemImage: store.entries.isEmpty ? "clock.arrow.circlepath" : "calendar.badge.minus"
+                    )
+                    .padding(.top, 40)
+                } else {
+                    ForEach(store.filteredEntriesByDay, id: \.0) { date, dayEntries in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(sectionHeader(date))
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 4)
+
+                            VStack(spacing: 8) {
+                                ForEach(dayEntries) { entry in
+                                    ActivityEntryCard(entry: entry)
+                                        .contextMenu {
+                                            if store.canDeleteActivity {
+                                                Button(role: .destructive) {
+                                                    store.send(.deleteConfirmed(entry))
+                                                } label: {
+                                                    Label(String.delete, systemImage: "trash")
+                                                }
+                                            }
+                                        }
+                                }
+                            }
+                        }
+                    }
                 }
             }
-
-            // MARK: Entries — always grouped by day
-            ForEach(store.filteredEntriesByDay, id: \.0) { date, dayEntries in
-                Section(date.formatted(.dateTime.weekday(.abbreviated).day().month())) {
-                    ForEach(dayEntries) { entry in
-                        entryRow(entry)
-                    }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(store.user.fullName)
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { store.send(.navigateToPlans) } label: {
+                    Image(systemName: "target")
                 }
             }
         }
-        .listStyle(.insetGrouped)
-        .navigationTitle(store.user.fullName)
-        .navigationBarTitleDisplayMode(.large)
         .overlay {
-            if store.isLoading {
-                ProgressView()
-            } else if store.filteredEntries.isEmpty && !store.isLoading && !store.entries.isEmpty {
-                ContentUnavailableView(String.activity_no_data, systemImage: "calendar.badge.minus")
-            } else if store.entries.isEmpty && !store.isLoading {
-                ContentUnavailableView(String.activity_empty, systemImage: "clock.arrow.circlepath")
-            }
+            if store.isLoading { ProgressView() }
         }
         .task { store.send(.onLoad) }
     }
 
-    @ViewBuilder
-    private func entryRow(_ entry: UserActivityEntry) -> some View {
-        ActivityEntryRow(entry: entry)
-            .swipeActions(edge: .trailing) {
-                if store.canDeleteActivity {
-                    Button(role: .destructive) {
-                        store.send(.deleteConfirmed(entry))
-                    } label: {
-                        Label(String.delete, systemImage: "trash")
-                    }
-                }
-            }
+    private func sectionHeader(_ date: Date) -> String {
+        let cal = Calendar(identifier: .gregorian)
+        if cal.isDateInToday(date) { return String.activity_today }
+        if cal.isDateInYesterday(date) { return String.activity_yesterday }
+        return date.formatted(.dateTime.weekday(.wide).day().month())
     }
 }
 
-private struct ActivityEntryRow: View {
+// MARK: - Stat Chip
+
+private struct StatChip: View {
+    let status: SalonStatus
+    let count: Int
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("\(count)")
+                .font(.title3.bold())
+                .foregroundStyle(status.color)
+            Text(status.displayName)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .frame(minWidth: 60)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(status.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+// MARK: - Activity Entry Card
+
+private struct ActivityEntryCard: View {
     let entry: UserActivityEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(entry.salonName).font(.subheadline)
-                Spacer()
+        HStack(alignment: .top, spacing: 0) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(entry.status.color)
+                .frame(width: 4)
+                .padding(.vertical, 12)
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(entry.salonName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Text(entry.timestamp.formatted(.dateTime.hour().minute()))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+
                 Text(entry.status.displayName)
                     .font(.caption.bold())
                     .foregroundStyle(entry.status.color)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(entry.status.color.opacity(0.12), in: Capsule())
+
+                if let note = entry.note, !note.isEmpty {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
             }
-            if !(entry.note ?? "").isEmpty {
-                Text(entry.note ?? "")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-            Text(entry.timestamp.formatted(.dateTime.hour().minute()))
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 2)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }

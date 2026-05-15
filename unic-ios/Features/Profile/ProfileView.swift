@@ -20,7 +20,6 @@ struct ProfileView: View {
                                     .font(.title3.bold())
                                     .foregroundStyle(roleColor(store.currentUser.role))
                             }
-
                         VStack(alignment: .leading, spacing: 3) {
                             Text(store.currentUser.fullName)
                                 .font(.headline)
@@ -28,97 +27,91 @@ struct ProfileView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
+                        Spacer()
                     }
                     .padding(.vertical, 6)
-                    .contentShape(Rectangle())
                 }
 
                 // MARK: Progress
-                Section {
-                    VStack(alignment: .leading, spacing: 14) {
-                        // Header: period + See All
-                        HStack {
-                            if let plan = store.currentUser.activePlan {
-                                Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
-                                    .font(.subheadline.weight(.semibold))
-                                if plan.isPast {
-                                    Text(String.plan_ended)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            } else {
-                                Text(String.profile_plans_progress)
-                                    .font(.subheadline.weight(.semibold))
-                            }
-                            Spacer()
-                            Button(String.see_all) {
-                                store.send(.navigateToActivity)
-                            }
-                            .font(.subheadline)
-                        }
-
-                        // Rings
+                if store.currentUser.activePlan != nil {
+                    Section {
                         if let plan = store.currentUser.activePlan {
-                            HStack(spacing: 28) {
-                                if let target = plan.targetSalons, target > 0 {
-                                    RingProgressView(
-                                        value: store.salonsInPlan,
-                                        target: target,
-                                        label: String.plan_target_salons,
-                                        color: plan.isPast ? .secondary : .blue
-                                    )
-                                }
-                                if let target = plan.targetTestDrives, target > 0 {
-                                    RingProgressView(
-                                        value: store.testDrivesInPlan,
-                                        target: target,
-                                        label: String.plan_target_test_drives,
-                                        color: plan.isPast ? .secondary : .green
-                                    )
-                                }
-                                Spacer()
-                            }
-                        }
-
-                        // Plans management
-                        if store.canManagePlans {
-                            Button {
-                                store.send(.navigateToPlans)
-                            } label: {
-                                Label(String.plans_nav_title, systemImage: "target")
+                            VStack(alignment: .leading, spacing: 14) {
+                                HStack {
+                                    Image(systemName: "target")
+                                        .foregroundStyle(.secondary)
+                                        .font(.subheadline)
+                                    Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
+                                        .font(.subheadline.weight(.semibold))
+                                    if plan.isPast {
+                                        Text(String.plan_ended)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Button(String.see_all) {
+                                        store.send(.navigateToActivity)
+                                    }
                                     .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                                }
+
+                                HStack(spacing: 28) {
+                                    if let target = plan.targetSalons, target > 0 {
+                                        RingProgressView(
+                                            value: store.salonsInPlan,
+                                            target: target,
+                                            label: String.plan_target_salons,
+                                            color: plan.isPast ? .secondary : .blue
+                                        )
+                                    }
+                                    if let target = plan.targetTestDrives, target > 0 {
+                                        RingProgressView(
+                                            value: store.testDrivesInPlan,
+                                            target: target,
+                                            label: String.plan_target_test_drives,
+                                            color: plan.isPast ? .secondary : .green
+                                        )
+                                    }
+                                    Spacer()
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                }
+
+                // MARK: Plan History
+                if !store.planHistory.isEmpty {
+                    Section(String.plan_history) {
+                        ForEach(store.planHistory) { entry in
+                            PlanHistoryRowView(entry: entry)
+                        }
+                    }
+                }
+
+                // MARK: Navigation rows
+                if store.canViewSales || store.canViewUsers {
+                    Section {
+                        if store.canViewSales {
+                            Button {
+                                store.send(.navigateToSales)
+                            } label: {
+                                Label(String.sales_nav_title, systemImage: "chart.line.uptrend.xyaxis")
+                                    .foregroundStyle(.primary)
+                            }
+                        }
+                        if store.canViewUsers {
+                            Button {
+                                store.send(.navigateToUsers)
+                            } label: {
+                                Label(String.users_nav_title, systemImage: "person.2.fill")
+                                    .foregroundStyle(.primary)
                             }
                         }
                     }
-                    .padding(.vertical, 4)
                 }
-
-                // MARK: Sales (conditional)
-                if store.canViewSales {
-                    Section {
-                        Button {
-                            store.send(.navigateToSales)
-                        } label: {
-                            Label(String.sales_nav_title, systemImage: "chart.line.uptrend.xyaxis")
-                                .foregroundColor(.primary)
-                        }
-                    }
-                }
-
-                // MARK: Users (conditional)
-                if store.canViewUsers {
-                    Section {
-                        Button {
-                            store.send(.navigateToUsers)
-                        } label: {
-                            Label(String.users_nav_title, systemImage: "person.2.fill")
-                                .foregroundColor(.primary)
-                        }
-                    }
-                }
-
             }
+            .listStyle(.insetGrouped)
             .navigationTitle(String.profile_nav_title)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -226,6 +219,33 @@ struct RingProgressView: View {
         }
     }
 }
+
+// MARK: - Plan History Row
+
+struct PlanHistoryRowView: View {
+    let entry: UserPlanHistoryEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(entry.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(entry.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
+                .font(.subheadline.weight(.semibold))
+            HStack(spacing: 16) {
+                if let target = entry.targetSalons, target > 0 {
+                    Label("\(entry.result.salons)/\(target)", systemImage: "building.2")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if let target = entry.targetTestDrives, target > 0 {
+                    Label("\(entry.result.testDrives)/\(target)", systemImage: "car")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+    }
+}
+
 
 // MARK: - TCA Bridge Views for TestDrive and RoutePlanner in SalonsFeature path
 // These wrap the legacy views for use in the NavigationStack destination.

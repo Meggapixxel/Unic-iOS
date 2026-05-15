@@ -27,6 +27,7 @@ struct ProfileFeature {
     struct State: Equatable {
         var currentUser: AppUser
         var activityEntries: [UserActivityEntry] = []
+        var planHistory: [UserPlanHistoryEntry] = []
         var path: StackState<Path.State> = StackState()
         var showLogoutConfirm: Bool = false
 
@@ -56,6 +57,7 @@ struct ProfileFeature {
         case binding(BindingAction<State>)
         case onLoad
         case activityLoaded([UserActivityEntry])
+        case planHistoryLoaded([UserPlanHistoryEntry])
         case logoutTapped
         case logoutConfirmed
         case navigateToActivity
@@ -83,16 +85,26 @@ struct ProfileFeature {
                 state.canViewSales = auth.canViewSales()
                 state.canViewUsers = auth.canViewUsers()
                 state.canManagePlans = auth.canManagePlans()
-                guard state.currentUser.activePlan != nil else { return .none }
                 let firebase = firebase
+                let auth = auth
                 let userId = state.currentUser.id
                 return .run { send in
-                    let entries = (try? await firebase.fetchUserActivity(userId)) ?? []
-                    await send(.activityLoaded(entries))
+                    let refreshed = await auth.refreshCurrentUser()
+                    let hasPlan = refreshed?.activePlan != nil
+                    if hasPlan {
+                        let entries = (try? await firebase.fetchUserActivity(userId)) ?? []
+                        await send(.activityLoaded(entries))
+                    }
+                    let history = (try? await firebase.fetchPlanHistory(userId)) ?? []
+                    await send(.planHistoryLoaded(history))
                 }
 
             case let .activityLoaded(entries):
                 state.activityEntries = entries
+                return .none
+
+            case let .planHistoryLoaded(history):
+                state.planHistory = history
                 return .none
 
             case .logoutTapped:
@@ -205,6 +217,10 @@ struct ProfileFeature {
 
             case .path(.element(_, .clientDetail(.invoiceTapped(let invoice)))):
                 state.path.append(.invoiceDetail(InvoiceDetailFeature.State(invoice: invoice)))
+                return .none
+
+            case .path(.element(_, .userActivity(.navigateToPlans))):
+                state.path.append(.plans(PlansFeature.State()))
                 return .none
 
             case .path(.element(_, .users(.userTapped(let user)))):

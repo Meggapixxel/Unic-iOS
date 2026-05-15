@@ -70,6 +70,7 @@ struct UserActivityFeature {
         case failed(String)
         case deleteTapped(UserActivityEntry)
         case deleteConfirmed(UserActivityEntry)
+        case navigateToPlans
     }
 
     @Dependency(\.firebaseClient) var firebase
@@ -81,6 +82,9 @@ struct UserActivityFeature {
             switch action {
             case .binding:
                 return .none
+            case .navigateToPlans:
+                return .none
+
             case .onLoad:
                 state.canDeleteActivity = auth.canDeleteActivity()
                 state.isLoading = true

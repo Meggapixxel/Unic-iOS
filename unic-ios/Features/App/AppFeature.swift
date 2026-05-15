@@ -46,11 +46,14 @@ struct AppFeature {
 
             case .authStateChanged(let user):
                 if let user {
-                    if case var .main(mainState) = state {
+                    switch state {
+                    case .main(var mainState):
                         mainState.currentUser = user
                         mainState.profile.currentUser = user
                         state = .main(mainState)
-                    } else {
+                    case .welcome:
+                        break
+                    default:
                         state = .welcome(WelcomeFeature.State(user: user))
                     }
                 } else {

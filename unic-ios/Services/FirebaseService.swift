@@ -517,35 +517,23 @@ final class FirebaseService: ObservableObject {
     // MARK: - Users
 
     func fetchAllUsers() async throws -> [AppUser] {
+        AppLogger.log(.debug, "Firebase", "fetchAllUsers")
         let snapshot = try await db.collection("users").getDocuments()
         return snapshot.documents.compactMap { doc in
             let d = doc.data()
             guard let role = UserRole(rawValue: d["role"] as? String ?? "") else { return nil }
-            var activePlan: UserActivePlan?
-            if let pd = d["activePlan"] as? [String: Any],
-               let startTs = pd["startDate"] as? Timestamp,
-               let endTs   = pd["endDate"]   as? Timestamp {
-                activePlan = UserActivePlan(
-                    id: pd["id"] as? String,
-                    startDate: startTs.dateValue(),
-                    endDate: endTs.dateValue(),
-                    targetSalons: pd["targetSalons"] as? Int,
-                    targetSalonsPerDay: pd["targetSalonsPerDay"] as? Int,
-                    targetTestDrives: pd["targetTestDrives"] as? Int,
-                    targetTestDrivesPerDay: pd["targetTestDrivesPerDay"] as? Int
-                )
-            }
             return AppUser(
                 id: doc.documentID,
                 firstName: d["first_name"] as? String ?? "",
                 lastName: d["last_name"] as? String ?? "",
                 role: role,
-                activePlan: activePlan
+                activePlan: nil
             )
         }
     }
 
     func fetchUserActivity(userId: String) async throws -> [UserActivityEntry] {
+        AppLogger.log(.debug, "Firebase", "fetchUserActivity: userId=\(userId)")
         let snapshot = try await db.collectionGroup("statusHistory")
             .whereField("createdBy", isEqualTo: userId)
             .order(by: "timestamp", descending: true)
@@ -568,7 +556,7 @@ final class FirebaseService: ObservableObject {
             for await (id, name) in group { salonNames[id] = name }
         }
 
-        return snapshot.documents.compactMap { doc -> UserActivityEntry? in
+        let entries = snapshot.documents.compactMap { doc -> UserActivityEntry? in
             guard let sid = salonId(from: doc.reference.path) else { return nil }
             let d = doc.data()
             let status = SalonStatus(rawValue: d["status"] as? String ?? "") ?? .new
@@ -579,6 +567,8 @@ final class FirebaseService: ObservableObject {
                 status: status, note: raw?.isEmpty == false ? raw : nil, timestamp: ts
             )
         }
+        AppLogger.log(.debug, "Firebase", "fetchUserActivity → \(entries.count) entries")
+        return entries
     }
 
     private func salonId(from path: String) -> String? {
@@ -685,6 +675,116 @@ final class FirebaseService: ObservableObject {
 
     func deletePlan(id: String) async throws {
         try await db.collection("plans").document(id).delete()
+    }
+
+    func fetchDefaultPlan() async throws -> DefaultPlan? {
+        AppLogger.log(.debug, "Firebase", "fetchDefaultPlan")
+        let doc = try await db.collection("config").document("defaultPlan").getDocument()
+        guard doc.exists, let d = doc.data() else {
+            AppLogger.log(.debug, "Firebase", "fetchDefaultPlan → not found")
+            return nil
+        }
+        return DefaultPlan(
+            createdBy: d["createdBy"] as? String ?? "",
+            targetSalons: d["targetSalons"] as? Int,
+            targetSalonsPerDay: d["targetSalonsPerDay"] as? Int ?? 0,
+            targetTestDrives: d["targetTestDrives"] as? Int,
+            targetTestDrivesPerDay: d["targetTestDrivesPerDay"] as? Int ?? 0
+        )
+    }
+
+    func fetchPlanHistory(userId: String) async throws -> [UserPlanHistoryEntry] {
+        AppLogger.log(.debug, "Firebase", "fetchPlanHistory: userId=\(userId)")
+        let snapshot = try await db.collection("users").document(userId).collection("planHistory")
+            .order(by: "result.createdAt", descending: true)
+            .getDocuments()
+        let entries = snapshot.documents.compactMap { doc -> UserPlanHistoryEntry? in
+            let d = doc.data()
+            guard let startTs     = d["startDate"]            as? Timestamp,
+                  let endTs       = d["endDate"]              as? Timestamp,
+                  let resultMap   = d["result"]               as? [String: Any],
+                  let createdAtTs = resultMap["createdAt"]    as? Timestamp
+            else { return nil }
+            return UserPlanHistoryEntry(
+                id: doc.documentID,
+                startDate: startTs.dateValue(),
+                endDate: endTs.dateValue(),
+                targetSalons: d["targetSalons"] as? Int,
+                targetSalonsPerDay: d["targetSalonsPerDay"] as? Int ?? 0,
+                targetTestDrives: d["targetTestDrives"] as? Int,
+                targetTestDrivesPerDay: d["targetTestDrivesPerDay"] as? Int ?? 0,
+                result: PlanResult(
+                    salons: resultMap["salons"] as? Int ?? 0,
+                    testDrives: resultMap["testDrives"] as? Int ?? 0,
+                    createdAt: createdAtTs.dateValue()
+                )
+            )
+        }
+        AppLogger.log(.debug, "Firebase", "fetchPlanHistory → \(entries.count) archived entries")
+        return entries
+    }
+
+    func setPlanForAllUsers(plan: Plan) async throws {
+        AppLogger.log(.info, "Firebase", "setPlanForAllUsers: planId=\(plan.id ?? "new")")
+        let usersSnapshot = try await db.collection("users").getDocuments()
+        let userIds = usersSnapshot.documents.map { $0.documentID }
+        AppLogger.log(.debug, "Firebase", "setPlanForAllUsers: processing \(userIds.count) users")
+
+        for userId in userIds {
+            let histSnapshot = try await db.collection("users").document(userId)
+                .collection("planHistory")
+                .order(by: "startDate", descending: true)
+                .limit(to: 1)
+                .getDocuments()
+
+            if let currentDoc = histSnapshot.documents.first,
+               currentDoc.data()["result"] == nil {
+                let d = currentDoc.data()
+                if let startTs = d["startDate"] as? Timestamp,
+                   let endTs   = d["endDate"]   as? Timestamp {
+                    let result = (try? await countActivityInPeriod(userId: userId, start: startTs.dateValue(), end: endTs.dateValue()))
+                        ?? PlanResult(salons: 0, testDrives: 0, createdAt: Date())
+                    AppLogger.log(.debug, "Firebase", "Archiving plan for userId=\(userId): salons=\(result.salons), testDrives=\(result.testDrives)")
+                    try? await currentDoc.reference.updateData([
+                        "result": [
+                            "salons": result.salons,
+                            "testDrives": result.testDrives,
+                            "createdAt": Timestamp(date: result.createdAt)
+                        ]
+                    ])
+                }
+            }
+
+            let docId = plan.id ?? UUID().uuidString
+            var newData: [String: Any] = [
+                "startDate": Timestamp(date: plan.startDate),
+                "endDate": Timestamp(date: plan.endDate),
+                "targetSalonsPerDay": plan.targetSalonsPerDay,
+                "targetTestDrivesPerDay": plan.targetTestDrivesPerDay
+            ]
+            if let ts = plan.targetSalons     { newData["targetSalons"] = ts }
+            if let td = plan.targetTestDrives { newData["targetTestDrives"] = td }
+            try? await db.collection("users").document(userId)
+                .collection("planHistory").document(docId).setData(newData)
+        }
+
+        AppLogger.log(.info, "Firebase", "setPlanForAllUsers: done for \(userIds.count) users")
+    }
+
+    private func countActivityInPeriod(userId: String, start: Date, end: Date) async throws -> PlanResult {
+        let snapshot = try await db.collectionGroup("statusHistory")
+            .whereField("createdBy", isEqualTo: userId)
+            .order(by: "timestamp")
+            .getDocuments()
+        let docs = snapshot.documents.filter {
+            guard let ts = ($0.data()["timestamp"] as? Timestamp)?.dateValue() else { return false }
+            return ts >= start && ts <= end
+        }
+        return PlanResult(
+            salons: docs.count,
+            testDrives: docs.filter { ($0.data()["status"] as? String) == SalonStatus.testDrive.rawValue }.count,
+            createdAt: Date()
+        )
     }
 
     // MARK: - Promo Offers

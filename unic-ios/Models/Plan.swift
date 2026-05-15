@@ -1,15 +1,23 @@
 import Foundation
 @preconcurrency import FirebaseFirestore
 
+struct DefaultPlan: Codable, Equatable {
+    var createdBy: String
+    var targetSalons: Int?
+    var targetSalonsPerDay: Int
+    var targetTestDrives: Int?
+    var targetTestDrivesPerDay: Int
+}
+
 struct Plan: Codable, Identifiable, Equatable {
     @DocumentID var id: String?
     let startDate: Date
     let endDate: Date
     let createdBy: String
     var targetSalons: Int?
-    var targetSalonsPerDay: Int?
+    var targetSalonsPerDay: Int
     var targetTestDrives: Int?
-    var targetTestDrivesPerDay: Int?
+    var targetTestDrivesPerDay: Int
 
     init(
         id: String? = nil,
@@ -17,9 +25,9 @@ struct Plan: Codable, Identifiable, Equatable {
         endDate: Date,
         createdBy: String,
         targetSalons: Int? = nil,
-        targetSalonsPerDay: Int? = nil,
+        targetSalonsPerDay: Int = 0,
         targetTestDrives: Int? = nil,
-        targetTestDrivesPerDay: Int? = nil
+        targetTestDrivesPerDay: Int = 0
     ) {
         self.id = id
         self.startDate = startDate

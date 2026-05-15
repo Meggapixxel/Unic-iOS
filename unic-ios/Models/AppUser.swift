@@ -14,15 +14,32 @@ enum UserRole: String, Codable {
     }
 }
 
+struct PlanResult: Codable, Equatable, Hashable {
+    var salons: Int
+    var testDrives: Int
+    var createdAt: Date
+}
+
+struct UserPlanHistoryEntry: Codable, Equatable, Hashable, Identifiable {
+    var id: String?
+    var startDate: Date
+    var endDate: Date
+    var targetSalons: Int?
+    var targetSalonsPerDay: Int
+    var targetTestDrives: Int?
+    var targetTestDrivesPerDay: Int
+    var result: PlanResult
+}
+
 // Snapshot of active plan stored in user document, with embedded progress counters.
 struct UserActivePlan: Codable, Equatable, Hashable {
     var id: String?
     var startDate: Date
     var endDate: Date
     var targetSalons: Int?
-    var targetSalonsPerDay: Int?
+    var targetSalonsPerDay: Int
     var targetTestDrives: Int?
-    var targetTestDrivesPerDay: Int?
+    var targetTestDrivesPerDay: Int
 
     var isActive: Bool { Date() >= startDate && Date() <= endDate }
     var isPast: Bool   { Date() > endDate }
