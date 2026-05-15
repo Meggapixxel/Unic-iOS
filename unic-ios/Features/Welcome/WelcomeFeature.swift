@@ -8,7 +8,6 @@ struct WelcomeFeature {
         let user: AppUser
         var salons: IdentifiedArrayOf<Salon> = []
         var isDataReady = false
-        var isLocationChecked = false
         var minTimePassed = false
 
         var canProceed: Bool { isDataReady && minTimePassed }
@@ -18,7 +17,6 @@ struct WelcomeFeature {
         case onAppear
         case dataLoaded(IdentifiedArrayOf<Salon>)
         case dataFailed
-        case locationChecked
         case minTimeElapsed
         case delegate(Delegate)
 
@@ -59,11 +57,6 @@ struct WelcomeFeature {
 
             case .dataFailed:
                 state.isDataReady = true
-                if state.canProceed { return .send(.delegate(.readyToEnter(state.user, state.salons))) }
-                return .none
-
-            case .locationChecked:
-                state.isLocationChecked = true
                 if state.canProceed { return .send(.delegate(.readyToEnter(state.user, state.salons))) }
                 return .none
 

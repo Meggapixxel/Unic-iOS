@@ -1,10 +1,8 @@
 import ComposableArchitecture
-import CoreLocation
 import SwiftUI
 
 struct WelcomeView: View {
     let store: StoreOf<WelcomeFeature>
-    @ObservedObject private var locationManager = LocationManager.shared
 
     var body: some View {
         ZStack {
@@ -37,15 +35,6 @@ struct WelcomeView: View {
         .onAppear {
             store.send(.onAppear)
             LocationManager.shared.requestPermission()
-        }
-        .onReceive(locationManager.$authStatus) { status in
-            guard status != .notDetermined else { return }
-            store.send(.locationChecked)
-        }
-        .onAppear {
-            if locationManager.authStatus != .notDetermined {
-                store.send(.locationChecked)
-            }
         }
     }
 }
