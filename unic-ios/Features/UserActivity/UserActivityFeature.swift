@@ -10,13 +10,24 @@ struct UserActivityFeature {
         var isLoading = false
         var error: String?
         var groupMode: GroupMode = .day
-        var selectedDate: Date = Date()
-        var customStart: Date = Calendar.current.date(byAdding: .day, value: -6, to: Date()) ?? Date()
-        var customEnd: Date = Date()
+        var selectedDate: Date
+        var customStart: Date
+        var customEnd: Date
+        var maxDate: Date
         var canDeleteActivity = false
 
         enum GroupMode: String, CaseIterable, Equatable {
             case day, custom
+        }
+
+        init(user: AppUser) {
+            @Dependency(\.date) var date
+            let now = date()
+            self.user = user
+            self.maxDate = now
+            self.selectedDate = now
+            self.customEnd = now
+            self.customStart = Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now
         }
 
         var filteredEntries: [UserActivityEntry] {

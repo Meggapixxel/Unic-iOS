@@ -268,15 +268,21 @@ struct AddStatusFeature {
         var currentUserId: String
         var selectedStatus: SalonStatus
         var note: String = ""
-        var selectedDate: Date = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+        var selectedDate: Date
+        var minScheduledDate: Date
         var isSaving = false
         var locationError: Bool = false
 
         init(salonId: String, currentStatus: SalonStatus, currentUserId: String) {
+            @Dependency(\.date) var date
+            let now = date()
             self.salonId = salonId
             self.currentStatus = currentStatus
             self.currentUserId = currentUserId
             self.selectedStatus = currentStatus
+            let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: now) ?? now
+            self.minScheduledDate = tomorrow
+            self.selectedDate = tomorrow
         }
     }
 

@@ -23,7 +23,8 @@ struct SalesFeature {
     struct State: Equatable {
         var section: SalesSection = .invoices
         var period: SalesPeriod = .year
-        var selectedDate: Date = Date()
+        var selectedDate: Date
+        var today: Date
         var searchText: String = ""
         var statusFilter: PaymentStatus?
         var isLoading: Bool = false
@@ -33,6 +34,13 @@ struct SalesFeature {
         // Backing data
         var allInvoices: [FlexiBeeInvoice] = []
         var allMovementItems: [FlexiBeeStockMovementItem] = []
+
+        init() {
+            @Dependency(\.date) var date
+            let now = date()
+            self.selectedDate = now
+            self.today = now
+        }
 
         // MARK: Computed — period analytics
 
@@ -124,7 +132,7 @@ struct SalesFeature {
         var canGoNext: Bool {
             let cal = Calendar.current
             let gran: Calendar.Component = period == .month ? .month : .year
-            return !cal.isDate(selectedDate, equalTo: Date(), toGranularity: gran)
+            return !cal.isDate(selectedDate, equalTo: today, toGranularity: gran)
         }
 
         private static let monthYearFmt: DateFormatter = {

@@ -143,9 +143,11 @@ struct PlansFormFeature {
         var isValid: Bool { endDate > startDate }
 
         init(existing: Plan? = nil) {
+            @Dependency(\.date) var date
+            let now = date()
             self.existing = existing
-            startDate   = existing?.startDate ?? Date()
-            endDate     = existing?.endDate ?? Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+            startDate   = existing?.startDate ?? now
+            endDate     = existing?.endDate ?? Calendar.current.date(byAdding: .day, value: 7, to: now) ?? now
             salonsPerDay     = existing?.targetSalonsPerDay ?? 0
             salonsTotal      = existing?.targetSalons ?? 0
             testDrivesPerDay = existing?.targetTestDrivesPerDay ?? 0

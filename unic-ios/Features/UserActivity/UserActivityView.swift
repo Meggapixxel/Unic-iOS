@@ -18,10 +18,10 @@ struct UserActivityView: View {
                 .listRowSeparator(.hidden)
 
                 if store.groupMode == .day {
-                    DatePicker(String.activity_group_day, selection: $store.selectedDate, in: ...Date(), displayedComponents: .date)
+                    DatePicker(String.activity_group_day, selection: $store.selectedDate, in: ...store.maxDate, displayedComponents: .date)
                 } else {
                     DatePicker(String.activity_from, selection: $store.customStart, in: ...store.customEnd, displayedComponents: .date)
-                    DatePicker(String.activity_to, selection: $store.customEnd, in: store.customStart...Date(), displayedComponents: .date)
+                    DatePicker(String.activity_to, selection: $store.customEnd, in: store.customStart...store.maxDate, displayedComponents: .date)
                 }
             }
 

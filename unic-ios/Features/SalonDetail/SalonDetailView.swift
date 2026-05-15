@@ -461,7 +461,7 @@ struct AddStatusView: View {
                         DatePicker(
                             "",
                             selection: $store.selectedDate,
-                            in: Calendar.current.date(byAdding: .day, value: 1, to: Date())!...,
+                            in: store.minScheduledDate...,
                             displayedComponents: [.date, .hourAndMinute]
                         )
                         .labelsHidden()
