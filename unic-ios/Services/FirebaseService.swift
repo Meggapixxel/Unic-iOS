@@ -392,15 +392,6 @@ final class FirebaseService: ObservableObject {
 
         try await db.collection("salons").document(salonId).updateData(salonUpdate)
 
-        if let userId = createdBy {
-            var userUpdate: [String: Any] = [
-                "activePlan.salonsVisited": FieldValue.increment(Int64(1))
-            ]
-            if status == .testDrive {
-                userUpdate["activePlan.testDriveCount"] = FieldValue.increment(Int64(1))
-            }
-            try? await db.collection("users").document(userId).updateData(userUpdate)
-        }
     }
 
     func deleteStatusHistoryEntry(salonId: String, entryId: String) async throws {
@@ -543,8 +534,8 @@ final class FirebaseService: ObservableObject {
                     targetSalonsPerDay: pd["targetSalonsPerDay"] as? Int,
                     targetTestDrives: pd["targetTestDrives"] as? Int,
                     targetTestDrivesPerDay: pd["targetTestDrivesPerDay"] as? Int,
-                    salonsVisited: pd["salonsVisited"] as? Int ?? 0,
-                    testDriveCount: pd["testDriveCount"] as? Int ?? 0
+                    salonsVisited: 0,
+                    testDriveCount: 0
                 )
             }
             return AppUser(

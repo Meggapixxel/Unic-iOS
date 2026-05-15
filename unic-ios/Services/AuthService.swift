@@ -146,37 +146,27 @@ final class AuthService: ObservableObject {
 
         var userActivePlan: UserActivePlan?
         if let plan = currentPlan {
-            let planChanged    = existingPlanId != plan.id
-            let salonsVisited  = planChanged ? 0 : (existingPlanData?["salonsVisited"]  as? Int ?? 0)
-            let testDriveCount = planChanged ? 0 : (existingPlanData?["testDriveCount"] as? Int ?? 0)
-
             userActivePlan = UserActivePlan(
                 id: plan.id, title: plan.title,
                 startDate: plan.startDate, endDate: plan.endDate,
                 targetSalons: plan.targetSalons, targetSalonsPerDay: plan.targetSalonsPerDay,
                 targetTestDrives: plan.targetTestDrives, targetTestDrivesPerDay: plan.targetTestDrivesPerDay,
-                salonsVisited: salonsVisited, testDriveCount: testDriveCount
+                salonsVisited: 0, testDriveCount: 0
             )
 
-            // Write plan snapshot to user doc (dot-notation preserves counters unless plan changed)
-            var planUpdate: [String: Any] = [
-                "activePlan.id":                   plan.id ?? NSNull(),
-                "activePlan.title":                plan.title as Any,
-                "activePlan.startDate":            Timestamp(date: plan.startDate),
-                "activePlan.endDate":              Timestamp(date: plan.endDate),
-                "activePlan.targetSalons":         plan.targetSalons as Any,
-                "activePlan.targetSalonsPerDay":   plan.targetSalonsPerDay as Any,
-                "activePlan.targetTestDrives":     plan.targetTestDrives as Any,
+            let planUpdate: [String: Any] = [
+                "activePlan.id":                     plan.id ?? NSNull(),
+                "activePlan.title":                  plan.title as Any,
+                "activePlan.startDate":              Timestamp(date: plan.startDate),
+                "activePlan.endDate":                Timestamp(date: plan.endDate),
+                "activePlan.targetSalons":           plan.targetSalons as Any,
+                "activePlan.targetSalonsPerDay":     plan.targetSalonsPerDay as Any,
+                "activePlan.targetTestDrives":       plan.targetTestDrives as Any,
                 "activePlan.targetTestDrivesPerDay": plan.targetTestDrivesPerDay as Any
             ]
-            if planChanged {
-                planUpdate["activePlan.salonsVisited"]  = 0
-                planUpdate["activePlan.testDriveCount"] = 0
-            }
             try? await db.collection("users").document(uid).updateData(planUpdate)
 
         } else if existingPlanData != nil {
-            // Plan expired — clear from user doc
             try? await db.collection("users").document(uid).updateData(["activePlan": FieldValue.delete()])
         }
 

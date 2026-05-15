@@ -44,6 +44,7 @@ struct ProfileFeature {
     enum Action: BindableAction {
         case binding(BindingAction<State>)
         case onLoad
+        case planStatsLoaded(salons: Int, testDrives: Int)
         case logoutTapped
         case logoutConfirmed
         case navigateToActivity
@@ -56,6 +57,7 @@ struct ProfileFeature {
     // MARK: - Dependencies
 
     @Dependency(\.authClient) var auth
+    @Dependency(\.firebaseClient) var firebase
     @Dependency(\.flexiBeeClient) var flexiBeeClient
 
     // MARK: - Body
@@ -70,6 +72,23 @@ struct ProfileFeature {
                 state.canViewSales = auth.canViewSales()
                 state.canViewUsers = auth.canViewUsers()
                 state.canManagePlans = auth.canManagePlans()
+                guard let plan = state.currentUser.activePlan else { return .none }
+                let firebase = firebase
+                let userId = state.currentUser.id
+                let startDate = plan.startDate
+                let endDate = plan.endDate
+                return .run { send in
+                    let entries = (try? await firebase.fetchUserActivity(userId)) ?? []
+                    let inPlan = entries.filter { $0.timestamp >= startDate && $0.timestamp <= endDate }
+                    await send(.planStatsLoaded(
+                        salons: inPlan.count,
+                        testDrives: inPlan.filter { $0.status == .testDrive }.count
+                    ))
+                }
+
+            case let .planStatsLoaded(salons, testDrives):
+                state.currentUser.activePlan?.salonsVisited = salons
+                state.currentUser.activePlan?.testDriveCount = testDrives
                 return .none
 
             case .logoutTapped:
