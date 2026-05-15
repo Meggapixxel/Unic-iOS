@@ -11,7 +11,7 @@ struct WelcomeFeature {
         var isLocationChecked = false
         var minTimePassed = false
 
-        var canProceed: Bool { isDataReady && isLocationChecked && minTimePassed }
+        var canProceed: Bool { isDataReady && minTimePassed }
     }
 
     enum Action {

@@ -472,22 +472,6 @@ struct AddStatusView: View {
                     TextField(String.add_comment, text: $store.note, axis: .vertical)
                         .lineLimit(3...6)
                 }
-
-                Section {
-                    HStack(spacing: 10) {
-                        if store.isFetchingLocation {
-                            ProgressView().controlSize(.small)
-                            Text(String.location_fetching).foregroundStyle(.secondary)
-                        } else if store.userLocation != nil {
-                            Image(systemName: "location.fill").foregroundStyle(.green)
-                            Text(String.location_obtained).foregroundStyle(.secondary)
-                        } else {
-                            Image(systemName: "location.slash.fill").foregroundStyle(.red)
-                            Text(String.location_unavailable).foregroundStyle(.red)
-                        }
-                    }
-                    .font(.footnote)
-                }
             }
             .navigationTitle(String.add_status)
             .navigationBarTitleDisplayMode(.inline)
@@ -499,18 +483,25 @@ struct AddStatusView: View {
                     Button { store.send(.saveTapped) } label: {
                         Image(systemName: "checkmark")
                     }
-                    .disabled(!store.canSave)
+                    .disabled(store.isSaving)
                 }
             }
             .overlay {
                 if store.isSaving {
-                    ProgressView()
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(8)
+                    VStack(spacing: 8) {
+                        ProgressView()
+                        Text(String.location_fetching)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(8)
                 }
             }
-            .task { store.send(.onAppear) }
+            .alert(String.location_unavailable, isPresented: $store.locationError) {
+                Button("OK") { store.send(.locationErrorDismissed) }
+            }
         }
     }
 }

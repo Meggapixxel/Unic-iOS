@@ -270,10 +270,7 @@ struct AddStatusFeature {
         var note: String = ""
         var selectedDate: Date = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
         var isSaving = false
-        var userLocation: Location?
-        var isFetchingLocation = false
-
-        var canSave: Bool { !isSaving && userLocation != nil }
+        var locationError: Bool = false
 
         init(salonId: String, currentStatus: SalonStatus, currentUserId: String) {
             self.salonId = salonId
@@ -285,11 +282,10 @@ struct AddStatusFeature {
 
     enum Action: BindableAction {
         case binding(BindingAction<State>)
-        case onAppear
-        case locationFetched(Location?)
         case saveTapped
         case entryAdded(StatusHistoryEntry, updatedSalon: Salon?)
         case failed(String)
+        case locationErrorDismissed
         case cancelTapped
     }
 
@@ -302,20 +298,8 @@ struct AddStatusFeature {
         BindingReducer()
         Reduce { state, action in
             switch action {
-            case .onAppear:
-                state.isFetchingLocation = true
-                return .run { send in
-                    let location = await locationClient.fetchLocation()
-                    await send(.locationFetched(location))
-                }
-
-            case .locationFetched(let location):
-                state.isFetchingLocation = false
-                state.userLocation = location
-                return .none
-
             case .saveTapped:
-                guard state.canSave else { return .none }
+                guard !state.isSaving else { return .none }
                 state.isSaving = true
                 let salonId = state.salonId
                 let selectedStatus = state.selectedStatus
@@ -323,9 +307,14 @@ struct AddStatusFeature {
                 let noteOrNil: String? = note.isEmpty ? nil : note
                 let createdBy = state.currentUserId
                 let scheduledDate: Date? = selectedStatus == .demoScheduled ? state.selectedDate : nil
-                let userLocation = state.userLocation
                 let firebase = firebase
+                let locationClient = locationClient
                 return .run { [firebase, date] send in
+                    let userLocation = await locationClient.fetchLocation()
+                    guard userLocation != nil else {
+                        await send(.failed(String(localized: "location_unavailable")))
+                        return
+                    }
                     do {
                         try await firebase.addStatusHistoryEntry(
                             salonId, selectedStatus, note, createdBy, scheduledDate ?? date(), userLocation
@@ -348,8 +337,12 @@ struct AddStatusFeature {
             case .entryAdded:
                 state.isSaving = false
                 return .none
-            case .failed:
+            case .failed(let msg):
                 state.isSaving = false
+                state.locationError = msg == String(localized: "location_unavailable")
+                return .none
+            case .locationErrorDismissed:
+                state.locationError = false
                 return .none
             case .cancelTapped:
                 return .run { _ in await dismiss() }
