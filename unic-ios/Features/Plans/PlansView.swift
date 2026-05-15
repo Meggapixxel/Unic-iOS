@@ -91,6 +91,22 @@ struct PlansFormView: View {
                     DatePicker(String.plan_start_date, selection: $store.startDate, displayedComponents: .date)
                     DatePicker(String.plan_end_date, selection: $store.endDate, in: store.startDate..., displayedComponents: .date)
                 }
+                Section(String.plan_targets) {
+                    Stepper(value: $store.targetSalons, in: 0...999) {
+                        HStack {
+                            Label(String.plan_target_salons, systemImage: "storefront")
+                            Spacer()
+                            Text("\(store.targetSalons)").foregroundStyle(.secondary)
+                        }
+                    }
+                    Stepper(value: $store.targetTestDrives, in: 0...999) {
+                        HStack {
+                            Label(String.plan_target_test_drives, systemImage: "car.side")
+                            Spacer()
+                            Text("\(store.targetTestDrives)").foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
             .navigationTitle(store.existing == nil ? String.plan_add : String.plan_edit)
             .navigationBarTitleDisplayMode(.inline)
@@ -133,14 +149,16 @@ private struct PlanRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(plan.title).font(.headline)
+                Text(plan.title ?? String.plan_untitled).font(.headline)
                 Spacer()
                 statusBadge
             }
-            Text(plan.description)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            if let desc = plan.description, !desc.isEmpty {
+                Text(desc)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
             Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
                 .font(.caption)
                 .foregroundStyle(.tertiary)

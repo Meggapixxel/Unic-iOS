@@ -28,6 +28,7 @@ struct ProfileFeature {
         var currentUser: AppUser
         var path: StackState<Path.State> = StackState()
         var showLogoutConfirm: Bool = false
+        var activePlan: Plan?
 
         // Permissions (resolved at onLoad)
         var canViewSales: Bool = false
@@ -44,6 +45,7 @@ struct ProfileFeature {
     enum Action: BindableAction {
         case binding(BindingAction<State>)
         case onLoad
+        case activePlanLoaded(Plan?)
         case logoutTapped
         case logoutConfirmed
         case navigateToActivity
@@ -56,6 +58,7 @@ struct ProfileFeature {
     // MARK: - Dependencies
 
     @Dependency(\.authClient) var auth
+    @Dependency(\.firebaseClient) var firebaseClient
     @Dependency(\.flexiBeeClient) var flexiBeeClient
 
     // MARK: - Body
@@ -70,6 +73,14 @@ struct ProfileFeature {
                 state.canViewSales = auth.canViewSales()
                 state.canViewUsers = auth.canViewUsers()
                 state.canManagePlans = auth.canManagePlans()
+                let firebase = firebaseClient
+                return .run { [firebase] send in
+                    let plan = try? await firebase.fetchActivePlan()
+                    await send(.activePlanLoaded(plan))
+                }
+
+            case .activePlanLoaded(let plan):
+                state.activePlan = plan
                 return .none
 
             case .logoutTapped:

@@ -182,6 +182,10 @@ struct StockFeature {
             case .destination(.presented(.barcodeScanner(.scanCompleted(let barcode)))):
                 return .send(.barcodeScanned(barcode))
 
+            case .destination(.presented(.barcodeScanner(.dismiss))):
+                state.destination = nil
+                return .none
+
             case .destination(.presented(.checklist(.dismiss))):
                 state.destination = nil
                 return .none

@@ -81,7 +81,7 @@ private struct _PlanBannerContent: View {
                         .foregroundStyle(.white)
                         .font(.subheadline.bold())
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(plan.title)
+                        Text(plan.title ?? String.plan_untitled)
                             .font(.subheadline.bold())
                             .foregroundStyle(.white)
                             .lineLimit(1)
@@ -105,8 +105,8 @@ private struct _PlanBannerContent: View {
             }
             .buttonStyle(.plain)
 
-            if isExpanded {
-                Text(plan.description)
+            if isExpanded, let desc = plan.description, !desc.isEmpty {
+                Text(desc)
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.9))
                     .padding(.horizontal, 16)

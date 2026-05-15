@@ -389,6 +389,11 @@ extension String {
     static var plan_description_placeholder: String { String(localized: "plan_description_placeholder") }
     static var plan_start_date:           String { String(localized: "plan_start_date") }
     static var plan_end_date:             String { String(localized: "plan_end_date") }
+    static var plan_targets:              String { String(localized: "plan_targets") }
+    static var plan_target_salons:        String { String(localized: "plan_target_salons") }
+    static var plan_target_test_drives:   String { String(localized: "plan_target_test_drives") }
+    static var plan_untitled:             String { String(localized: "plan_untitled") }
+    static var profile_plans_progress:    String { String(localized: "profile_plans_progress") }
 
     // MARK: - Promos
     static var promos_nav_title:              String { String(localized: "promos_nav_title") }

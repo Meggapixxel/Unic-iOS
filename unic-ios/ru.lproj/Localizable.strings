@@ -390,6 +390,11 @@
 "plan_end_date" = "Дата окончания";
 "plan_delete" = "Удалить план";
 "plan_delete_confirm" = "Удалить этот план?";
+"plan_targets" = "Цели";
+"plan_target_salons" = "Салоны";
+"plan_target_test_drives" = "Тест Драйвы";
+"plan_untitled" = "Без названия";
+"profile_plans_progress" = "Планы и прогресс";
 
 /* Promo Offers */
 "promos_nav_title" = "Акции";

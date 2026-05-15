@@ -135,10 +135,12 @@ struct PlansFormFeature {
         var description: String
         var startDate: Date
         var endDate: Date
+        var targetSalons: Int
+        var targetTestDrives: Int
         var isSaving = false
         var error: String?
 
-        var isValid: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        var isValid: Bool { endDate > startDate }
 
         init(existing: Plan? = nil) {
             self.existing = existing
@@ -146,6 +148,8 @@ struct PlansFormFeature {
             description = existing?.description ?? ""
             startDate = existing?.startDate ?? Date()
             endDate = existing?.endDate ?? Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+            targetSalons = existing?.targetSalons ?? 0
+            targetTestDrives = existing?.targetTestDrives ?? 0
         }
     }
 
@@ -167,13 +171,17 @@ struct PlansFormFeature {
             case .saveTapped:
                 guard state.isValid else { return .none }
                 state.isSaving = true
+                let trimmedTitle = state.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedDesc  = state.description.trimmingCharacters(in: .whitespacesAndNewlines)
                 let plan = Plan(
                     id: state.existing?.id,
-                    title: state.title.trimmingCharacters(in: .whitespacesAndNewlines),
-                    description: state.description.trimmingCharacters(in: .whitespacesAndNewlines),
+                    title: trimmedTitle.isEmpty ? nil : trimmedTitle,
+                    description: trimmedDesc.isEmpty ? nil : trimmedDesc,
                     startDate: state.startDate,
                     endDate: state.endDate,
-                    createdBy: auth.currentUser()?.id ?? ""
+                    createdBy: auth.currentUser()?.id ?? "",
+                    targetSalons: state.targetSalons > 0 ? state.targetSalons : nil,
+                    targetTestDrives: state.targetTestDrives > 0 ? state.targetTestDrives : nil
                 )
                 let firebase = firebase
                 return .run { [firebase] send in

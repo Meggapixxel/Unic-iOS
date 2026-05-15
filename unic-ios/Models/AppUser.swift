@@ -14,11 +14,21 @@ enum UserRole: String, Codable {
     }
 }
 
+struct UserPlanProgress: Codable, Equatable, Hashable {
+    var visitedSalonIds: [String]
+    var testDriveCount: Int
+
+    var salonsVisited: Int { visitedSalonIds.count }
+
+    static let empty = UserPlanProgress(visitedSalonIds: [], testDriveCount: 0)
+}
+
 struct AppUser: Codable, Equatable, Hashable, Identifiable {
     let id: String
     let firstName: String
     let lastName: String
     let role: UserRole
+    var planProgress: UserPlanProgress?
 
     var fullName: String { "\(firstName) \(lastName)" }
     var isAdmin: Bool   { role == .admin }

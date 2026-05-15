@@ -151,7 +151,12 @@ final class AuthService: ObservableObject {
         let lastName  = data["last_name"]  as? String ?? ""
         let roleString = data["role"] as? String ?? ""
         let role = UserRole(rawValue: roleString) ?? .sales
-        let user = AppUser(id: uid, firstName: firstName, lastName: lastName, role: role)
+        let visitedSalonIds = data["visitedSalonIds"] as? [String] ?? []
+        let testDriveCount  = data["testDriveCount"]  as? Int ?? 0
+        let planProgress: UserPlanProgress? = (visitedSalonIds.isEmpty && testDriveCount == 0)
+            ? nil
+            : UserPlanProgress(visitedSalonIds: visitedSalonIds, testDriveCount: testDriveCount)
+        let user = AppUser(id: uid, firstName: firstName, lastName: lastName, role: role, planProgress: planProgress)
         AppLogger.log(.info, "Auth", "User loaded: \(firstName) \(lastName), role=\(roleString)")
 
         do {

@@ -390,6 +390,16 @@ final class FirebaseService: ObservableObject {
         }
 
         try await db.collection("salons").document(salonId).updateData(salonUpdate)
+
+        if let userId = createdBy {
+            var userUpdate: [String: Any] = [
+                "visitedSalonIds": FieldValue.arrayUnion([salonId])
+            ]
+            if status == .testDrive {
+                userUpdate["testDriveCount"] = FieldValue.increment(Int64(1))
+            }
+            try? await db.collection("users").document(userId).updateData(userUpdate)
+        }
     }
 
     func deleteStatusHistoryEntry(salonId: String, entryId: String) async throws {
@@ -519,11 +529,17 @@ final class FirebaseService: ObservableObject {
         return snapshot.documents.compactMap { doc in
             let d = doc.data()
             guard let role = UserRole(rawValue: d["role"] as? String ?? "") else { return nil }
+            let visitedSalonIds = d["visitedSalonIds"] as? [String] ?? []
+            let testDriveCount  = d["testDriveCount"]  as? Int ?? 0
+            let planProgress: UserPlanProgress? = (visitedSalonIds.isEmpty && testDriveCount == 0)
+                ? nil
+                : UserPlanProgress(visitedSalonIds: visitedSalonIds, testDriveCount: testDriveCount)
             return AppUser(
                 id: doc.documentID,
                 firstName: d["first_name"] as? String ?? "",
                 lastName: d["last_name"] as? String ?? "",
-                role: role
+                role: role,
+                planProgress: planProgress
             )
         }
     }
