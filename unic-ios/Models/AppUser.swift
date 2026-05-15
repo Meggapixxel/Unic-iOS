@@ -24,8 +24,6 @@ struct UserActivePlan: Codable, Equatable, Hashable {
     var targetSalonsPerDay: Int?
     var targetTestDrives: Int?
     var targetTestDrivesPerDay: Int?
-    var salonsVisited: Int
-    var testDriveCount: Int
 
     var isActive: Bool { Date() >= startDate && Date() <= endDate }
     var isPast: Bool   { Date() > endDate }

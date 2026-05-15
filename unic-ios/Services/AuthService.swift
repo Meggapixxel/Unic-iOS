@@ -150,8 +150,7 @@ final class AuthService: ObservableObject {
                 id: plan.id, title: plan.title,
                 startDate: plan.startDate, endDate: plan.endDate,
                 targetSalons: plan.targetSalons, targetSalonsPerDay: plan.targetSalonsPerDay,
-                targetTestDrives: plan.targetTestDrives, targetTestDrivesPerDay: plan.targetTestDrivesPerDay,
-                salonsVisited: 0, testDriveCount: 0
+                targetTestDrives: plan.targetTestDrives, targetTestDrivesPerDay: plan.targetTestDrivesPerDay
             )
 
             let planUpdate: [String: Any] = [

@@ -533,9 +533,7 @@ final class FirebaseService: ObservableObject {
                     targetSalons: pd["targetSalons"] as? Int,
                     targetSalonsPerDay: pd["targetSalonsPerDay"] as? Int,
                     targetTestDrives: pd["targetTestDrives"] as? Int,
-                    targetTestDrivesPerDay: pd["targetTestDrivesPerDay"] as? Int,
-                    salonsVisited: 0,
-                    testDriveCount: 0
+                    targetTestDrivesPerDay: pd["targetTestDrivesPerDay"] as? Int
                 )
             }
             return AppUser(

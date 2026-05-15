@@ -44,7 +44,7 @@ struct ProfileView: View {
                             HStack(spacing: 24) {
                                 if let target = plan.targetSalons, target > 0 {
                                     RingProgressView(
-                                        value: plan.salonsVisited,
+                                        value: store.salonsInPlan,
                                         target: target,
                                         label: String.plan_target_salons,
                                         color: .blue
@@ -52,7 +52,7 @@ struct ProfileView: View {
                                 }
                                 if let target = plan.targetTestDrives, target > 0 {
                                     RingProgressView(
-                                        value: plan.testDriveCount,
+                                        value: store.testDrivesInPlan,
                                         target: target,
                                         label: String.plan_target_test_drives,
                                         color: .green

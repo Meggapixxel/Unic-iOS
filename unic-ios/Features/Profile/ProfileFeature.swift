@@ -26,6 +26,7 @@ struct ProfileFeature {
     @ObservableState
     struct State: Equatable {
         var currentUser: AppUser
+        var activityEntries: [UserActivityEntry] = []
         var path: StackState<Path.State> = StackState()
         var showLogoutConfirm: Bool = false
 
@@ -37,6 +38,16 @@ struct ProfileFeature {
         init(currentUser: AppUser) {
             self.currentUser = currentUser
         }
+
+        var salonsInPlan: Int {
+            guard let plan = currentUser.activePlan else { return 0 }
+            return activityEntries.filter { $0.timestamp >= plan.startDate && $0.timestamp <= plan.endDate }.count
+        }
+
+        var testDrivesInPlan: Int {
+            guard let plan = currentUser.activePlan else { return 0 }
+            return activityEntries.filter { $0.timestamp >= plan.startDate && $0.timestamp <= plan.endDate && $0.status == .testDrive }.count
+        }
     }
 
     // MARK: - Action
@@ -44,7 +55,7 @@ struct ProfileFeature {
     enum Action: BindableAction {
         case binding(BindingAction<State>)
         case onLoad
-        case planStatsLoaded(salons: Int, testDrives: Int)
+        case activityLoaded([UserActivityEntry])
         case logoutTapped
         case logoutConfirmed
         case navigateToActivity
@@ -72,23 +83,16 @@ struct ProfileFeature {
                 state.canViewSales = auth.canViewSales()
                 state.canViewUsers = auth.canViewUsers()
                 state.canManagePlans = auth.canManagePlans()
-                guard let plan = state.currentUser.activePlan else { return .none }
+                guard state.currentUser.activePlan != nil else { return .none }
                 let firebase = firebase
                 let userId = state.currentUser.id
-                let startDate = plan.startDate
-                let endDate = plan.endDate
                 return .run { send in
                     let entries = (try? await firebase.fetchUserActivity(userId)) ?? []
-                    let inPlan = entries.filter { $0.timestamp >= startDate && $0.timestamp <= endDate }
-                    await send(.planStatsLoaded(
-                        salons: inPlan.count,
-                        testDrives: inPlan.filter { $0.status == .testDrive }.count
-                    ))
+                    await send(.activityLoaded(entries))
                 }
 
-            case let .planStatsLoaded(salons, testDrives):
-                state.currentUser.activePlan?.salonsVisited = salons
-                state.currentUser.activePlan?.testDriveCount = testDrives
+            case let .activityLoaded(entries):
+                state.activityEntries = entries
                 return .none
 
             case .logoutTapped:
