@@ -398,7 +398,7 @@
 "plan_target_test_drives" = "Test Drives";
 "plan_goal_per_day" = "Per Day";
 "plan_goal_total" = "Total";
-"plan_untitled" = "Untitled Plan";
+"plan_untitled" = "Untitled Plan";\n"plan_ended" = "Ended";
 "profile_plans_progress" = "Plans & Progress";
 
 /* Promo Offers */

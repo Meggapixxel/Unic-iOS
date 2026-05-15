@@ -395,6 +395,7 @@ extension String {
     static var plan_goal_per_day:         String { String(localized: "plan_goal_per_day") }
     static var plan_goal_total:           String { String(localized: "plan_goal_total") }
     static var plan_untitled:             String { String(localized: "plan_untitled") }
+    static var plan_ended:                String { String(localized: "plan_ended") }
     static var profile_plans_progress:    String { String(localized: "profile_plans_progress") }
     static var location_fetching:          String { String(localized: "location_fetching") }
     static var location_obtained:          String { String(localized: "location_obtained") }

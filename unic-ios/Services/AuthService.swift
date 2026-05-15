@@ -164,8 +164,19 @@ final class AuthService: ObservableObject {
             ]
             try? await db.collection("users").document(uid).updateData(planUpdate)
 
-        } else if existingPlanData != nil {
-            try? await db.collection("users").document(uid).updateData(["activePlan": FieldValue.delete()])
+        } else if let pd = existingPlanData,
+                  let startTs = pd["startDate"] as? Timestamp,
+                  let endTs   = pd["endDate"]   as? Timestamp {
+            // No new active plan — keep the last known plan displayed (frozen)
+            userActivePlan = UserActivePlan(
+                id: pd["id"] as? String,
+                startDate: startTs.dateValue(),
+                endDate: endTs.dateValue(),
+                targetSalons: pd["targetSalons"] as? Int,
+                targetSalonsPerDay: pd["targetSalonsPerDay"] as? Int,
+                targetTestDrives: pd["targetTestDrives"] as? Int,
+                targetTestDrivesPerDay: pd["targetTestDrivesPerDay"] as? Int
+            )
         }
 
         let user = AppUser(id: uid, firstName: firstName, lastName: lastName, role: role, activePlan: userActivePlan)

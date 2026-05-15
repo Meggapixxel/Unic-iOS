@@ -38,9 +38,14 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: 14) {
                         // Header: period + See All
                         HStack {
-                            if let plan = store.currentUser.activePlan, plan.isActive {
+                            if let plan = store.currentUser.activePlan {
                                 Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
                                     .font(.subheadline.weight(.semibold))
+                                if plan.isPast {
+                                    Text(String.plan_ended)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             } else {
                                 Text(String.profile_plans_progress)
                                     .font(.subheadline.weight(.semibold))
@@ -53,14 +58,14 @@ struct ProfileView: View {
                         }
 
                         // Rings
-                        if let plan = store.currentUser.activePlan, plan.isActive {
+                        if let plan = store.currentUser.activePlan {
                             HStack(spacing: 28) {
                                 if let target = plan.targetSalons, target > 0 {
                                     RingProgressView(
                                         value: store.salonsInPlan,
                                         target: target,
                                         label: String.plan_target_salons,
-                                        color: .blue
+                                        color: plan.isPast ? .secondary : .blue
                                     )
                                 }
                                 if let target = plan.targetTestDrives, target > 0 {
@@ -68,7 +73,7 @@ struct ProfileView: View {
                                         value: store.testDrivesInPlan,
                                         target: target,
                                         label: String.plan_target_test_drives,
-                                        color: .green
+                                        color: plan.isPast ? .secondary : .green
                                     )
                                 }
                                 Spacer()
