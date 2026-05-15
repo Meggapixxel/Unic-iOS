@@ -34,13 +34,27 @@ struct ProfileView: View {
                 }
 
                 // MARK: Progress
-                Section(String.profile_plans_progress) {
-                    if let plan = store.currentUser.activePlan, plan.isActive {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            HStack(spacing: 24) {
+                Section {
+                    VStack(alignment: .leading, spacing: 14) {
+                        // Header: period + See All
+                        HStack {
+                            if let plan = store.currentUser.activePlan, plan.isActive {
+                                Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
+                                    .font(.subheadline.weight(.semibold))
+                            } else {
+                                Text(String.profile_plans_progress)
+                                    .font(.subheadline.weight(.semibold))
+                            }
+                            Spacer()
+                            Button(String.see_all) {
+                                store.send(.navigateToActivity)
+                            }
+                            .font(.subheadline)
+                        }
+
+                        // Rings
+                        if let plan = store.currentUser.activePlan, plan.isActive {
+                            HStack(spacing: 28) {
                                 if let target = plan.targetSalons, target > 0 {
                                     RingProgressView(
                                         value: store.salonsInPlan,
@@ -59,24 +73,20 @@ struct ProfileView: View {
                                 }
                                 Spacer()
                             }
-                            .padding(.vertical, 4)
                         }
-                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
-                    }
-                    Button {
-                        store.send(.navigateToActivity)
-                    } label: {
-                        Label(String.profile_activity_history, systemImage: "clock.arrow.circlepath")
-                            .foregroundColor(.primary)
-                    }
-                    if store.canManagePlans {
-                        Button {
-                            store.send(.navigateToPlans)
-                        } label: {
-                            Label(String.plans_nav_title, systemImage: "target")
-                                .foregroundColor(.primary)
+
+                        // Plans management
+                        if store.canManagePlans {
+                            Button {
+                                store.send(.navigateToPlans)
+                            } label: {
+                                Label(String.plans_nav_title, systemImage: "target")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
+                    .padding(.vertical, 4)
                 }
 
                 // MARK: Sales (conditional)
