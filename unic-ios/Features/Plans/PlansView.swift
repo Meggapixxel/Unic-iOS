@@ -80,13 +80,6 @@ struct PlansFormView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(String.section_main) {
-                    TextField(String.plan_title_placeholder, text: $store.title)
-                }
-                Section {
-                    TextField(String.plan_description_placeholder, text: $store.description, axis: .vertical)
-                        .lineLimit(4...10)
-                }
                 Section {
                     DatePicker(String.plan_start_date, selection: $store.startDate, displayedComponents: .date)
                     DatePicker(String.plan_end_date, selection: $store.endDate, in: store.startDate..., displayedComponents: .date)
@@ -165,19 +158,11 @@ private struct PlanRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(plan.title ?? String.plan_untitled).font(.headline)
+                Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
+                    .font(.headline)
                 Spacer()
                 statusBadge
             }
-            if let desc = plan.description, !desc.isEmpty {
-                Text(desc)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-            Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 4)
     }

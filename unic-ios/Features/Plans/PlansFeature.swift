@@ -131,8 +131,6 @@ struct PlansFormFeature {
     @ObservableState
     struct State: Equatable {
         var existing: Plan?
-        var title: String
-        var description: String
         var startDate: Date
         var endDate: Date
         var salonsPerDay: Int = 0
@@ -146,8 +144,6 @@ struct PlansFormFeature {
 
         init(existing: Plan? = nil) {
             self.existing = existing
-            title       = existing?.title ?? ""
-            description = existing?.description ?? ""
             startDate   = existing?.startDate ?? Date()
             endDate     = existing?.endDate ?? Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
             salonsPerDay     = existing?.targetSalonsPerDay ?? 0
@@ -175,12 +171,8 @@ struct PlansFormFeature {
             case .saveTapped:
                 guard state.isValid else { return .none }
                 state.isSaving = true
-                let trimmedTitle = state.title.trimmingCharacters(in: .whitespacesAndNewlines)
-                let trimmedDesc  = state.description.trimmingCharacters(in: .whitespacesAndNewlines)
                 let plan = Plan(
                     id: state.existing?.id,
-                    title: trimmedTitle.isEmpty ? nil : trimmedTitle,
-                    description: trimmedDesc.isEmpty ? nil : trimmedDesc,
                     startDate: state.startDate,
                     endDate: state.endDate,
                     createdBy: auth.currentUser()?.id ?? "",

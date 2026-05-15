@@ -3,8 +3,6 @@ import Foundation
 
 struct Plan: Codable, Identifiable, Equatable {
     @DocumentID var id: String?
-    var title: String?
-    var description: String?
     let startDate: Date
     let endDate: Date
     let createdBy: String
@@ -15,8 +13,6 @@ struct Plan: Codable, Identifiable, Equatable {
 
     init(
         id: String? = nil,
-        title: String? = nil,
-        description: String? = nil,
         startDate: Date,
         endDate: Date,
         createdBy: String,
@@ -26,8 +22,6 @@ struct Plan: Codable, Identifiable, Equatable {
         targetTestDrivesPerDay: Int? = nil
     ) {
         self.id = id
-        self.title = title
-        self.description = description
         self.startDate = startDate
         self.endDate = endDate
         self.createdBy = createdBy

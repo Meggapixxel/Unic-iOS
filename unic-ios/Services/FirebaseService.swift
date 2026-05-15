@@ -527,7 +527,6 @@ final class FirebaseService: ObservableObject {
                let endTs   = pd["endDate"]   as? Timestamp {
                 activePlan = UserActivePlan(
                     id: pd["id"] as? String,
-                    title: pd["title"] as? String,
                     startDate: startTs.dateValue(),
                     endDate: endTs.dateValue(),
                     targetSalons: pd["targetSalons"] as? Int,

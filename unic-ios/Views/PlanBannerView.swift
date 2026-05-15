@@ -80,15 +80,10 @@ private struct _PlanBannerContent: View {
                     Image(systemName: "target")
                         .foregroundStyle(.white)
                         .font(.subheadline.bold())
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(plan.title ?? String.plan_untitled)
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                        Text("\(String(localized: "plan_active_until")) \(plan.endDate.formatted(.dateTime.day().month(.abbreviated)))")
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.8))
-                    }
+                    Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
                     Spacer()
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .foregroundStyle(.white.opacity(0.8))
@@ -105,14 +100,6 @@ private struct _PlanBannerContent: View {
             }
             .buttonStyle(.plain)
 
-            if isExpanded, let desc = plan.description, !desc.isEmpty {
-                Text(desc)
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.9))
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
         }
         .background(Color.accentColor.gradient)
         .clipShape(RoundedRectangle(cornerRadius: 12))

@@ -37,10 +37,9 @@ struct ProfileView: View {
                 Section(String.profile_plans_progress) {
                     if let plan = store.currentUser.activePlan, plan.isActive {
                         VStack(alignment: .leading, spacing: 10) {
-                            if let title = plan.title {
-                                Text(title)
-                                    .font(.subheadline.weight(.semibold))
-                            }
+                            Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.secondary)
                             HStack(spacing: 24) {
                                 if let target = plan.targetSalons, target > 0 {
                                     RingProgressView(

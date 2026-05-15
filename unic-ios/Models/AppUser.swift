@@ -17,7 +17,6 @@ enum UserRole: String, Codable {
 // Snapshot of active plan stored in user document, with embedded progress counters.
 struct UserActivePlan: Codable, Equatable, Hashable {
     var id: String?
-    var title: String?
     var startDate: Date
     var endDate: Date
     var targetSalons: Int?

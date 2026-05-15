@@ -147,7 +147,7 @@ final class AuthService: ObservableObject {
         var userActivePlan: UserActivePlan?
         if let plan = currentPlan {
             userActivePlan = UserActivePlan(
-                id: plan.id, title: plan.title,
+                id: plan.id,
                 startDate: plan.startDate, endDate: plan.endDate,
                 targetSalons: plan.targetSalons, targetSalonsPerDay: plan.targetSalonsPerDay,
                 targetTestDrives: plan.targetTestDrives, targetTestDrivesPerDay: plan.targetTestDrivesPerDay
@@ -155,7 +155,6 @@ final class AuthService: ObservableObject {
 
             let planUpdate: [String: Any] = [
                 "activePlan.id":                     plan.id ?? NSNull(),
-                "activePlan.title":                  plan.title as Any,
                 "activePlan.startDate":              Timestamp(date: plan.startDate),
                 "activePlan.endDate":                Timestamp(date: plan.endDate),
                 "activePlan.targetSalons":           plan.targetSalons as Any,
