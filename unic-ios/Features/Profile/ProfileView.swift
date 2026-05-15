@@ -99,6 +99,12 @@ struct ProfileView: View {
                                 Label(String.sales_nav_title, systemImage: "chart.line.uptrend.xyaxis")
                                     .foregroundStyle(.primary)
                             }
+                            Button {
+                                store.send(.navigateToClients)
+                            } label: {
+                                Label(String.stat_clients, systemImage: "person.crop.rectangle.stack")
+                                    .foregroundStyle(.primary)
+                            }
                         }
                         if store.canViewUsers {
                             Button {

@@ -63,6 +63,7 @@ struct ProfileFeature {
         case navigateToActivity
         case navigateToSales
         case navigateToUsers
+        case navigateToClients
         case navigateToPlans
         case path(StackActionOf<Path>)
     }
@@ -128,6 +129,15 @@ struct ProfileFeature {
             case .navigateToUsers:
                 guard state.canViewUsers else { return .none }
                 state.path.append(.users(UsersFeature.State()))
+                return .none
+
+            case .navigateToClients:
+                guard state.canViewSales else { return .none }
+                let allInvoices = flexiBeeClient.invoices()
+                let clients = Dictionary(grouping: allInvoices) { $0.clientName }
+                    .map { (name: $0.key, revenue: $0.value.reduce(0) { $0 + $1.total }) }
+                    .sorted { $0.revenue > $1.revenue }
+                state.path.append(.allTopClients(AllTopClientsFeature.State(clients: clients)))
                 return .none
 
             case .navigateToPlans:
