@@ -29,6 +29,7 @@ struct FlexiBeeClient: @unchecked Sendable {
     var fetchCashReceiptId: (_ invoiceId: String) async throws -> String? = { _ in nil }
     var createCashReceipt: (_ invoice: FlexiBeeInvoice) async throws -> Void
     var fetchSingleInvoice: (_ id: String) async throws -> FlexiBeeInvoice? = { _ in nil }
+    var markAsAccounted: (_ id: String) async throws -> Void
 }
 
 extension FlexiBeeClient: DependencyKey {
@@ -61,7 +62,8 @@ extension FlexiBeeClient: DependencyKey {
                 fetchPDF: { path in try await s.fetchPDF(path: path) },
                 fetchCashReceiptId: { id in try await s.fetchCashReceiptId(for: id) },
                 createCashReceipt: { invoice in try await s.createCashReceipt(for: invoice) },
-                fetchSingleInvoice: { id in try await s.fetchSingleInvoice(id: id) }
+                fetchSingleInvoice: { id in try await s.fetchSingleInvoice(id: id) },
+                markAsAccounted: { id in try await s.markAsAccounted(id: id) }
             )
         }
     }

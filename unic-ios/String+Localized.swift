@@ -49,11 +49,13 @@ extension String {
 
     // MARK: - Salon List
     static var search_salons:  String { String(localized: "search_salons") }
-    static var stat_total:     String { String(localized: "stat_total") }
-    static var stat_new:       String { String(localized: "stat_new") }
-    static var stat_contacted: String { String(localized: "stat_contacted") }
-    static var stat_clients:   String { String(localized: "stat_clients") }
-    static var salon_statuses: String { String(localized: "salon_statuses") }
+    static var stat_total:             String { String(localized: "stat_total") }
+    static var stat_new:               String { String(localized: "stat_new") }
+    static var stat_contacted:         String { String(localized: "stat_contacted") }
+    static var stat_clients:           String { String(localized: "stat_clients") }
+    static var stat_new_clients:       String { String(localized: "stat_new_clients") }
+    static var stat_returning_clients: String { String(localized: "stat_returning_clients") }
+    static var salon_statuses:         String { String(localized: "salon_statuses") }
     static var sort_by_date:                String { String(localized: "sort_by_date") }
     static var filter_language:             String { String(localized: "filter_language") }
     static var filter_date_added:           String { String(localized: "filter_date_added") }
@@ -99,7 +101,6 @@ extension String {
     static var sort_by_status:    String { String(localized: "sort_by_status") }
 
     // MARK: - Salon Detail
-    static var edit_note:          String { String(localized: "edit_note") }
     static var status_update_hint: String { String(localized: "status_update_hint") }
     static var copy_number:        String { String(localized: "copy_number") }
     static var current_status:     String { String(localized: "current_status") }
@@ -122,7 +123,6 @@ extension String {
 
     // MARK: - Add / Edit Salon
     static var add_salon:             String { String(localized: "add_salon") }
-    static var edit_salon:            String { String(localized: "edit_salon") }
     static var section_main:          String { String(localized: "section_main") }
     static var section_contacts:      String { String(localized: "section_contacts") }
     static var section_notes:         String { String(localized: "section_notes") }
@@ -302,9 +302,7 @@ extension String {
 
     // MARK: - Create / Edit Invoice
     static var create_invoice_title:            String { String(localized: "create_invoice_title") }
-    static var edit_invoice_title:              String { String(localized: "edit_invoice_title") }
     static var create_invoice_submit:           String { String(localized: "create_invoice_submit") }
-    static var edit_invoice_action:             String { String(localized: "edit_invoice_action") }
     static var create_invoice_client:           String { String(localized: "create_invoice_client") }
     static var create_invoice_client_placeholder: String { String(localized: "create_invoice_client_placeholder") }
     static var create_invoice_client_search:    String { String(localized: "create_invoice_client_search") }
@@ -323,7 +321,6 @@ extension String {
     static var create_invoice_notes_placeholder: String { String(localized: "create_invoice_notes_placeholder") }
     static var create_invoice_pick_product:     String { String(localized: "create_invoice_pick_product") }
     static var new_client:                      String { String(localized: "new_client") }
-    static var edit_client:                     String { String(localized: "edit_client") }
     static var create_client_name_placeholder:  String { String(localized: "create_client_name_placeholder") }
 
     // MARK: - Stock Movement
@@ -335,13 +332,16 @@ extension String {
     static var stock_movement_items:    String { String(localized: "stock_movement_items") }
     static var stock_movement_add_item: String { String(localized: "stock_movement_add_item") }
     static var stock_movement_code:     String { String(localized: "stock_movement_code") }
-    static var stock_movement_edit:     String { String(localized: "stock_movement_edit") }
     static var stock_required_title:    String { String(localized: "stock_required_title") }
     static var stock_required_body:     String { String(localized: "stock_required_body") }
 
     // MARK: - Invoice Detail
-    static var invoice_detail_items:    String { String(localized: "invoice_detail_items") }
-    static var invoice_detail_no_items: String { String(localized: "invoice_detail_no_items") }
+    static var invoice_detail_items:          String { String(localized: "invoice_detail_items") }
+    static var invoice_detail_no_items:       String { String(localized: "invoice_detail_no_items") }
+    static var invoice_stage_created:         String { String(localized: "invoice_stage_created") }
+    static var invoice_stage_registered:      String { String(localized: "invoice_stage_registered") }
+    static var invoice_stage_moved:           String { String(localized: "invoice_stage_moved") }
+    static var invoice_stage_paid:            String { String(localized: "invoice_stage_paid") }
     static var pdf_documents:           String { String(localized: "pdf_documents") }
     static var pdf_invoice:             String { String(localized: "pdf_invoice") }
     static var pdf_cash_receipt:        String { String(localized: "pdf_cash_receipt") }
@@ -381,7 +381,6 @@ extension String {
     static var plans_nav_title:           String { String(localized: "plans_nav_title") }
     static var plans_empty:               String { String(localized: "plans_empty") }
     static var plan_add:                  String { String(localized: "plan_add") }
-    static var plan_edit:                 String { String(localized: "plan_edit") }
     static var plan_delete:               String { String(localized: "plan_delete") }
     static var plan_delete_confirm:       String { String(localized: "plan_delete_confirm") }
     static var plan_title_placeholder:    String { String(localized: "plan_title_placeholder") }
@@ -397,7 +396,6 @@ extension String {
     static var plan_ended:                String { String(localized: "plan_ended") }
     static var plan_history:              String { String(localized: "plan_history") }
     static var plan_default:              String { String(localized: "plan_default") }
-    static var plan_default_edit:         String { String(localized: "plan_default_edit") }
     static var plan_banner_title:         String { String(localized: "plan_banner_title") }
     static var plan_active_until:         String { String(localized: "plan_active_until") }
     static var profile_plans_progress:    String { String(localized: "profile_plans_progress") }
@@ -412,10 +410,10 @@ extension String {
     static var promos_nav_title:              String { String(localized: "promos_nav_title") }
     static var promos_empty:                  String { String(localized: "promos_empty") }
     static var promo_delete:                  String { String(localized: "promo_delete") }
-    static var promo_edit:                    String { String(localized: "promo_edit") }
     static var promo_delete_confirm:          String { String(localized: "promo_delete_confirm") }
     static var promo_title_placeholder:       String { String(localized: "promo_title_placeholder") }
     static var promo_description_placeholder: String { String(localized: "promo_description_placeholder") }
+    static var promo_has_dates:               String { String(localized: "promo_has_dates") }
     static var promo_valid_from:              String { String(localized: "promo_valid_from") }
     static var promo_valid_to:                String { String(localized: "promo_valid_to") }
     static var promo_add:                     String { String(localized: "promo_add") }

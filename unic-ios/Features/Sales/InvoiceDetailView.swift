@@ -11,6 +11,7 @@ struct InvoiceDetailView: View {
 
     var body: some View {
         List {
+            timelineSection
             headerSection
             infoSection
             notesSection
@@ -23,10 +24,9 @@ struct InvoiceDetailView: View {
         .toolbar {
             if store.canEdit && !store.isLoading {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(String.edit_invoice_action) {
+                    Button("Edit") {
                         store.send(.editTapped)
                     }
-                    .fontWeight(.semibold)
                 }
             }
             ToolbarItemGroup(placement: .bottomBar) {
@@ -91,6 +91,19 @@ struct InvoiceDetailView: View {
         ) { item in
             PDFShareSheetView(item: item)
         }
+    }
+
+    // MARK: - Timeline Section
+
+    private var timelineSection: some View {
+        Section {
+            InvoiceTimeline(
+                isAccounted: store.isAccounted,
+                stockMovementCreated: store.stockMovementCreated,
+                isPaid: store.invoice.paymentStatus == .paid
+            )
+        }
+        .listRowBackground(Color.clear)
     }
 
     // MARK: - Header Section
@@ -175,6 +188,15 @@ struct InvoiceDetailView: View {
             Spacer()
 
             HStack(spacing: 20) {
+                // Accounting (Registered)
+                if !store.isAccounted {
+                    Button {
+                        store.send(.accountingTapped)
+                    } label: {
+                        Image(systemName: "checkmark.seal")
+                    }
+                }
+
                 // Stock movement
                 if !store.stockMovementCreated {
                     Button {
@@ -186,13 +208,14 @@ struct InvoiceDetailView: View {
                 }
 
                 // Payment status
-                Button {
-                    store.send(.setPaymentStatus(.paid, nil))
-                } label: {
-                    Image(systemName: "checkmark.circle.fill")
+                if store.invoice.paymentStatus != .paid {
+                    Button {
+                        store.send(.setPaymentStatus(.paid, nil))
+                    } label: {
+                        Image(systemName: "checkmark.circle.fill")
+                    }
+                    .tint(.green)
                 }
-                .tint(store.invoice.paymentStatus == .paid ? .secondary : .green)
-                .disabled(store.invoice.paymentStatus == .paid)
 
                 // Documents / PDF
                 Button {
@@ -313,12 +336,11 @@ struct InvoiceDetailView: View {
                             .textCase(.uppercase)
                         Spacer()
                         // Edit movement button
-                        Button(String.stock_movement_edit) {
+                        Button("Edit") {
                             store.send(.openStockMovement)
                         }
                         .font(.caption.bold())
                         .foregroundStyle(Color.accentColor)
-                        .textCase(nil)
                     }
                 }
             }
@@ -387,6 +409,118 @@ private struct _PaymentMethodRow: View {
             .padding(.vertical, 14)
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Invoice Timeline
+
+private struct _TimelineScaleKey: PreferenceKey {
+    static var defaultValue: CGFloat { 1 }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = min(value, nextValue()) }
+}
+
+private struct InvoiceTimeline: View {
+    let isAccounted: Bool
+    let stockMovementCreated: Bool
+    let isPaid: Bool
+
+    @State private var scale: CGFloat = 1
+
+    var body: some View {
+        steps
+            .scaleEffect(scale, anchor: .center)
+            .overlay(
+                GeometryReader { available in
+                    steps
+                        .fixedSize()
+                        .hidden()
+                        .background(GeometryReader { natural in
+                            Color.clear.preference(
+                                key: _TimelineScaleKey.self,
+                                value: min(1, available.size.width / max(natural.size.width, 1))
+                            )
+                        })
+                }
+            )
+            .padding(.vertical, 6)
+            .onPreferenceChange(_TimelineScaleKey.self) { newScale in
+                withAnimation(.easeOut(duration: 0.2)) { scale = newScale }
+            }
+    }
+
+    private var steps: some View {
+        HStack(spacing: 0) {
+            InvoiceTimelineStep(icon: "doc.text.fill",          label: String.invoice_stage_created,    done: true,               delay: 0.0)
+            InvoiceTimelineConnector(done: isAccounted,                                                                            delay: 0.15)
+            InvoiceTimelineStep(icon: "checkmark.seal.fill",   label: String.invoice_stage_registered, done: isAccounted,         delay: 0.2)
+            InvoiceTimelineConnector(done: stockMovementCreated,                                                                   delay: 0.35)
+            InvoiceTimelineStep(icon: "shippingbox.fill",      label: String.invoice_stage_moved,      done: stockMovementCreated, delay: 0.4)
+            InvoiceTimelineConnector(done: isPaid,                                                                                 delay: 0.55)
+            InvoiceTimelineStep(icon: "checkmark.circle.fill", label: String.invoice_stage_paid,       done: isPaid,              delay: 0.6)
+        }
+    }
+}
+
+// MARK: - Invoice Timeline Step
+
+private struct InvoiceTimelineStep: View {
+    let icon: String
+    let label: String
+    let done: Bool
+    let delay: Double
+
+    @State private var appeared = false
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundStyle(done ? Color.green : Color(.systemGray3))
+                .symbolEffect(.bounce, value: done)
+                .animation(.easeInOut(duration: 0.35), value: done)
+            Text(label)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(done ? Color.green : Color(.systemGray3))
+                .animation(.easeInOut(duration: 0.35), value: done)
+        }
+        .frame(minWidth: 44)
+        .scaleEffect(appeared ? 1 : 0.5)
+        .opacity(appeared ? 1 : 0)
+        .onAppear {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.65).delay(delay)) {
+                appeared = true
+            }
+        }
+    }
+}
+
+// MARK: - Invoice Timeline Connector
+
+private struct InvoiceTimelineConnector: View {
+    let done: Bool
+    let delay: Double
+
+    @State private var appeared = false
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Rectangle()
+                .fill(Color(.systemGray4))
+                .frame(height: 2)
+            Rectangle()
+                .fill(Color.green)
+                .frame(height: 2)
+                .scaleEffect(x: done ? 1 : 0, anchor: .leading)
+                .animation(.easeInOut(duration: 0.4), value: done)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 18)
+        .opacity(appeared ? 1 : 0)
+        .onAppear {
+            withAnimation(.easeIn(duration: 0.25).delay(delay)) {
+                appeared = true
+            }
+        }
     }
 }
 

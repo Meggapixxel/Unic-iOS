@@ -266,6 +266,20 @@ final class FlexiBeeService: ObservableObject {
         _ = try await execute(method: "PUT", urlString: baseURL + "/faktura-vydana/\(id).json", body: body)
     }
 
+    func markAsAccounted(id: String) async throws {
+        try require(AuthService.shared.canEditInvoice)
+        let body: [String: Any] = [
+            "winstrom": [
+                "faktura-vydana": [[
+                    "typUcOp":   "code:TRŽBA ZBOŽÍ",
+                    "zuctovano": true
+                ]]
+            ]
+        ]
+        let jsonData = try JSONSerialization.data(withJSONObject: body)
+        _ = try await execute(method: "PUT", urlString: baseURL + "/faktura-vydana/\(id).json", body: jsonData)
+    }
+
     func createCashReceipt(for invoice: FlexiBeeInvoice) async throws {
         guard let clientCode = invoice.clientCode else { return }
         let receipt = NewCashReceipt(

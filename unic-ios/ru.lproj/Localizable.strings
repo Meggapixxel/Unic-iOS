@@ -68,7 +68,6 @@
 "filter_date_this_year" = "В этом году";
 
 /* Salon Detail */
-"edit_note" = "Редактировать заметку";
 "status_update_hint" = "Обновляй статус каждый раз после посещения.";
 "call" = "Позвонить";
 "copy_number" = "Скопировать номер";
@@ -93,7 +92,6 @@
 
 /* Add Salon */
 "add_salon" = "Новый салон";
-"edit_salon" = "Редактировать салон";
 "section_main" = "Основное";
 "section_contacts" = "Контакты";
 "section_notes" = "Заметки";
@@ -294,9 +292,7 @@
 
 /* Create / Edit Invoice */
 "create_invoice_title" = "Новый счёт";
-"edit_invoice_title" = "Редактировать счёт";
 "create_invoice_submit" = "Выставить";
-"edit_invoice_action" = "Редактировать";
 "create_invoice_client" = "Клиент";
 "create_invoice_client_placeholder" = "Выберите клиента";
 "create_invoice_client_search" = "Поиск клиента...";
@@ -315,7 +311,6 @@
 "create_invoice_notes_placeholder" = "Необязательно";
 "create_invoice_pick_product" = "Выберите продукт";
 "new_client" = "Новый клиент";
-"edit_client" = "Редактировать клиента";
 "create_client_name_placeholder" = "Название компании или лица";
 "stock_movement_title" = "Складское движение";
 "stock_movement_section" = "Склад";
@@ -325,11 +320,14 @@
 "stock_movement_items" = "Позиции";
 "stock_movement_add_item" = "Добавить позицию";
 "stock_movement_code" = "Код товара";
-"stock_movement_edit" = "Редактировать движение";
 "stock_required_title" = "Требуется движение склада";
 "stock_required_body" = "Сначала выполните движение склада, чтобы отметить инвойс как оплаченный.";
 "invoice_detail_items" = "Позиции";
 "invoice_detail_no_items" = "Позиции отсутствуют";
+"invoice_stage_created" = "Создано";
+"invoice_stage_registered" = "Зачтено";
+"invoice_stage_moved" = "Списано";
+"invoice_stage_paid" = "Оплачено";
 "invoice_status_change_title" = "Изменить статус оплаты";
 "invoice_status_change_to %@" = "Установить «%@»?";
 "delete_invoice_action" = "Удалить инвойс";
@@ -386,7 +384,6 @@
 "plans_nav_title" = "Планы";
 "plans_empty" = "Нет активных планов";
 "plan_add" = "Новый план";
-"plan_edit" = "Редактировать план";
 "plan_title_placeholder" = "Заголовок плана";
 "plan_description_placeholder" = "Описание задачи...";
 "plan_start_date" = "Дата начала";
@@ -401,17 +398,18 @@
 "plan_untitled" = "Без названия";
 "plan_ended" = "Завершён";
 "plan_default" = "Шаблон плана";
-"plan_default_edit" = "Редактировать шаблон";
 "profile_plans_progress" = "Планы и прогресс";
 "plan_history" = "История";
+"stat_new_clients" = "Новые";
+"stat_returning_clients" = "Постоянные";
 
 /* Promo Offers */
 "promos_nav_title" = "Акции";
 "promos_empty" = "Нет акционных предложений";
 "promo_add" = "Новая акция";
-"promo_edit" = "Редактировать акцию";
 "promo_title_placeholder" = "Название акции";
 "promo_description_placeholder" = "Описание акции...";
+"promo_has_dates" = "Установить период";
 "promo_valid_from" = "Действует с";
 "promo_valid_to" = "Действует до";
 "promo_delete" = "Удалить акцию";

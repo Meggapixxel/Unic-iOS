@@ -181,6 +181,9 @@ struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
     let code:              String?
     let notes:             String?
     let finalText:         String?
+    let clientIc:          String?
+    let clientDic:         String?
+    let isAccounted:       Bool?
     private let issueDateRaw:      String?
     private let dueDateRaw:        String?
     private let totalRaw:          String?
@@ -193,6 +196,9 @@ struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
         case code              = "kod"
         case notes             = "popis"
         case finalText         = "zavTxt"
+        case clientIc          = "ic"
+        case clientDic         = "dic"
+        case isAccounted       = "zuctovano"
         case issueDateRaw      = "datVyst"
         case dueDateRaw        = "datSplat"
         case totalRaw          = "sumCelkem"
@@ -200,6 +206,31 @@ struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
         case clientRef         = "firma@showAs"
         case paymentMethodCode = "formaUhradyCis"
         case varSym            = "varSym"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id                = try c.decode(String.self,  forKey: .id)
+        code              = try c.decodeIfPresent(String.self,  forKey: .code)
+        notes             = try c.decodeIfPresent(String.self,  forKey: .notes)
+        finalText         = try c.decodeIfPresent(String.self,  forKey: .finalText)
+        clientIc          = try c.decodeIfPresent(String.self,  forKey: .clientIc)
+        clientDic         = try c.decodeIfPresent(String.self,  forKey: .clientDic)
+        issueDateRaw      = try c.decodeIfPresent(String.self,  forKey: .issueDateRaw)
+        dueDateRaw        = try c.decodeIfPresent(String.self,  forKey: .dueDateRaw)
+        totalRaw          = try c.decodeIfPresent(String.self,  forKey: .totalRaw)
+        paymentStatusCode = try c.decodeIfPresent(String.self,  forKey: .paymentStatusCode)
+        clientRef         = try c.decodeIfPresent(String.self,  forKey: .clientRef)
+        paymentMethodCode = try c.decodeIfPresent(String.self,  forKey: .paymentMethodCode)
+        varSym            = try c.decodeIfPresent(String.self,  forKey: .varSym)
+        // FlexiBee returns booleans as strings ("true"/"false")
+        if let boolVal = try? c.decode(Bool.self, forKey: .isAccounted) {
+            isAccounted = boolVal
+        } else if let strVal = try? c.decode(String.self, forKey: .isAccounted) {
+            isAccounted = strVal == "true"
+        } else {
+            isAccounted = nil
+        }
     }
 
     static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }

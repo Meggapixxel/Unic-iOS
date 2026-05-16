@@ -20,6 +20,7 @@ struct InvoiceDetailFeature {
 
         var canEdit: Bool { invoice.paymentStatus != .paid }
         var stockMovementCreated: Bool { stockMovement != nil }
+        var isAccounted: Bool { invoice.isAccounted == true }
 
         static func == (lhs: Self, rhs: Self) -> Bool {
             lhs.invoice == rhs.invoice &&
@@ -78,6 +79,8 @@ struct InvoiceDetailFeature {
         case statusChangeCompleted(FlexiBeeInvoice)
         case openStockMovement
         case stockMovementCreated
+        case accountingTapped
+        case accountingCompleted(FlexiBeeInvoice)
         case shareInvoicePDF
         case shareCashReceiptPDF
         case shareBothPDFs
@@ -187,6 +190,24 @@ struct InvoiceDetailFeature {
                 }
 
             case let .statusChangeCompleted(invoice):
+                state.invoice = invoice
+                return .none
+
+            case .accountingTapped:
+                let invoiceId = state.invoice.id
+                let invoice = state.invoice
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
+                    do {
+                        try await flexiBeeClient.markAsAccounted(invoiceId)
+                        let updated = try await flexiBeeClient.fetchSingleInvoice(invoiceId) ?? invoice
+                        await send(.accountingCompleted(updated))
+                    } catch {
+                        await send(.failed(error.localizedDescription))
+                    }
+                }
+
+            case let .accountingCompleted(invoice):
                 state.invoice = invoice
                 return .none
 

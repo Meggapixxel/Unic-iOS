@@ -68,7 +68,6 @@
 "filter_date_this_year" = "Цього року";
 
 /* Salon Detail */
-"edit_note" = "Редагувати нотатку";
 "status_update_hint" = "Оновлюй статус кожного разу після відвідування.";
 "call" = "Зателефонувати";
 "copy_number" = "Скопіювати номер";
@@ -93,7 +92,6 @@
 
 /* Add Salon */
 "add_salon" = "Новий салон";
-"edit_salon" = "Редагувати салон";
 "section_main" = "Основне";
 "section_contacts" = "Контакти";
 "section_notes" = "Нотатки";
@@ -294,9 +292,7 @@
 
 /* Create / Edit Invoice */
 "create_invoice_title" = "Нова фактура";
-"edit_invoice_title" = "Редагувати фактуру";
 "create_invoice_submit" = "Виставити";
-"edit_invoice_action" = "Редагувати";
 "create_invoice_client" = "Клієнт";
 "create_invoice_client_placeholder" = "Оберіть клієнта";
 "create_invoice_client_search" = "Пошук клієнта...";
@@ -315,7 +311,6 @@
 "create_invoice_notes_placeholder" = "Необов'язково";
 "create_invoice_pick_product" = "Оберіть продукт";
 "new_client" = "Новий клієнт";
-"edit_client" = "Редагувати клієнта";
 "create_client_name_placeholder" = "Назва компанії або особи";
 "stock_movement_title" = "Складський рух";
 "stock_movement_section" = "Склад";
@@ -325,11 +320,14 @@
 "stock_movement_items" = "Позиції";
 "stock_movement_add_item" = "Додати позицію";
 "stock_movement_code" = "Код товару";
-"stock_movement_edit" = "Редагувати рух";
 "stock_required_title" = "Потрібен рух складу";
 "stock_required_body" = "Спочатку виконайте рух складу, щоб позначити інвойс як оплачений.";
 "invoice_detail_items" = "Позиції";
 "invoice_detail_no_items" = "Позиції відсутні";
+"invoice_stage_created" = "Створено";
+"invoice_stage_registered" = "Зараховано";
+"invoice_stage_moved" = "Списано";
+"invoice_stage_paid" = "Оплачено";
 "invoice_status_change_title" = "Змінити статус оплати";
 "invoice_status_change_to %@" = "Встановити «%@»?";
 "delete_invoice_action" = "Видалити інвойс";
@@ -386,7 +384,6 @@
 "plans_nav_title" = "Плани";
 "plans_empty" = "Немає активних планів";
 "plan_add" = "Новий план";
-"plan_edit" = "Редагувати план";
 "plan_title_placeholder" = "Заголовок плану";
 "plan_description_placeholder" = "Опис задачі...";
 "plan_start_date" = "Дата початку";
@@ -401,17 +398,18 @@
 "plan_untitled" = "Без назви";
 "plan_ended" = "Завершено";
 "plan_default" = "Шаблон плану";
-"plan_default_edit" = "Редагувати шаблон";
 "profile_plans_progress" = "Плани та прогрес";
 "plan_history" = "Історія";
+"stat_new_clients" = "Нові";
+"stat_returning_clients" = "Постійні";
 
 /* Promo Offers */
 "promos_nav_title" = "Акції";
 "promos_empty" = "Немає акційних пропозицій";
 "promo_add" = "Нова акція";
-"promo_edit" = "Редагувати акцію";
 "promo_title_placeholder" = "Назва акції";
 "promo_description_placeholder" = "Опис акції...";
+"promo_has_dates" = "Встановити термін";
 "promo_valid_from" = "Діє з";
 "promo_valid_to" = "Діє до";
 "promo_delete" = "Видалити акцію";
