@@ -155,9 +155,7 @@ struct PlansFormView: View {
 private struct PlanRow: View {
     let plan: Plan
 
-    private var period: String {
-        "\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))"
-    }
+    private var period: String { planPeriodString(from: plan.startDate, to: plan.endDate) }
 
     private var durationDays: Int {
         max(1, Calendar.current.dateComponents([.day], from: plan.startDate, to: plan.endDate).day ?? 1)

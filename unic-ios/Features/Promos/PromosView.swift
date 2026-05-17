@@ -147,7 +147,7 @@ private struct PromoRowView: View {
                     .lineLimit(2)
             }
             if let vf = promo.validFrom, let vt = promo.validTo {
-                Text("\(vf.formatted(.dateTime.day().month(.abbreviated))) – \(vt.formatted(.dateTime.day().month(.abbreviated).year()))")
+                Text(planPeriodString(from: vf, to: vt))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -298,7 +298,7 @@ private struct PromoPeriodView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("From").font(.caption).foregroundStyle(.secondary)
-                    Text(validFrom.formatted(.dateTime.day().month(.abbreviated).year()))
+                    Text(planDateString(validFrom))
                         .font(.subheadline.weight(.semibold))
                 }
                 Spacer()
@@ -306,7 +306,7 @@ private struct PromoPeriodView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Until").font(.caption).foregroundStyle(.secondary)
-                    Text(validTo.formatted(.dateTime.day().month(.abbreviated).year()))
+                    Text(planDateString(validTo))
                         .font(.subheadline.weight(.semibold))
                 }
             }

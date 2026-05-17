@@ -80,7 +80,7 @@ private struct _PlanBannerContent: View {
                     Image(systemName: "target")
                         .foregroundStyle(.white)
                         .font(.subheadline.bold())
-                    Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
+                    Text(planPeriodString(from: plan.startDate, to: plan.endDate))
                         .font(.subheadline.bold())
                         .foregroundStyle(.white)
                         .lineLimit(1)

@@ -41,7 +41,7 @@ struct ProfileView: View {
                                     Image(systemName: "target")
                                         .foregroundStyle(.secondary)
                                         .font(.subheadline)
-                                    Text("\(plan.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(plan.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
+                                    Text(planPeriodString(from: plan.startDate, to: plan.endDate))
                                         .font(.subheadline.weight(.semibold))
                                     if plan.isPast {
                                         Text(String.plan_ended)
@@ -269,7 +269,7 @@ struct PlanHistoryRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("\(entry.startDate.formatted(.dateTime.day().month(.abbreviated))) – \(entry.endDate.formatted(.dateTime.day().month(.abbreviated).year()))")
+            Text(planPeriodString(from: entry.startDate, to: entry.endDate))
                 .font(.subheadline.weight(.semibold))
             HStack(spacing: 16) {
                 if let target = entry.targetSalons, target > 0 {

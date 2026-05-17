@@ -3,6 +3,23 @@ import MapKit
 import CoreLocation
 import Combine
 
+// MARK: - Date Formatters
+
+private let _planDayMonthFmt: DateFormatter = {
+    let f = DateFormatter(); f.dateFormat = "d MMMM"; return f
+}()
+private let _planDayMonthYearFmt: DateFormatter = {
+    let f = DateFormatter(); f.dateFormat = "d MMMM yyyy"; return f
+}()
+
+func planPeriodString(from start: Date, to end: Date) -> String {
+    "\(_planDayMonthFmt.string(from: start)) – \(_planDayMonthYearFmt.string(from: end))"
+}
+
+func planDateString(_ date: Date) -> String {
+    _planDayMonthYearFmt.string(from: date)
+}
+
 // MARK: - CZK Formatter
 
 private extension NumberFormatter {
