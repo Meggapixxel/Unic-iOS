@@ -53,7 +53,7 @@ final class InvoiceFormViewModel: ObservableObject {
     private let deleteClientAction: (String) async throws -> Void
 
     var isEditing: Bool { editingInvoice != nil }
-    var title: String { isEditing ? String.edit_invoice_title : String.create_invoice_title }
+    var title: String { String.create_invoice_title }
     var submitLabel: String { isEditing ? String.save : String.create_invoice_submit }
 
     var canCreateClient: Bool { AuthService.shared.canCreateClient }

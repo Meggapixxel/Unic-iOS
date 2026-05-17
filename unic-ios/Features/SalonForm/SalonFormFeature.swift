@@ -312,7 +312,7 @@ struct SalonFormView: View {
                         .lineLimit(3...6)
                 }
             }
-            .navigationTitle(store.isEdit ? String.edit_salon : String.add_salon)
+            .navigationTitle(String.add_salon)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

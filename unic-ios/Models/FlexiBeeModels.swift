@@ -102,7 +102,7 @@ struct FlexiBeeCenikWrapper: Decodable {
 
 // MARK: - Joined Stock + Price
 
-struct FlexiBeeStockWithPrice: Identifiable, Hashable {
+struct FlexiBeeStockItem: Identifiable, Hashable {
     let card:  FlexiBeeStockCard
     let price: FlexiBeeCenikItem?
 
@@ -123,9 +123,17 @@ struct FlexiBeeStockWithPrice: Identifiable, Hashable {
         return String(name[name.startIndex..<range.lowerBound])
     }
 
-    var displayName: String {
-        guard let range = name.range(of: " - ") else { return name }
-        return String(name[range.upperBound...])
+    var volume: String? {
+        let parts = name.components(separatedBy: " - ")
+        guard parts.count >= 3 else { return nil }
+        return parts.last
+    }
+
+    var productName: String {
+        let parts = name.components(separatedBy: " - ")
+        guard parts.count >= 2 else { return name }
+        let withoutLine = parts.dropFirst()
+        return (parts.count >= 3 ? withoutLine.dropLast() : withoutLine).joined(separator: " - ")
     }
 }
 

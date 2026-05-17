@@ -418,6 +418,8 @@ struct ClientDetailFeature {
     struct State: Equatable {
         var clientName: String
         var clientCode: String?
+        var clientIc: String? = nil
+        var clientDic: String? = nil
         var canEdit: Bool = false
         var canEditClient: Bool = false
         var invoices: [FlexiBeeInvoice]
@@ -439,6 +441,8 @@ struct ClientDetailFeature {
         static func == (lhs: Self, rhs: Self) -> Bool {
             lhs.clientName == rhs.clientName &&
             lhs.clientCode == rhs.clientCode &&
+            lhs.clientIc == rhs.clientIc &&
+            lhs.clientDic == rhs.clientDic &&
             lhs.canEdit == rhs.canEdit &&
             lhs.canEditClient == rhs.canEditClient &&
             lhs.invoices.map(\.id) == rhs.invoices.map(\.id) &&
@@ -447,6 +451,7 @@ struct ClientDetailFeature {
     }
 
     enum Action {
+        case onLoad
         case invoiceTapped(FlexiBeeInvoice)
         case newInvoiceTapped
         case editClientTapped
@@ -459,6 +464,11 @@ struct ClientDetailFeature {
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
+            case .onLoad:
+                let first = state.invoices.first
+                state.clientIc = first?.clientIc.flatMap { $0.isEmpty ? nil : $0 }
+                state.clientDic = first?.clientDic.flatMap { $0.isEmpty ? nil : $0 }
+                return .none
             case .newInvoiceTapped:
                 state.destination = .createInvoice(
                     InvoiceFormPlaceholderFeature.State(preSelectClientCode: state.clientCode)
@@ -494,9 +504,10 @@ struct ClientDetailFeature {
                 }
                 return .none
             case .destination(.presented(.editClient(.dismiss))):
-                // Refresh clientName from updated data if available
-                if case let .editClient(editState) = state.destination {
-                    state.clientName = editState.name.trimmingCharacters(in: .whitespaces)
+                if case let .editClient(s) = state.destination {
+                    state.clientName = s.name.trimmingCharacters(in: .whitespaces)
+                    state.clientIc = s.ic.isEmpty ? nil : s.ic
+                    state.clientDic = s.dic.isEmpty ? nil : s.dic
                 }
                 state.destination = nil
                 return .none

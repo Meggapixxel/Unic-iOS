@@ -12,8 +12,6 @@ struct PromoFormFeature {
         var descriptionUk: String = ""
         var descriptionRu: String = ""
         var category: String = "Other"
-        var validFrom: Date
-        var validTo: Date
         var isSaving = false
         var alertMessage: String?
         var existing: PromoOffer?
@@ -21,8 +19,6 @@ struct PromoFormFeature {
         var isValid: Bool { !titleEn.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
         init(existing: PromoOffer? = nil) {
-            @Dependency(\.date) var date
-            let now = date()
             self.existing = existing
             self.titleEn       = existing?.content[AppLanguage.en.rawValue]?.title ?? ""
             self.titleUk       = existing?.content[AppLanguage.ua.rawValue]?.title ?? ""
@@ -30,9 +26,7 @@ struct PromoFormFeature {
             self.descriptionEn = existing?.content[AppLanguage.en.rawValue]?.description ?? ""
             self.descriptionUk = existing?.content[AppLanguage.ua.rawValue]?.description ?? ""
             self.descriptionRu = existing?.content[AppLanguage.ru.rawValue]?.description ?? ""
-            self.category  = existing?.category ?? "Other"
-            self.validFrom = existing?.validFrom ?? now
-            self.validTo   = existing?.validTo ?? Calendar.current.date(byAdding: .day, value: 30, to: now) ?? now
+            self.category      = existing?.category ?? "Other"
         }
     }
 
@@ -75,8 +69,8 @@ struct PromoFormFeature {
                 }
                 let promo = PromoOffer(
                     id: state.existing?.id,
-                    validFrom: state.validFrom,
-                    validTo: state.validTo,
+                    validFrom: state.existing?.validFrom,
+                    validTo: state.existing?.validTo,
                     createdBy: auth.currentUser()?.id ?? "",
                     category: state.category,
                     content: promoContent

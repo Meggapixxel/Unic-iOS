@@ -240,6 +240,12 @@ struct SalonsFeature {
             case let .path(.element(id: _, action: .salonDetail(.salonUpdated(salon)))):
                 return .send(.salonSaved(salon))
 
+            case .path(.element(id: _, action: .salonDetail(.statusAdded(_)))):
+                if let last = state.path.last, case let .salonDetail(detail) = last {
+                    return .send(.salonSaved(detail.salon))
+                }
+                return .none
+
             case .path(.element(id: _, action: .salonDetail(.deleteFinished))):
                 // The detail reducer already dismissed itself via @Dependency(\.dismiss).
                 // Remove the salon from the list.

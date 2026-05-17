@@ -18,7 +18,7 @@ struct PlansView: View {
                             Button {
                                 store.send(.editTapped(plan))
                             } label: {
-                                Label(String.plan_edit, systemImage: "pencil")
+                                Image(systemName: "pencil")
                             }
                             .tint(.orange)
                         }
@@ -117,7 +117,7 @@ struct PlansFormView: View {
                     }
                 }
             }
-            .navigationTitle(store.existing == nil ? String.plan_add : String.plan_edit)
+            .navigationTitle(String.plan_add)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

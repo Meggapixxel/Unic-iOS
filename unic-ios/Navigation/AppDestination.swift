@@ -1,7 +1,7 @@
 import Foundation
 
 enum AppDestination: Hashable {
-    case product(FlexiBeeStockWithPrice)
+    case product(FlexiBeeStockItem)
     case invoice(FlexiBeeInvoice)
     case allTopProducts
     case allTopClients

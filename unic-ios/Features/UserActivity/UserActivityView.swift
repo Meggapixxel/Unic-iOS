@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import MapKit
 import SwiftUI
 
 struct UserActivityView: View {
@@ -83,6 +84,15 @@ struct UserActivityView: View {
                                 .font(.footnote.weight(.semibold))
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 4)
+
+                            let routeEntries = dayEntries
+                                .filter { $0.coordinate != nil }
+                                .sorted { $0.timestamp < $1.timestamp }
+                            if !routeEntries.isEmpty {
+                                RouteMapView(entries: routeEntries)
+                                    .frame(height: 200)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                            }
 
                             VStack(spacing: 8) {
                                 ForEach(dayEntries) { entry in
@@ -196,5 +206,64 @@ private struct ActivityEntryCard: View {
         }
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
         .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+// MARK: - Route Map
+
+private struct RouteMapView: View {
+    let entries: [UserActivityEntry]
+
+    @State private var position: MapCameraPosition = .automatic
+
+    private var coordinates: [CLLocationCoordinate2D] {
+        entries.compactMap(\.coordinate)
+    }
+
+    private func makeRegion() -> MKCoordinateRegion {
+        let coords = coordinates
+        guard !coords.isEmpty else {
+            return MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 50.075, longitude: 14.438),
+                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+            )
+        }
+        let lats = coords.map(\.latitude)
+        let lngs = coords.map(\.longitude)
+        let centerLat = (lats.min()! + lats.max()!) / 2
+        let centerLng = (lngs.min()! + lngs.max()!) / 2
+        let spanLat = max((lats.max()! - lats.min()!) * 1.6, 0.012)
+        let spanLng = max((lngs.max()! - lngs.min()!) * 1.6, 0.012)
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: centerLat, longitude: centerLng),
+            span: MKCoordinateSpan(latitudeDelta: spanLat, longitudeDelta: spanLng)
+        )
+    }
+
+    var body: some View {
+        Map(position: $position) {
+            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                if let coord = entry.coordinate {
+                    Annotation(entry.salonName, coordinate: coord) {
+                        ZStack {
+                            Circle()
+                                .fill(entry.status.color)
+                                .frame(width: 28, height: 28)
+                            Text("\(index + 1)")
+                                .font(.caption2.bold())
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+            }
+            if coordinates.count > 1 {
+                MapPolyline(coordinates: coordinates)
+                    .stroke(.blue.opacity(0.6), lineWidth: 2)
+            }
+        }
+        .mapStyle(.standard(elevation: .flat))
+        .disabled(true)
+        .onAppear { position = .region(makeRegion()) }
+        .onChange(of: entries) { position = .region(makeRegion()) }
     }
 }

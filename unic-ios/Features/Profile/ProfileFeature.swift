@@ -49,6 +49,38 @@ struct ProfileFeature {
             guard let plan = currentUser.activePlan else { return 0 }
             return activityEntries.filter { $0.timestamp >= plan.startDate && $0.timestamp <= plan.endDate && $0.status == .testDrive }.count
         }
+
+        var newClientsInPlan: Int {
+            guard let plan = currentUser.activePlan else { return 0 }
+            let contactedStatuses: Set<SalonStatus> = [.contacted, .testDrive, .demoScheduled, .ordered]
+            let prePlanContacted = Set(
+                activityEntries
+                    .filter { $0.timestamp < plan.startDate && contactedStatuses.contains($0.status) }
+                    .map(\.salonId)
+            )
+            let inPlanContacted = Set(
+                activityEntries
+                    .filter { $0.timestamp >= plan.startDate && $0.timestamp <= plan.endDate && contactedStatuses.contains($0.status) }
+                    .map(\.salonId)
+            )
+            return inPlanContacted.filter { !prePlanContacted.contains($0) }.count
+        }
+
+        var returningClientsInPlan: Int {
+            guard let plan = currentUser.activePlan else { return 0 }
+            let contactedStatuses: Set<SalonStatus> = [.contacted, .testDrive, .demoScheduled, .ordered]
+            let prePlanContacted = Set(
+                activityEntries
+                    .filter { $0.timestamp < plan.startDate && contactedStatuses.contains($0.status) }
+                    .map(\.salonId)
+            )
+            let inPlanContacted = Set(
+                activityEntries
+                    .filter { $0.timestamp >= plan.startDate && $0.timestamp <= plan.endDate && contactedStatuses.contains($0.status) }
+                    .map(\.salonId)
+            )
+            return inPlanContacted.filter { prePlanContacted.contains($0) }.count
+        }
     }
 
     // MARK: - Action

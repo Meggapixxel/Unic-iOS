@@ -11,6 +11,20 @@ import CoreLocation
 import FirebaseCore
 @preconcurrency import FirebaseFirestore
 
+enum FirebaseError: LocalizedError {
+    case documentNotFound
+    case decodingFailed
+    case missingId
+
+    var errorDescription: String? {
+        switch self {
+        case .documentNotFound: return "Document not found in Firestore"
+        case .decodingFailed:   return "Failed to decode Firestore document"
+        case .missingId:        return "Document ID is missing"
+        }
+    }
+}
+
 struct TagItem: Identifiable, Hashable {
     let id: String
     let name: String
@@ -562,9 +576,13 @@ final class FirebaseService: ObservableObject {
             let status = SalonStatus(rawValue: d["status"] as? String ?? "") ?? .new
             let ts = (d["timestamp"] as? Timestamp)?.dateValue() ?? Date()
             let raw = d["note"] as? String
+            let loc = d["userLocation"] as? [String: Any]
+            let lat = loc?["lat"] as? Double
+            let lng = loc?["lng"] as? Double
             return UserActivityEntry(
                 id: doc.documentID, salonId: sid, salonName: salonNames[sid] ?? sid,
-                status: status, note: raw?.isEmpty == false ? raw : nil, timestamp: ts
+                status: status, note: raw?.isEmpty == false ? raw : nil, timestamp: ts,
+                latitude: lat, longitude: lng
             )
         }
         AppLogger.log(.debug, "Firebase", "fetchUserActivity → \(entries.count) entries")
@@ -795,10 +813,8 @@ final class FirebaseService: ObservableObject {
     }
 
     func fetchPromos() async throws -> [PromoOffer] {
-        let snapshot = try await db.collection("promos")
-            .order(by: "validFrom", descending: true)
-            .getDocuments()
-        return try snapshot.documents.compactMap { try $0.data(as: PromoOffer.self) }
+        let snapshot = try await db.collection("promos").getDocuments()
+        return snapshot.documents.compactMap { try? $0.data(as: PromoOffer.self) }
     }
 
     func savePromo(_ promo: PromoOffer) async throws -> PromoOffer {
@@ -808,14 +824,35 @@ final class FirebaseService: ObservableObject {
         let docRef: DocumentReference
         if let id = promo.id {
             docRef = db.collection("promos").document(id)
-            try await docRef.setData(data)
         } else {
-            docRef = try await db.collection("promos").addDocument(data: data)
+            docRef = db.collection("promos").document()
         }
-        let doc = try await docRef.getDocument()
-        guard let saved = try? doc.data(as: PromoOffer.self) else {
-            throw NSError(domain: "SavePromo", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to fetch saved promo"])
-        }
+        try await docRef.setData(data)
+        return try await fetchPromo(ref: docRef)
+    }
+
+    func activatePromo(id: String, validFrom: Date, validTo: Date) async throws -> PromoOffer {
+        let docRef = db.collection("promos").document(id)
+        try await docRef.updateData([
+            "validFrom": Timestamp(date: validFrom),
+            "validTo":   Timestamp(date: validTo)
+        ])
+        return try await fetchPromo(ref: docRef)
+    }
+
+    func deactivatePromo(id: String) async throws -> PromoOffer {
+        let docRef = db.collection("promos").document(id)
+        try await docRef.updateData([
+            "validFrom": FieldValue.delete(),
+            "validTo":   FieldValue.delete()
+        ])
+        return try await fetchPromo(ref: docRef)
+    }
+
+    private func fetchPromo(ref: DocumentReference) async throws -> PromoOffer {
+        let doc = try await ref.getDocument()
+        guard doc.exists else { throw FirebaseError.documentNotFound }
+        guard let saved = try? doc.data(as: PromoOffer.self) else { throw FirebaseError.decodingFailed }
         return saved
     }
 

@@ -501,7 +501,7 @@ struct EditNoteSheet: View {
                     TextField(String.add_comment, text: $noteText, axis: .vertical).lineLimit(3...8)
                 }
             }
-            .navigationTitle(String.edit_note).navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(String.note_optional).navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { CloseButton { isPresented = false } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -809,7 +809,7 @@ extension Salon {
 // MARK: - StockWithPriceRow
 
 struct StockWithPriceRow: View {
-    let item: FlexiBeeStockWithPrice
+    let item: FlexiBeeStockItem
 
     var body: some View {
         HStack(spacing: 12) {
@@ -818,9 +818,17 @@ struct StockWithPriceRow: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
-                Text(item.displayName)
+                Text(item.productName)
                     .font(.callout)
                     .lineLimit(2)
+                if let vol = item.volume {
+                    Text(vol)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color(.systemGray5), in: Capsule())
+                }
             }
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 4) {

@@ -19,21 +19,22 @@ struct StockFeature {
         @Presents var destination: Destination.State?
 
         // Backing store — populated on load/sync
-        var allStock: [FlexiBeeStockWithPrice] = []
+        var allStock: [FlexiBeeStockItem] = []
 
-        var filteredStock: [FlexiBeeStockWithPrice] {
+        var filteredStock: [FlexiBeeStockItem] {
             let q = searchText.lowercased()
-            let items: [FlexiBeeStockWithPrice] = searchText.isEmpty
+            let items: [FlexiBeeStockItem] = searchText.isEmpty
                 ? allStock
                 : allStock.filter {
                     $0.code.lowercased().contains(q) ||
-                    $0.displayName.lowercased().contains(q)
+                    $0.productName.lowercased().contains(q) ||
+                    $0.productLine.lowercased().contains(q)
                 }
             switch sortField {
             case .section:
-                return items.sorted { $0.displayName < $1.displayName }
+                return items.sorted { $0.productName < $1.productName }
             case .name:
-                return items.sorted { $0.displayName < $1.displayName }
+                return items.sorted { $0.productName < $1.productName }
             case .quantity:
                 return items.sorted { sortAscending ? $0.quantity < $1.quantity : $0.quantity > $1.quantity }
             }
@@ -42,7 +43,7 @@ struct StockFeature {
         var totalStockUnits: Double { allStock.reduce(0) { $0 + $1.quantity } }
         var lowStockCount: Int { allStock.filter { $0.quantity <= 2 }.count }
 
-        var groupedStock: [(line: String, items: [FlexiBeeStockWithPrice])] {
+        var groupedStock: [(line: String, items: [FlexiBeeStockItem])] {
             let grouped = Dictionary(grouping: filteredStock, by: \.productLine)
             return grouped.keys.sorted { a, b in
                 if a == "—" { return false }
@@ -74,15 +75,15 @@ struct StockFeature {
         case binding(BindingAction<State>)
         case onLoad
         case forceSync
-        case syncCompleted([FlexiBeeStockWithPrice], Date?)
+        case syncCompleted([FlexiBeeStockItem], Date?)
         case syncFailed(String)
         case destinationChanged
-        case openProduct(FlexiBeeStockWithPrice)
+        case openProduct(FlexiBeeStockItem)
         case openChecklist
         case openBarcodeScanner
         case openCatalog
         case barcodeScanned(String)
-        case barcodeSearchCompleted(FlexiBeeStockWithPrice?)
+        case barcodeSearchCompleted(FlexiBeeStockItem?)
         case destination(PresentationAction<Destination.Action>)
         case path(StackActionOf<Path>)
     }
@@ -218,7 +219,7 @@ extension StockFeature.Path.State: Equatable {}
 struct ProductDetailFeature {
     @ObservableState
     struct State: Equatable {
-        var product: FlexiBeeStockWithPrice
+        var product: FlexiBeeStockItem
         var showPurchaseDetails: Bool = false
     }
 

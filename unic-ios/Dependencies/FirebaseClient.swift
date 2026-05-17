@@ -35,6 +35,8 @@ struct FirebaseClient: @unchecked Sendable {
     var fetchPromoCategories: () async throws -> [String] = { [] }
     var fetchPromos: () async throws -> [PromoOffer] = { [] }
     var savePromo: (_ promo: PromoOffer) async throws -> PromoOffer = { _ in throw NSError() }
+    var activatePromo: (_ id: String, _ validFrom: Date, _ validTo: Date) async throws -> PromoOffer = { _, _, _ in throw FirebaseError.missingId }
+    var deactivatePromo: (_ id: String) async throws -> PromoOffer = { _ in throw FirebaseError.missingId }
     var deletePromo: (_ id: String) async throws -> Void
     // Tags
     var loadWorksOnTags: () async -> [WorksOnTag] = { [] }
@@ -82,6 +84,8 @@ extension FirebaseClient: DependencyKey {
                 fetchPromoCategories: { try await s.fetchPromoCategories() },
                 fetchPromos: { try await s.fetchPromos() },
                 savePromo: { promo in try await s.savePromo(promo) },
+                activatePromo: { id, vf, vt in try await s.activatePromo(id: id, validFrom: vf, validTo: vt) },
+                deactivatePromo: { id in try await s.deactivatePromo(id: id) },
                 deletePromo: { id in try await s.deletePromo(id: id) },
                 loadWorksOnTags: { await s.loadWorksOnTags() },
                 loadBundleCodes: { await s.loadBundleCodes() },

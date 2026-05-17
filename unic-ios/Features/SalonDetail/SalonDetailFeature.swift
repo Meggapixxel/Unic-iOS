@@ -164,6 +164,7 @@ struct SalonDetailFeature {
                     state.statusHistory.insert(entry, at: 0)
                 }
                 state.latestEntry = entry
+                state.salon.status = entry.status
                 return .none
 
             case let .updateNote(note, entryId: entryId):
@@ -272,6 +273,8 @@ struct AddStatusFeature {
         var minScheduledDate: Date
         var isSaving = false
         var locationError: Bool = false
+        var selectedArticleCodes: [String] = []
+        var stockItems: [FlexiBeeStockItem] = []
 
         init(salonId: String, currentStatus: SalonStatus, currentUserId: String) {
             @Dependency(\.date) var date
@@ -288,6 +291,7 @@ struct AddStatusFeature {
 
     enum Action: BindableAction {
         case binding(BindingAction<State>)
+        case onLoad
         case saveTapped
         case entryAdded(StatusHistoryEntry, updatedSalon: Salon?)
         case failed(String)
@@ -297,6 +301,7 @@ struct AddStatusFeature {
 
     @Dependency(\.firebaseClient) var firebase
     @Dependency(\.locationClient) var locationClient
+    @Dependency(\.flexiBeeClient) var flexiBeeClient
     @Dependency(\.date) var date
     @Dependency(\.dismiss) var dismiss
 
@@ -304,13 +309,21 @@ struct AddStatusFeature {
         BindingReducer()
         Reduce { state, action in
             switch action {
+            case .onLoad:
+                state.stockItems = Array(flexiBeeClient.stockWithPrices())
+                return .none
+
             case .saveTapped:
                 guard !state.isSaving else { return .none }
                 state.isSaving = true
                 let salonId = state.salonId
                 let selectedStatus = state.selectedStatus
-                let note = state.note
-                let noteOrNil: String? = note.isEmpty ? nil : note
+                let articleText = selectedStatus == .testDrive && !state.selectedArticleCodes.isEmpty
+                    ? state.selectedArticleCodes.joined(separator: ", ")
+                    : nil
+                let notePart = state.note.isEmpty ? nil : state.note
+                let effectiveNote = [articleText, notePart].compactMap { $0 }.joined(separator: "\n")
+                let noteOrNil: String? = effectiveNote.isEmpty ? nil : effectiveNote
                 let createdBy = state.currentUserId
                 let scheduledDate: Date? = selectedStatus == .demoScheduled ? state.selectedDate : nil
                 let firebase = firebase
@@ -323,7 +336,7 @@ struct AddStatusFeature {
                     }
                     do {
                         try await firebase.addStatusHistoryEntry(
-                            salonId, selectedStatus, note, createdBy, scheduledDate ?? date(), userLocation
+                            salonId, selectedStatus, effectiveNote, createdBy, scheduledDate ?? date(), userLocation
                         )
                         let history = try await firebase.fetchStatusHistory(salonId)
                         let entry = history.first ?? StatusHistoryEntry(

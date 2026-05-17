@@ -70,6 +70,7 @@ struct PromosFeature {
         case openEdit(PromoOffer)
         case openDetail(PromoOffer)
         case toggleEnabled(PromoOffer)
+        case promoDeactivated(PromoOffer)
         case toggleShowDisabled
         case setLanguage(AppLanguage)
         case toggleCategory(String)
@@ -151,17 +152,29 @@ struct PromosFeature {
                 return .none
 
             case .toggleEnabled(let promo):
-                guard let id = promo.id, let idx = state.promos.firstIndex(where: { $0.id == id }) else { return .none }
-                state.promos[idx].isEnabled.toggle()
-                let updated = state.promos[idx]
-                let firebase = firebase
-                return .run { [firebase] send in
-                    do {
-                        _ = try await firebase.savePromo(updated)
-                    } catch {
-                        await send(.failed(error.localizedDescription))
+                if promo.isEnabled {
+                    guard let id = promo.id else { return .none }
+                    let firebase = firebase
+                    return .run { [firebase] send in
+                        do {
+                            let saved = try await firebase.deactivatePromo(id)
+                            await send(.promoDeactivated(saved))
+                        } catch {
+                            await send(.failed(error.localizedDescription))
+                        }
                     }
+                } else {
+                    var detailState = PromoDetailFeature.State(promo: promo, canManagePromos: state.canManagePromos, language: state.language)
+                    detailState.isPickingActivationDates = true
+                    state.destination = .detail(detailState)
+                    return .none
                 }
+
+            case .promoDeactivated(let promo):
+                if let idx = state.promos.firstIndex(where: { $0.id == promo.id }) {
+                    state.promos[idx] = promo
+                }
+                return .none
 
             case .deleteTapped(let promo):
                 state.promoToDelete = promo

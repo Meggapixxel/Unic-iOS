@@ -6,7 +6,7 @@ struct FlexiBeeClient: @unchecked Sendable {
     var loadIfNeeded: () async -> Void = {}
     var forceSync: () async -> Void = {}
     var refreshInvoicesData: () async -> Void = {}
-    var stockWithPrices: () -> IdentifiedArrayOf<FlexiBeeStockWithPrice> = { [] }
+    var stockWithPrices: () -> IdentifiedArrayOf<FlexiBeeStockItem> = { [] }
     var stock: () -> [FlexiBeeStockCard] = { [] }
     var invoices: () -> [FlexiBeeInvoice] = { [] }
     var salesMovementItems: () -> [FlexiBeeStockMovementItem] = { [] }

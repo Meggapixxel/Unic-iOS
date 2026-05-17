@@ -22,12 +22,15 @@ struct StockView: View {
                 .task { store.send(.onLoad) }
                 .refreshable { store.send(.forceSync) }
         } destination: { pathStore in
-            switch pathStore.case {
-            case let .productDetail(productStore):
-                ProductDetailView(store: productStore)
-            case let .catalog(catalogStore):
-                CatalogView(store: catalogStore)
+            Group {
+                switch pathStore.case {
+                case let .productDetail(productStore):
+                    ProductDetailView(store: productStore)
+                case let .catalog(catalogStore):
+                    CatalogView(store: catalogStore)
+                }
             }
+            .toolbar(.hidden, for: .tabBar)
         }
         .sheet(
             item: $store.scope(
@@ -122,10 +125,19 @@ private struct StockListContent: View {
                 }
                 if store.sortField == .section {
                     ForEach(store.groupedStock, id: \.line) { group in
-                        Section("\(group.line) (\(group.items.count))") {
+                        Section {
                             ForEach(group.items) { item in
                                 stockItemButton(item)
                             }
+                        } header: {
+                            Text("\(group.line) (\(group.items.count))")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .glassBackgroundCapsule()
+                                .textCase(nil)
+                                .padding(.vertical, 4)
                         }
                     }
                 } else {
@@ -167,7 +179,7 @@ private struct StockListContent: View {
         }
     }
     
-    private func stockItemButton(_ item: FlexiBeeStockWithPrice) -> some View {
+    private func stockItemButton(_ item: FlexiBeeStockItem) -> some View {
         Button { store.send(.openProduct(item)) } label: {
             HStack(spacing: 8) {
                 StockWithPriceRow(item: item)

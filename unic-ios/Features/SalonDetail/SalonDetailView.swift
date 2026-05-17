@@ -468,12 +468,27 @@ struct AddStatusView: View {
                     }
                 }
 
+                if store.selectedStatus == .testDrive {
+                    Section(String.articles_label) {
+                        TagEditor(
+                            selectedIds: $store.selectedArticleCodes,
+                            availableTags: store.stockItems.map {
+                                TagItem(id: $0.code, name: $0.name.isEmpty ? $0.code : "\($0.code) — \($0.name)")
+                            },
+                            placeholder: "articles_search",
+                            canAddNew: false,
+                            onAddNew: nil
+                        )
+                    }
+                }
+
                 Section(String.note_optional) {
                     TextField(String.add_comment, text: $store.note, axis: .vertical)
                         .lineLimit(3...6)
                 }
             }
             .navigationTitle(String.add_status)
+            .task { store.send(.onLoad) }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -532,7 +547,7 @@ struct StatusHistoryView: View {
                                         Button {
                                             editingEntry = entry
                                         } label: {
-                                            Label(String.edit_note, systemImage: "pencil")
+                                            Image(systemName: "pencil")
                                         }
                                         .tint(.blue)
                                     }

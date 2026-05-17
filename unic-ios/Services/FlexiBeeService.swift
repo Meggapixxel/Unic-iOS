@@ -70,9 +70,9 @@ final class FlexiBeeService: ObservableObject {
         return Date().timeIntervalSince(last) < Self.cacheTTL
     }
 
-    var stockWithPrices: IdentifiedArrayOf<FlexiBeeStockWithPrice> {
+    var stockWithPrices: IdentifiedArrayOf<FlexiBeeStockItem> {
         let priceByCode = Dictionary(uniqueKeysWithValues: priceList.map { ($0.code, $0) })
-        return IdentifiedArray(uniqueElements: stock.map { FlexiBeeStockWithPrice(card: $0, price: priceByCode[$0.code]) })
+        return IdentifiedArray(uniqueElements: stock.map { FlexiBeeStockItem(card: $0, price: priceByCode[$0.code]) })
     }
 
     // MARK: - Load

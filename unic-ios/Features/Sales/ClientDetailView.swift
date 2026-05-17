@@ -14,11 +14,14 @@ struct ClientDetailView: View {
         .listStyle(.insetGrouped)
         .navigationTitle(store.clientName)
         .navigationBarTitleDisplayMode(.inline)
+        .task { store.send(.onLoad) }
         .toolbar {
             if store.canEditClient {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(String.edit_client) {
+                    Button {
                         store.send(.editClientTapped)
+                    } label: {
+                        Image(systemName: "square.and.pencil")
                     }
                 }
             }
@@ -65,11 +68,15 @@ struct ClientDetailView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(store.clientName)
                     .font(.title3.bold())
-                if let code = store.clientCode {
-                    Text(code)
+                if let ic = store.clientIc {
+                    Text("IČO: \(ic)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
+                }
+                if let dic = store.clientDic {
+                    Text("DIČ: \(dic)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 HStack(spacing: 16) {
                     Label("\(store.invoices.count)", systemImage: "doc.text")
@@ -192,7 +199,7 @@ struct ClientEditView: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(String.edit_client)
+            .navigationTitle(store.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

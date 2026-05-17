@@ -76,7 +76,7 @@ struct Salon: Codable, Identifiable, Hashable {
     let contacts: Contacts?
 
     let leadTemp: String?
-    let status: String?
+    var status: String?
     let ownerDriven: Bool?
     let notes: String?
     let worksOn: [String]?

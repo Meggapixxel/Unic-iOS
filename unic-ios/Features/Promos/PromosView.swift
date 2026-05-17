@@ -22,7 +22,7 @@ struct PromosView: View {
                             Button {
                                 store.send(.openEdit(promo))
                             } label: {
-                                Label(String.promo_edit, systemImage: "pencil")
+                                Image(systemName: "pencil")
                             }
                             .tint(.orange)
                         }
@@ -146,9 +146,11 @@ private struct PromoRowView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
-            Text("\(promo.validFrom.formatted(.dateTime.day().month(.abbreviated))) – \(promo.validTo.formatted(.dateTime.day().month(.abbreviated).year()))")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+            if let vf = promo.validFrom, let vt = promo.validTo {
+                Text("\(vf.formatted(.dateTime.day().month(.abbreviated))) – \(vt.formatted(.dateTime.day().month(.abbreviated).year()))")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
         }
         .padding(.vertical, 4)
         .opacity(promo.isEnabled ? 1 : 0.45)
@@ -200,7 +202,9 @@ struct PromoDetailView: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(12)
 
-                    PromoPeriodView(promo: store.promo)
+                    if let vf = store.promo.validFrom, let vt = store.promo.validTo {
+                        PromoPeriodView(validFrom: vf, validTo: vt)
+                    }
                 }
                 .padding()
             }
@@ -212,11 +216,14 @@ struct PromoDetailView: View {
                 }
                 if store.canManagePromos {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button { store.send(.toggleEnabled) } label: {
-                            Image(systemName: store.promo.isEnabled ? "eye.slash" : "eye")
+                        if store.isTogglingEnabled {
+                            ProgressView().scaleEffect(0.8)
+                        } else {
+                            Button { store.send(.toggleEnabled) } label: {
+                                Image(systemName: store.promo.isEnabled ? "eye.slash" : "eye")
+                            }
+                            .tint(store.promo.isEnabled ? .gray : .green)
                         }
-                        .tint(store.promo.isEnabled ? .gray : .green)
-                        .disabled(store.isTogglingEnabled)
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button { store.send(.editTapped) } label: {
@@ -225,6 +232,31 @@ struct PromoDetailView: View {
                     }
                 }
             }
+            .sheet(isPresented: $store.isPickingActivationDates) {
+                store.send(.activatePickerDismissed)
+            } content: {
+                NavigationStack {
+                    Form {
+                        Section {
+                            DatePicker(String.promo_valid_from, selection: $store.activateFrom, displayedComponents: .date)
+                            DatePicker(String.promo_valid_to, selection: $store.activateTo, in: store.activateFrom..., displayedComponents: .date)
+                        }
+                    }
+                    .navigationTitle(String.promo_has_dates)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            CloseButton { store.send(.activatePickerDismissed) }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button { store.send(.activateDateConfirmed) } label: {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.medium])
+            }
         }
     }
 }
@@ -232,21 +264,24 @@ struct PromoDetailView: View {
 // MARK: - Promo Period
 
 private struct PromoPeriodView: View {
-    let promo: PromoOffer
+    let validFrom: Date
+    let validTo: Date
 
     private var progress: Double {
-        let total = promo.validTo.timeIntervalSince(promo.validFrom)
-        let elapsed = Date().timeIntervalSince(promo.validFrom)
+        let total = validTo.timeIntervalSince(validFrom)
+        let elapsed = Date().timeIntervalSince(validFrom)
         return min(max(elapsed / total, 0), 1)
     }
 
+    private var isActive: Bool { Date() >= validFrom && Date() <= validTo }
+
     private var statusText: String {
         let now = Date()
-        if now < promo.validFrom {
-            let days = Calendar.current.dateComponents([.day], from: now, to: promo.validFrom).day ?? 0
+        if now < validFrom {
+            let days = Calendar.current.dateComponents([.day], from: now, to: validFrom).day ?? 0
             return "Starts in \(days) day\(days == 1 ? "" : "s")"
-        } else if promo.isActive {
-            let days = Calendar.current.dateComponents([.day], from: now, to: promo.validTo).day ?? 0
+        } else if isActive {
+            let days = Calendar.current.dateComponents([.day], from: now, to: validTo).day ?? 0
             return days == 0 ? "Last day" : "\(days) day\(days == 1 ? "" : "s") left"
         } else {
             return "Expired"
@@ -254,8 +289,8 @@ private struct PromoPeriodView: View {
     }
 
     private var barColor: Color {
-        if promo.isActive { return .accentColor }
-        return Date() < promo.validFrom ? .orange : .gray
+        if isActive { return .accentColor }
+        return Date() < validFrom ? .orange : .gray
     }
 
     var body: some View {
@@ -263,7 +298,7 @@ private struct PromoPeriodView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("From").font(.caption).foregroundStyle(.secondary)
-                    Text(promo.validFrom.formatted(.dateTime.day().month(.abbreviated).year()))
+                    Text(validFrom.formatted(.dateTime.day().month(.abbreviated).year()))
                         .font(.subheadline.weight(.semibold))
                 }
                 Spacer()
@@ -271,7 +306,7 @@ private struct PromoPeriodView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Until").font(.caption).foregroundStyle(.secondary)
-                    Text(promo.validTo.formatted(.dateTime.day().month(.abbreviated).year()))
+                    Text(validTo.formatted(.dateTime.day().month(.abbreviated).year()))
                         .font(.subheadline.weight(.semibold))
                 }
             }
@@ -288,7 +323,7 @@ private struct PromoPeriodView: View {
                 Spacer()
                 Text(statusText)
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(promo.isActive ? Color.accentColor : .secondary)
+                    .foregroundStyle(isActive ? Color.accentColor : .secondary)
             }
         }
         .padding()
@@ -327,12 +362,8 @@ struct PromoFormView: View {
                         }
                     }
                 }
-                Section {
-                    DatePicker(String.promo_valid_from, selection: $store.validFrom, displayedComponents: .date)
-                    DatePicker(String.promo_valid_to, selection: $store.validTo, in: store.validFrom..., displayedComponents: .date)
-                }
             }
-            .navigationTitle(store.existing == nil ? String.promo_add : String.promo_edit)
+            .navigationTitle(String.promo_add)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

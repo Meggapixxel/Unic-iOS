@@ -9,11 +9,10 @@ struct PromoContent: Codable, Equatable {
 struct PromoOffer: Codable, Identifiable, Equatable {
     @DocumentID var id: String?
     var content: [String: PromoContent]
-    let validFrom: Date
-    let validTo: Date
+    var validFrom: Date?
+    var validTo: Date?
     let createdBy: String
     var category: String
-    var isEnabled: Bool
 
     static let categories: [String] = [
         "Hair Color", "Developer", "Bleaching Powder",
@@ -21,8 +20,15 @@ struct PromoOffer: Codable, Identifiable, Equatable {
         "Hair Care", "Styling", "GRAVITY", "BROWIS", "Other"
     ]
 
-    var isActive: Bool { Date() >= validFrom && Date() <= validTo }
-    var isPast: Bool { Date() > validTo }
+    var isEnabled: Bool { validFrom != nil || validTo != nil }
+    var isActive: Bool {
+        guard let vf = validFrom, let vt = validTo else { return false }
+        return Date() >= vf && Date() <= vt
+    }
+    var isPast: Bool {
+        guard let vt = validTo else { return false }
+        return Date() > vt
+    }
 
     var title: String { content["en"]?.title ?? content.values.first?.title ?? "" }
     var description: String { content["en"]?.description ?? content.values.first?.description ?? "" }
@@ -39,11 +45,10 @@ struct PromoOffer: Codable, Identifiable, Equatable {
         id: String? = nil,
         title: String = "",
         description: String = "",
-        validFrom: Date,
-        validTo: Date,
+        validFrom: Date? = nil,
+        validTo: Date? = nil,
         createdBy: String,
         category: String = "Other",
-        isEnabled: Bool = true,
         content: [String: PromoContent] = [:]
     ) {
         self.id = id
@@ -51,18 +56,16 @@ struct PromoOffer: Codable, Identifiable, Equatable {
         self.validTo = validTo
         self.createdBy = createdBy
         self.category = category
-        self.isEnabled = isEnabled
         self.content = content.isEmpty ? ["en": PromoContent(title: title, description: description)] : content
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         _id       = try c.decode(DocumentID<String>.self, forKey: .id)
-        validFrom = try c.decode(Date.self, forKey: .validFrom)
-        validTo   = try c.decode(Date.self, forKey: .validTo)
+        validFrom = try? c.decode(Date.self, forKey: .validFrom)
+        validTo   = try? c.decode(Date.self, forKey: .validTo)
         createdBy = try c.decode(String.self, forKey: .createdBy)
         category  = (try? c.decode(String.self, forKey: .category)) ?? "Other"
-        isEnabled = (try? c.decode(Bool.self, forKey: .isEnabled)) ?? true
         if let contentDict = try? c.decode([String: PromoContent].self, forKey: .content) {
             content = contentDict
         } else {
@@ -73,7 +76,7 @@ struct PromoOffer: Codable, Identifiable, Equatable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, content, validFrom, validTo, createdBy, category, isEnabled
+        case id, content, validFrom, validTo, createdBy, category
         case title, description
     }
 
@@ -81,10 +84,9 @@ struct PromoOffer: Codable, Identifiable, Equatable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try _id.encode(to: encoder)
         try c.encode(content, forKey: .content)
-        try c.encode(validFrom, forKey: .validFrom)
-        try c.encode(validTo, forKey: .validTo)
+        try c.encodeIfPresent(validFrom, forKey: .validFrom)
+        try c.encodeIfPresent(validTo, forKey: .validTo)
         try c.encode(createdBy, forKey: .createdBy)
         try c.encode(category, forKey: .category)
-        try c.encode(isEnabled, forKey: .isEnabled)
     }
 }

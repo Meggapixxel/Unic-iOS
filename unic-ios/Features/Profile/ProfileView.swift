@@ -74,6 +74,22 @@ struct ProfileView: View {
                                     }
                                     Spacer()
                                 }
+
+                                if store.newClientsInPlan > 0 || store.returningClientsInPlan > 0 {
+                                    HStack(spacing: 20) {
+                                        ClientStatChip(
+                                            count: store.newClientsInPlan,
+                                            label: String.stat_new_clients,
+                                            color: plan.isPast ? .secondary : .orange
+                                        )
+                                        ClientStatChip(
+                                            count: store.returningClientsInPlan,
+                                            label: String.stat_returning_clients,
+                                            color: plan.isPast ? .secondary : .purple
+                                        )
+                                        Spacer()
+                                    }
+                                }
                             }
                             .padding(.vertical, 4)
                         }
@@ -131,6 +147,7 @@ struct ProfileView: View {
                 }
             }
             .task { store.send(.onLoad) }
+            .refreshable { await store.send(.onLoad).finish() }
             .confirmationDialog(
                 String.profile_logout_confirm,
                 isPresented: $store.showLogoutConfirm,
@@ -222,6 +239,25 @@ struct RingProgressView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+        }
+    }
+}
+
+// MARK: - Client Stat Chip
+
+struct ClientStatChip: View {
+    let count: Int
+    let label: String
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("\(count)")
+                .font(.title3.bold())
+                .foregroundStyle(color)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
     }
 }

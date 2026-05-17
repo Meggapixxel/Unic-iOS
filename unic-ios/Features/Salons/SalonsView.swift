@@ -20,14 +20,17 @@ struct SalonsView: View {
                     SalonFormView(store: formStore)
                 }
         } destination: { pathStore in
-            switch pathStore.case {
-            case let .salonDetail(detailStore):
-                SalonDetailView(store: detailStore)
-            case let .testDrive(tdStore):
-                TestDriveView(store: tdStore)
-            case let .routePlanner(rpStore):
-                RoutePlannerView(store: rpStore)
+            Group {
+                switch pathStore.case {
+                case let .salonDetail(detailStore):
+                    SalonDetailView(store: detailStore)
+                case let .testDrive(tdStore):
+                    TestDriveView(store: tdStore)
+                case let .routePlanner(rpStore):
+                    RoutePlannerView(store: rpStore)
+                }
             }
+            .toolbar(.hidden, for: .tabBar)
         }
     }
 
