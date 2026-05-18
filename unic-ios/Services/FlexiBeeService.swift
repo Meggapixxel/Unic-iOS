@@ -75,6 +75,7 @@ final class FlexiBeeService: ObservableObject {
 
     private init() {
         restoreFromDisk()
+        rebuildStockWithPrices()
     }
 
     // MARK: - Computed
