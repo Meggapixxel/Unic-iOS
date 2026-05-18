@@ -7,8 +7,7 @@ struct PromosView: View {
     @Bindable var store: StoreOf<PromosFeature>
 
     var body: some View {
-        NavigationStack {
-            List {
+        List {
                 ForEach(store.displayed) { promo in
                     Button { store.send(.openDetail(promo)) } label: {
                         PromoRowView(promo: promo, language: store.language)
@@ -117,7 +116,6 @@ struct PromosView: View {
                 PromoFormView(store: formStore)
             }
             .task { store.send(.onLoad) }
-        }
     }
 }
 

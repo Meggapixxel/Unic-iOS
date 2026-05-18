@@ -53,22 +53,6 @@ import Foundation
 @Reducer
 struct ProfileFeature {
 
-    // MARK: - Path
-
-    /// All screens reachable via the profile navigation stack.
-    @Reducer
-    enum Path {
-        case userActivity(UserActivityFeature)
-        case sales(SalesFeature)
-        case invoiceDetail(InvoiceDetailFeature)
-        case allTopClients(AllTopClientsFeature)
-        case allTopProducts(AllTopProductsFeature)
-        case users(UsersFeature)
-        case plans(PlansFeature)
-        case productDetail(ProductDetailFeature)
-        case clientDetail(ClientDetailFeature)
-    }
-
     // MARK: - State
 
     /// State for the profile tab and its navigation stack.
@@ -81,7 +65,6 @@ struct ProfileFeature {
         var activityEntries: [UserActivityEntry] = []
         /// `true` while activity entries are being fetched from Firebase.
         var isLoadingActivity: Bool = false
-        var path: StackState<Path.State> = StackState()
         /// Controls visibility of the logout confirmation dialog.
         var showLogoutConfirm: Bool = false
 
@@ -181,7 +164,11 @@ struct ProfileFeature {
         /// Navigates to the full ranked-clients list, built from cached FlexiBee invoices.
         case navigateToClients
         case navigateToPlans
-        case path(StackActionOf<Path>)
+        case delegate(Delegate)
+
+        enum Delegate: Equatable {
+            case navigate(AppPath.State)
+        }
     }
 
     // MARK: - Dependencies
@@ -244,18 +231,15 @@ struct ProfileFeature {
                 return .none
 
             case .navigateToActivity:
-                state.path.append(.userActivity(UserActivityFeature.State(user: state.currentUser)))
-                return .none
+                return .send(.delegate(.navigate(.userActivity(UserActivityFeature.State(user: state.currentUser)))))
 
             case .navigateToSales:
                 guard state.canViewSales else { return .none }
-                state.path.append(.sales(SalesFeature.State()))
-                return .none
+                return .send(.delegate(.navigate(.sales(SalesFeature.State()))))
 
             case .navigateToUsers:
                 guard state.canViewUsers else { return .none }
-                state.path.append(.users(UsersFeature.State()))
-                return .none
+                return .send(.delegate(.navigate(.users(UsersFeature.State()))))
 
             case .navigateToClients:
                 guard state.canViewSales else { return .none }
@@ -263,112 +247,19 @@ struct ProfileFeature {
                 let clients = Dictionary(grouping: allInvoices) { $0.clientName }
                     .map { (name: $0.key, revenue: $0.value.reduce(0) { $0 + $1.total }) }
                     .sorted { $0.revenue > $1.revenue }
-                state.path.append(.allTopClients(AllTopClientsFeature.State(clients: clients)))
-                return .none
+                return .send(.delegate(.navigate(.allTopClients(AllTopClientsFeature.State(clients: clients)))))
 
             case .navigateToPlans:
                 guard state.canManagePlans else { return .none }
-                state.path.append(.plans(PlansFeature.State()))
-                return .none
+                return .send(.delegate(.navigate(.plans(PlansFeature.State()))))
 
-            // MARK: Sales sub-navigation (flat stack)
-
-            case .path(.element(_, .sales(.invoiceTapped(let invoice)))):
-                state.path.append(.invoiceDetail(InvoiceDetailFeature.State(invoice: invoice)))
-                return .none
-
-            case .path(.element(let id, .sales(.seeAllTopClientsTapped))):
-                if case let .sales(salesState) = state.path[id: id] {
-                    state.path.append(.allTopClients(AllTopClientsFeature.State(clients: salesState.topClients)))
-                }
-                return .none
-
-            case .path(.element(_, .sales(.clientTapped(let name)))):
-                let allInvoices = flexiBeeClient.invoices()
-                let clientInvoices = allInvoices.filter { $0.clientName == name }
-                let code = clientInvoices.first?.clientCode
-                state.path.append(.clientDetail(ClientDetailFeature.State(
-                    clientName: name, clientCode: code,
-                    canEdit: auth.canEditInvoice(),
-                    canEditClient: auth.canEditClient(),
-                    invoices: clientInvoices
-                )))
-                return .none
-
-            case .path(.element(let id, .sales(.seeAllTopProductsTapped))):
-                if case let .sales(salesState) = state.path[id: id] {
-                    state.path.append(.allTopProducts(AllTopProductsFeature.State(products: salesState.topProducts)))
-                }
-                return .none
-
-            case .path(.element(_, .invoiceDetail(.deleteCompleted))):
-                state.path.removeLast()
-                let flexiBeeClient = flexiBeeClient
-                return .run { [flexiBeeClient] send in
-                    await flexiBeeClient.forceSync()
-                }
-
-            case .path(.element(_, .invoiceDetail(.productTapped(let code)))):
-                let stock = flexiBeeClient.stockWithPrices()
-                if let product = stock.first(where: { $0.code == code }) {
-                    state.path.append(.productDetail(ProductDetailFeature.State(product: product)))
-                }
-                return .none
-
-            case .path(.element(let id, .invoiceDetail(.clientTapped))):
-                if case let .invoiceDetail(detailState) = state.path[id: id] {
-                    let name = detailState.invoice.clientName
-                    let code = detailState.invoice.clientCode
-                    let allInvoices = flexiBeeClient.invoices()
-                    let clientInvoices = allInvoices.filter {
-                        code != nil ? $0.clientCode == code : $0.clientName == name
-                    }
-                    state.path.append(.clientDetail(ClientDetailFeature.State(
-                        clientName: name, clientCode: code,
-                        canEdit: auth.canEditInvoice(),
-                        canEditClient: auth.canEditClient(),
-                        invoices: clientInvoices
-                    )))
-                }
-                return .none
-
-            case .path(.element(_, .allTopProducts(.productTapped(let code)))):
-                let stock = flexiBeeClient.stockWithPrices()
-                if let product = stock.first(where: { $0.code == code }) {
-                    state.path.append(.productDetail(ProductDetailFeature.State(product: product)))
-                }
-                return .none
-
-            case .path(.element(_, .allTopClients(.clientTapped(let name)))):
-                let allInvoices = flexiBeeClient.invoices()
-                let clientInvoices = allInvoices.filter { $0.clientName == name }
-                let code = clientInvoices.first?.clientCode
-                state.path.append(.clientDetail(ClientDetailFeature.State(
-                    clientName: name, clientCode: code,
-                    canEdit: auth.canEditInvoice(),
-                    canEditClient: auth.canEditClient(),
-                    invoices: clientInvoices
-                )))
-                return .none
-
-            case .path(.element(_, .clientDetail(.invoiceTapped(let invoice)))):
-                state.path.append(.invoiceDetail(InvoiceDetailFeature.State(invoice: invoice)))
-                return .none
-
-            case .path(.element(_, .users(.userTapped(let user)))):
-                state.path.append(.userActivity(UserActivityFeature.State(user: user)))
-                return .none
-
-            case .path:
+            case .delegate:
                 return .none
 
             case .binding:
                 return .none
             }
         }
-        .forEach(\.path, action: \.path)
     }
 }
-
-extension ProfileFeature.Path.State: Equatable {}
 

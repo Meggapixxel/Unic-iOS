@@ -8,8 +8,7 @@ struct ProfileView: View {
     @Bindable var store: StoreOf<ProfileFeature>
 
     var body: some View {
-        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
-            List {
+        List {
                 // MARK: User Card
                 Section {
                     HStack(spacing: 14) {
@@ -192,31 +191,6 @@ struct ProfileView: View {
                 }
                 Button(String.cancel, role: .cancel) { }
             }
-        } destination: { pathStore in
-            Group {
-                switch pathStore.case {
-                case let .userActivity(activityStore):
-                    UserActivityView(store: activityStore)
-                case let .sales(salesStore):
-                    SalesView(store: salesStore)
-                case let .invoiceDetail(detailStore):
-                    InvoiceDetailView(store: detailStore)
-                case let .allTopClients(clientsStore):
-                    AllTopClientsView(store: clientsStore)
-                case let .allTopProducts(productsStore):
-                    AllTopProductsView(store: productsStore)
-                case let .users(usersStore):
-                    UsersView(store: usersStore)
-                case let .plans(plansStore):
-                    PlansView(store: plansStore)
-                case let .productDetail(productStore):
-                    ProductDetailView(store: productStore)
-                case let .clientDetail(clientStore):
-                    ClientDetailView(store: clientStore)
-                }
-            }
-            .toolbar(.hidden, for: .tabBar)
-        }
     }
 
     // MARK: - Helpers

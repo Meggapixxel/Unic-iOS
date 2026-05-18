@@ -10,57 +10,44 @@ struct StockView: View {
     @Bindable var store: StoreOf<StockFeature>
 
     var body: some View {
-        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
-            StockListContent(store: store)
-                .navigationInlineTitle(String.stock_nav_title)
-                .searchable(text: $store.searchText, prompt: String.search_stock)
-                .toolbar { stockToolbar }
-                .overlay {
-                    if store.isLoading && store.allStock.isEmpty {
-                        LoadingOverlay()
-                    }
-                }
-                .task { store.send(.onLoad) }
-                .refreshable { store.send(.forceSync) }
-        } destination: { pathStore in
-            Group {
-                switch pathStore.case {
-                case let .productDetail(productStore):
-                    ProductDetailView(store: productStore)
-                case let .catalog(catalogStore):
-                    CatalogView(store: catalogStore)
+        StockListContent(store: store)
+            .navigationInlineTitle(String.stock_nav_title)
+            .searchable(text: $store.searchText, prompt: String.search_stock)
+            .toolbar { stockToolbar }
+            .overlay {
+                if store.isLoading && store.allStock.isEmpty {
+                    LoadingOverlay()
                 }
             }
-            .toolbar(.hidden, for: .tabBar)
-        }
-        .sheet(
-            item: $store.scope(
-                state: \.destination?.barcodeScanner,
-                action: \.destination.barcodeScanner
-            )
-        ) { scannerStore in
-            BarcodeScannerWrapper(store: scannerStore)
-        }
-        .sheet(
-            item: $store.scope(
-                state: \.destination?.checklist,
-                action: \.destination.checklist
-            )
-        ) { checklistStore in
-            StockChecklistView(store: checklistStore)
-        }
-        .alert(
-            String.barcode_title,
-            isPresented: Binding(
-                get: { store.errorMessage != nil },
-                set: { if !$0 { store.send(.binding(.set(\.errorMessage, nil))) } }
-            )
-        ) {
-            Button("OK") { store.send(.binding(.set(\.errorMessage, nil))) }
-        } message: {
-            Text(store.errorMessage ?? "")
-        }
-        // No-op needed: the binding alert above requires BindingAction which StockFeature has.
+            .task { store.send(.onLoad) }
+            .refreshable { store.send(.forceSync) }
+            .sheet(
+                item: $store.scope(
+                    state: \.destination?.barcodeScanner,
+                    action: \.destination.barcodeScanner
+                )
+            ) { scannerStore in
+                BarcodeScannerWrapper(store: scannerStore)
+            }
+            .sheet(
+                item: $store.scope(
+                    state: \.destination?.checklist,
+                    action: \.destination.checklist
+                )
+            ) { checklistStore in
+                StockChecklistView(store: checklistStore)
+            }
+            .alert(
+                String.barcode_title,
+                isPresented: Binding(
+                    get: { store.errorMessage != nil },
+                    set: { if !$0 { store.send(.binding(.set(\.errorMessage, nil))) } }
+                )
+            ) {
+                Button("OK") { store.send(.binding(.set(\.errorMessage, nil))) }
+            } message: {
+                Text(store.errorMessage ?? "")
+            }
     }
 
     // MARK: - Toolbar

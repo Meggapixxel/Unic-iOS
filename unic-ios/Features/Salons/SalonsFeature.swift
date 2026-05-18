@@ -55,15 +55,6 @@ import IdentifiedCollections
 @Reducer
 struct SalonsFeature {
 
-    // MARK: - Path
-
-    /// Navigation stack destinations reachable from the salons list.
-    @Reducer
-    enum Path {
-        case salonDetail(SalonDetailFeature)
-        case testDrive(TestDriveFeature)
-    }
-
     // MARK: - Destination
 
     /// Modal destinations presented from the salons list.
@@ -96,7 +87,6 @@ struct SalonsFeature {
         var languageFilter: Set<String> = []
         /// Active date-range filter IDs; empty means no date constraint.
         var dateRangeFilter: Set<DateRangeOption.ID> = []
-        var path: StackState<Path.State> = StackState()
         @Presents var destination: Destination.State?
         var errorMessage: String?
 
@@ -220,8 +210,12 @@ struct SalonsFeature {
         case clearFilters
         case navigateToTestDrive
         case navigateToRoutePlanner
-        case path(StackActionOf<Path>)
+        case delegate(Delegate)
         case destination(PresentationAction<Destination.Action>)
+
+        enum Delegate: Equatable {
+            case navigate(AppPath.State)
+        }
     }
 
     // MARK: - Dependencies
@@ -263,8 +257,7 @@ struct SalonsFeature {
                 return .none
 
             case let .salonTapped(salon):
-                state.path.append(.salonDetail(SalonDetailFeature.State(salon: salon)))
-                return .none
+                return .send(.delegate(.navigate(.salonDetail(SalonDetailFeature.State(salon: salon)))))
 
             case let .salonSaved(salon):
                 if state.salons[id: salon.id] != nil {
@@ -304,37 +297,10 @@ struct SalonsFeature {
                 return .none
 
             case .navigateToTestDrive:
-                state.path.append(.testDrive(TestDriveFeature.State(salons: state.salons)))
-                return .none
+                return .send(.delegate(.navigate(.testDrive(TestDriveFeature.State(salons: state.salons)))))
 
             case .navigateToRoutePlanner:
                 state.destination = .routePlanner(RoutePlannerFeature.State(salons: state.displayedSalons))
-                return .none
-
-            // MARK: Path propagation
-            case let .path(.element(id: _, action: .testDrive(.salonTapped(salon)))):
-                state.path.append(.salonDetail(SalonDetailFeature.State(salon: salon)))
-                return .none
-
-            case let .path(.element(id: _, action: .salonDetail(.salonUpdated(salon)))):
-                return .send(.salonSaved(salon))
-
-            case .path(.element(id: _, action: .salonDetail(.statusAdded(_)))):
-                if let last = state.path.last, case let .salonDetail(detail) = last {
-                    return .send(.salonSaved(detail.salon))
-                }
-                return .none
-
-            case .path(.element(id: _, action: .salonDetail(.deleteFinished))):
-                // The detail reducer already dismissed itself via @Dependency(\.dismiss).
-                // Remove the salon from the list.
-                if let last = state.path.last,
-                   case let .salonDetail(detail) = last {
-                    return .send(.salonDeleted(detail.salon.salonId))
-                }
-                return .none
-
-            case .path:
                 return .none
 
             // MARK: Destination form
@@ -342,6 +308,9 @@ struct SalonsFeature {
                 return .send(.salonSaved(salon))
 
             case .destination:
+                return .none
+
+            case .delegate:
                 return .none
 
             case .binding(\.showMap):
@@ -352,10 +321,8 @@ struct SalonsFeature {
                 return .none
             }
         }
-        .forEach(\.path, action: \.path)
         .ifLet(\.$destination, action: \.destination)
     }
 }
 
-extension SalonsFeature.Path.State: Equatable {}
 extension SalonsFeature.Destination.State: Equatable {}

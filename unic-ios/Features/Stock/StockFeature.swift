@@ -58,7 +58,6 @@ struct StockFeature {
         var isLoading: Bool = false
         var errorMessage: String?
         var lastSyncDate: Date?
-        var path: StackState<Path.State> = StackState()
         @Presents var destination: Destination.State?
 
         // Backing store — populated on load/sync
@@ -103,14 +102,6 @@ struct StockFeature {
         }
     }
 
-    // MARK: - Path
-
-    @Reducer
-    enum Path {
-        case productDetail(ProductDetailFeature)
-        case catalog(CatalogFeature)
-    }
-
     // MARK: - Destination
 
     @Reducer
@@ -138,7 +129,11 @@ struct StockFeature {
         case barcodeScanned(String)
         case barcodeSearchCompleted(FlexiBeeStockItem?)
         case destination(PresentationAction<Destination.Action>)
-        case path(StackActionOf<Path>)
+        case delegate(Delegate)
+
+        enum Delegate: Equatable {
+            case navigate(AppPath.State)
+        }
     }
 
     // MARK: - Dependencies
@@ -210,12 +205,10 @@ struct StockFeature {
                 return .none
 
             case let .openProduct(product):
-                state.path.append(.productDetail(ProductDetailFeature.State(product: product)))
-                return .none
+                return .send(.delegate(.navigate(.productDetail(ProductDetailFeature.State(product: product)))))
 
             case .openCatalog:
-                state.path.append(.catalog(CatalogFeature.State()))
-                return .none
+                return .send(.delegate(.navigate(.catalog(CatalogFeature.State()))))
 
             case .openChecklist:
                 state.destination = .checklist(StockChecklistFeature.State())
@@ -245,7 +238,7 @@ struct StockFeature {
 
             case let .barcodeSearchCompleted(product):
                 if let product {
-                    state.path.append(.productDetail(ProductDetailFeature.State(product: product)))
+                    return .send(.delegate(.navigate(.productDetail(ProductDetailFeature.State(product: product)))))
                 }
                 return .none
 
@@ -263,15 +256,14 @@ struct StockFeature {
             case .destination:
                 return .none
 
-            case .binding:
+            case .delegate:
                 return .none
 
-            case .path:
+            case .binding:
                 return .none
             }
         }
         .ifLet(\.$destination, action: \.destination)
-        .forEach(\.path, action: \.path)
     }
 
     /// Strips all non-alphanumeric characters and uppercases an article code for barcode matching.
@@ -282,8 +274,6 @@ struct StockFeature {
          .uppercased()
     }
 }
-
-extension StockFeature.Path.State: Equatable {}
 
 // MARK: - Product Detail Feature (leaf)
 

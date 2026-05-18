@@ -8,33 +8,21 @@ struct SalonsView: View {
     @Bindable var store: StoreOf<SalonsFeature>
 
     var body: some View {
-        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
-            mainContent
-                .navigationInlineTitle("Salons")
-                .toolbar { toolbarContent }
-                .searchable(text: $store.searchText, prompt: Text(String.search_salons))
-                .task { store.send(.onLoad) }
-                .sheet(
-                    item: $store.scope(state: \.destination?.form, action: \.destination.form)
-                ) { formStore in
-                    SalonFormView(store: formStore)
-                }
-                .fullScreenCover(
-                    item: $store.scope(state: \.destination?.routePlanner, action: \.destination.routePlanner)
-                ) { rpStore in
-                    RoutePlannerView(store: rpStore)
-                }
-        } destination: { pathStore in
-            Group {
-                switch pathStore.case {
-                case let .salonDetail(detailStore):
-                    SalonDetailView(store: detailStore)
-                case let .testDrive(tdStore):
-                    TestDriveView(store: tdStore)
-                }
+        mainContent
+            .navigationInlineTitle("Salons")
+            .toolbar { toolbarContent }
+            .searchable(text: $store.searchText, prompt: Text(String.search_salons))
+            .task { store.send(.onLoad) }
+            .sheet(
+                item: $store.scope(state: \.destination?.form, action: \.destination.form)
+            ) { formStore in
+                SalonFormView(store: formStore)
             }
-            .toolbar(.hidden, for: .tabBar)
-        }
+            .fullScreenCover(
+                item: $store.scope(state: \.destination?.routePlanner, action: \.destination.routePlanner)
+            ) { rpStore in
+                RoutePlannerView(store: rpStore)
+            }
     }
 
     // MARK: - Main Content
