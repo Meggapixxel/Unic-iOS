@@ -1,5 +1,7 @@
 import Foundation
 
+/// Typed static accessors for all localized string keys used across the app.
+/// Each property wraps `String(localized:)` so call sites remain compile-time safe.
 extension String {
 
     // MARK: - Common
