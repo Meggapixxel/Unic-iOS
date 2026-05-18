@@ -13,6 +13,7 @@
 
 /* Salon List */
 "search_salons" = "Search salons...";
+"search_promos" = "Search promos...";
 "stat_total" = "Total";
 "stat_new" = "New";
 "stat_contacted" = "Contacted";

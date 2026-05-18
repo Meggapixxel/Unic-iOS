@@ -11,7 +11,6 @@ struct StockView: View {
 
     var body: some View {
         StockListContent(store: store)
-            .searchable(text: $store.searchText, prompt: String.search_stock)
             .overlay {
                 if store.isLoading && store.allStock.isEmpty {
                     LoadingOverlay()

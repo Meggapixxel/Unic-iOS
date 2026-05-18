@@ -87,6 +87,7 @@ struct PromosFeature {
         /// The promo pending deletion confirmation; `nil` when no confirmation is shown.
         var promoToDelete: PromoOffer?
         @Presents var destination: Destination.State?
+        var searchText: String = ""
 
         /// Category strings that are represented in the current base set of displayed promos.
         var availableCategories: [String] {
@@ -97,7 +98,7 @@ struct PromosFeature {
             return categories.filter { presentInBase.contains($0) }
         }
 
-        /// Promos filtered by the active/inactive toggle and selected category chips.
+        /// Promos filtered by the active/inactive toggle, selected category chips, and search text.
         var displayed: [PromoOffer] {
             let base: [PromoOffer]
             if canManagePromos {
@@ -107,14 +108,22 @@ struct PromosFeature {
             } else {
                 base = promos.filter { $0.isActive && $0.isEnabled }
             }
-            guard !selectedCategories.isEmpty else { return base }
-            return base.filter { selectedCategories.contains($0.category) }
+            var result = selectedCategories.isEmpty ? base : base.filter { selectedCategories.contains($0.category) }
+            if !searchText.isEmpty {
+                let q = searchText.lowercased()
+                result = result.filter { promo in
+                    promo.content.values.contains { $0.title.lowercased().contains(q) } ||
+                    promo.category.lowercased().contains(q)
+                }
+            }
+            return result
         }
     }
 
     // MARK: - Action
 
-    enum Action {
+    enum Action: BindableAction {
+        case binding(BindingAction<State>)
         case onLoad
         case promosLoaded([PromoOffer])
         case categoriesLoaded([String])
@@ -141,8 +150,12 @@ struct PromosFeature {
     // MARK: - Body
 
     var body: some Reducer<State, Action> {
+        BindingReducer()
         Reduce { state, action in
             switch action {
+
+            case .binding:
+                return .none
 
             case .onLoad:
                 state.canManagePromos = auth.canManagePromos()

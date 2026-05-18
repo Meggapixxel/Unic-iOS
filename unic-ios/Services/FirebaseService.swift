@@ -976,10 +976,32 @@ final class FirebaseService: ObservableObject {
         return doc.data()?["categories"] as? [String] ?? []
     }
 
-    /// Fetches all promo-offer documents from the `promos` collection.
+    /// Fetches all promo-offer documents and attaches the current activation to each one.
     func fetchPromos() async throws -> [PromoOffer] {
-        let snapshot = try await db.collection("promos").getDocuments()
-        return snapshot.documents.compactMap { try? $0.data(as: PromoOffer.self) }
+        async let promoDocs  = db.collection("promos").getDocuments()
+        async let activeDocs = db.collectionGroup("activations")
+            .whereField("validTo", isGreaterThanOrEqualTo: Timestamp(date: Date()))
+            .getDocuments()
+
+        let (promoSnap, activeSnap) = try await (promoDocs, activeDocs)
+
+        var promos = promoSnap.documents.compactMap { try? $0.data(as: PromoOffer.self) }
+
+        let now = Date()
+        let activeByPromoId: [String: PromoActivation] = activeSnap.documents.reduce(into: [:]) { acc, doc in
+            guard var activation = try? doc.data(as: PromoActivation.self),
+                  activation.validFrom <= now,
+                  let promoId = doc.reference.parent.parent?.documentID else { return }
+            activation.id = doc.documentID
+            acc[promoId] = activation
+        }
+
+        for i in promos.indices {
+            if let id = promos[i].id {
+                promos[i].currentActivation = activeByPromoId[id]
+            }
+        }
+        return promos
     }
 
     /// Creates or overwrites a promo-offer document and returns the refreshed value.
@@ -999,26 +1021,56 @@ final class FirebaseService: ObservableObject {
         return try await fetchPromo(ref: docRef)
     }
 
-    /// Sets the `validFrom` and `validTo` timestamps on a promo, making it active.
-    /// - Returns: The updated `PromoOffer`.
+    /// Writes an activation record to the promo's `activations` subcollection.
+    /// - Returns: The updated `PromoOffer` with `currentActivation` populated.
     func activatePromo(id: String, validFrom: Date, validTo: Date) async throws -> PromoOffer {
-        let docRef = db.collection("promos").document(id)
-        try await docRef.updateData([
-            "validFrom": Timestamp(date: validFrom),
-            "validTo":   Timestamp(date: validTo)
+        let promoRef = db.collection("promos").document(id)
+        let activationRef = promoRef.collection("activations").document()
+        let userId = AuthService.shared.currentUser?.id ?? ""
+        try await activationRef.setData([
+            "promoId":     id,
+            "validFrom":   Timestamp(date: validFrom),
+            "validTo":     Timestamp(date: validTo),
+            "activatedBy": userId,
+            "activatedAt": Timestamp(date: Date())
         ])
-        return try await fetchPromo(ref: docRef)
+        var promo = try await fetchPromo(ref: promoRef)
+        if var activation = try? await activationRef.getDocument().data(as: PromoActivation.self) {
+            activation.id = activationRef.documentID
+            promo.currentActivation = activation
+        }
+        return promo
     }
 
-    /// Removes the `validFrom` and `validTo` fields from a promo, deactivating it.
-    /// - Returns: The updated `PromoOffer`.
+    /// Deletes the currently active activation record for a promo.
+    /// - Returns: The updated `PromoOffer` with `currentActivation` set to `nil`.
     func deactivatePromo(id: String) async throws -> PromoOffer {
-        let docRef = db.collection("promos").document(id)
-        try await docRef.updateData([
-            "validFrom": FieldValue.delete(),
-            "validTo":   FieldValue.delete()
-        ])
-        return try await fetchPromo(ref: docRef)
+        let promoRef = db.collection("promos").document(id)
+        let now = Date()
+        let activeSnap = try await promoRef.collection("activations")
+            .whereField("validTo", isGreaterThanOrEqualTo: Timestamp(date: now))
+            .getDocuments()
+        for doc in activeSnap.documents {
+            if let vf = (doc.data()["validFrom"] as? Timestamp)?.dateValue(), vf <= now {
+                try await doc.reference.delete()
+            }
+        }
+        var promo = try await fetchPromo(ref: promoRef)
+        promo.currentActivation = nil
+        return promo
+    }
+
+    /// Fetches all activation records for a promo, ordered newest first.
+    func fetchActivationHistory(id: String) async throws -> [PromoActivation] {
+        let snap = try await db.collection("promos").document(id)
+            .collection("activations")
+            .order(by: "activatedAt", descending: true)
+            .getDocuments()
+        return snap.documents.compactMap { doc -> PromoActivation? in
+            guard var a = try? doc.data(as: PromoActivation.self) else { return nil }
+            a.id = doc.documentID
+            return a
+        }
     }
 
     private func fetchPromo(ref: DocumentReference) async throws -> PromoOffer {

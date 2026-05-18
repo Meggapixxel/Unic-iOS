@@ -51,6 +51,7 @@ extension String {
 
     // MARK: - Salon List
     static var search_salons:  String { String(localized: "search_salons") }
+    static var search_promos:  String { String(localized: "search_promos") }
     static var stat_total:             String { String(localized: "stat_total") }
     static var stat_new:               String { String(localized: "stat_new") }
     static var stat_contacted:         String { String(localized: "stat_contacted") }

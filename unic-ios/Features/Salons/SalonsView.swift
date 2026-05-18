@@ -9,7 +9,6 @@ struct SalonsView: View {
 
     var body: some View {
         mainContent
-            .searchable(text: $store.searchText, prompt: Text(String.search_salons))
             .task { store.send(.onLoad) }
             .sheet(
                 item: $store.scope(state: \.destination?.form, action: \.destination.form)

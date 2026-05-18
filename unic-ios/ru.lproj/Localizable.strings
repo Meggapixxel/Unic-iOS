@@ -13,6 +13,7 @@
 
 /* Salon List */
 "search_salons" = "Поиск салонов...";
+"search_promos" = "Поиск акций...";
 "stat_total" = "Всего";
 "stat_new" = "Новые";
 "stat_contacted" = "Контакт";

@@ -46,6 +46,21 @@ struct MainView: View {
                     .padding(.top, 60)
                     .allowsHitTesting(false)
             }
+            .searchableWhen(
+                store.selectedTab == .salons,
+                text: $store.salons.searchText,
+                prompt: String.search_salons
+            )
+            .searchableWhen(
+                store.selectedTab == .promos,
+                text: $store.promos.searchText,
+                prompt: String.search_promos
+            )
+            .searchableWhen(
+                store.selectedTab == .stock,
+                text: $store.stock.searchText,
+                prompt: String.search_stock
+            )
             .navigationTitle(currentTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -88,5 +103,16 @@ struct MainView: View {
             }
         }
         .task { store.send(.onAppear) }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func searchableWhen(_ condition: Bool, text: Binding<String>, prompt: String) -> some View {
+        if condition {
+            searchable(text: text, prompt: prompt)
+        } else {
+            self
+        }
     }
 }
