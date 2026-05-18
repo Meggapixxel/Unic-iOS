@@ -1,7 +1,35 @@
 import ComposableArchitecture
 import Foundation
 
-/// TCA feature for the user-activity screen, supporting day-by-day and custom date-range views with per-status statistics.
+/// Manages the user-activity screen, which displays a filtered timeline of a single user's
+/// status-history entries with per-status counts, supporting single-day and custom date-range modes.
+///
+/// **Entry point**
+/// `.onLoad` is dispatched by the view's `.task` or `.onAppear`. It checks
+/// `auth.canDeleteActivity()` to set the deletion permission flag, then fetches all activity
+/// entries for the user from Firebase.
+///
+/// **Key action flows**
+/// - `.onLoad` — sets `isLoading = true`, calls `firebase.fetchUserActivity(userId)`, and
+///   dispatches `.loaded` on success or `.failed` on error.
+/// - `.loaded(_)` — stores entries sorted newest-first into `state.entries`; `filteredEntries`,
+///   `filteredStatusCounts`, and `filteredEntriesByDay` recompute automatically as derived state.
+/// - Binding on `groupMode`, `selectedDate`, `customStart`, `customEnd` — all handled by
+///   `BindingReducer`; no effects fired; the computed `filteredEntries` updates reactively.
+/// - `.deleteTapped(_)` — currently a no-op in the reducer; the view is expected to show a
+///   confirmation UI before dispatching `.deleteConfirmed`.
+/// - `.deleteConfirmed(_)` — removes the entry from `state.entries` optimistically, then calls
+///   `firebase.deleteActivityEntry(entry)` in the background; errors surface via `.failed`.
+/// - `.navigateToPlans` — no-op in this reducer; intended for the parent to intercept and push
+///   or present a Plans screen.
+/// - `.failed(_)` — clears `isLoading` and stores the error message for display.
+///
+/// **Navigation** — no `Path` or `Destination`; this feature is a leaf screen pushed onto the
+/// `UsersFeature` navigation stack. `.navigateToPlans` is a hook for the parent.
+///
+/// **Side effects**
+/// - `firebase.fetchUserActivity(userId)` — Firestore read on `.onLoad`.
+/// - `firebase.deleteActivityEntry(entry)` — Firestore write on `.deleteConfirmed`.
 @Reducer
 struct UserActivityFeature {
     /// Observable state for the user activity screen.

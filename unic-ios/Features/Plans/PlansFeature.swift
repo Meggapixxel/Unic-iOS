@@ -3,7 +3,44 @@ import Foundation
 
 // MARK: - PlansFeature
 
-/// TCA reducer that manages the list of all plans, supporting add, edit, delete, and applying a new plan to all users.
+/// TCA reducer that manages the plans list screen, supporting full CRUD (create, edit, delete) of plan
+/// documents in Firebase, and automatically propagating a newly created plan to all users.
+///
+/// **Entry point**
+/// `PlansView` dispatches `.onLoad` on appearance. `.onLoad` resolves the `canManagePlans` permission
+/// flag synchronously, then fetches all plans and the organisation-wide default plan targets from Firebase.
+///
+/// **Key action flows**
+/// - `.onLoad` — Sets `isLoading = true`, resolves `canManagePlans` from `authClient`, then runs a single
+///   `Effect.run` that:
+///   1. `firebase.fetchAllPlans()` → `.loaded(plans)` (or `.failed` on error).
+///   2. `firebase.fetchDefaultPlan()` → `.defaultPlanLoaded(dp?)` (failure is silently ignored).
+/// - `.loaded(plans)` — Clears loading flag, stores plans sorted newest-first by `startDate`.
+/// - `.defaultPlanLoaded(dp)` — Stores default targets used to pre-populate the add-plan form.
+/// - `.addTapped` — Presents the `.form` sheet with `PlansFormFeature.State(defaults:)` (blank form
+///   seeded with default targets).
+/// - `.editTapped(plan)` — Presents the `.form` sheet with `PlansFormFeature.State(existing:)` (form
+///   pre-populated from the selected plan).
+/// - `.deleteTapped(plan)` — Stages `plan` in `pendingDeletePlan`; the view shows a confirmation dialog.
+/// - `.deleteConfirmed` — Optimistically removes the plan from the local array, clears `pendingDeletePlan`,
+///   then calls `firebase.deletePlan(id)` asynchronously. On failure, sends `.failed`.
+/// - `.cancelDelete` — Clears `pendingDeletePlan` without deleting.
+/// - `.destination(.presented(.form(.saved(plan))))` — Form sheet dismissed after a successful save.
+///   Upserts the plan locally (prepends if new, replaces in-place if editing). If the plan is **new**,
+///   also calls `firebase.setPlanForAllUsers(plan)` to assign it to every user.
+///
+/// **Navigation (`Destination`)**
+/// Uses a single `@Presents` destination:
+/// - `.form(PlansFormFeature)` — A sheet for creating or editing a plan. Dismissed automatically by
+///   setting `destination = nil` when `.saved` is received.
+///
+/// **Side effects**
+/// - `firebase.fetchAllPlans()` — Firebase collection read on `.onLoad`.
+/// - `firebase.fetchDefaultPlan()` — Firebase document read on `.onLoad`; failure is suppressed.
+/// - `firebase.deletePlan(id)` — Firebase document deletion on `.deleteConfirmed`.
+/// - `firebase.savePlan(plan)` — Firebase write inside `PlansFormFeature` on `.saveTapped`.
+/// - `firebase.setPlanForAllUsers(plan)` — Firebase batch write triggered after a new plan is saved;
+///   assigns the new plan to every user document. Errors are silently ignored.
 @Reducer
 struct PlansFeature {
 
@@ -155,7 +192,28 @@ struct PlansFeature {
 
 // MARK: - PlansFormFeature
 
-/// TCA reducer for the plan create/edit form sheet.
+/// TCA reducer for the plan create/edit form sheet presented modally from `PlansFeature`.
+///
+/// **Entry point**
+/// Instantiated by `PlansFeature` on `.addTapped` or `.editTapped`. Initial state is populated in
+/// `init(existing:defaults:)` — either from an existing `Plan` (edit mode) or from `DefaultPlan`
+/// targets (create mode), with zero/current-date fallbacks when neither is available.
+///
+/// **Key action flows**
+/// - `.binding` — `BindingReducer` keeps `startDate`, `endDate`, and target numeric fields in sync
+///   with the form controls. `isValid` is derived: `endDate > startDate`.
+/// - `.saveTapped` — Guards `isValid`, sets `isSaving = true`, constructs a `Plan` value (reusing the
+///   existing `id` for edits, `nil` for new), then calls `firebase.savePlan(_:)` asynchronously.
+///   - On success → `.saved(plan)`: clears `isSaving`; the parent `PlansFeature` receives
+///     `.destination(.presented(.form(.saved(plan))))` and handles the upsert + user propagation.
+///   - On failure → `.failed(msg)`: clears `isSaving`, sets `error` for display.
+/// - `.cancelTapped` — No state change; the parent dismisses the sheet via `@Presents` machinery.
+///
+/// **Navigation**
+/// None — this is a leaf form reducer with no stack or sub-destinations.
+///
+/// **Side effects**
+/// - `firebase.savePlan(_:)` — Firebase write (create or update) executed on `.saveTapped`.
 @Reducer
 struct PlansFormFeature {
     /// Form state for adding or editing a plan.

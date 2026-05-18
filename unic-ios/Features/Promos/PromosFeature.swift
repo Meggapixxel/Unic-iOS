@@ -1,7 +1,48 @@
 import ComposableArchitecture
 import Foundation
 
-/// TCA feature managing the promos list, category filtering, language selection, and enable/disable toggling.
+/// Manages the Promos tab, which lists active promotional offers fetched from Firebase and lets
+/// admin users create, edit, enable/disable, and delete promos.
+///
+/// **Entry point**
+/// `.onLoad` is dispatched when the Promos tab appears. It checks the current user's
+/// `canManagePromos` permission via `authClient`, then concurrently fetches all promos and
+/// category strings from Firebase, dispatching `.promosLoaded` and `.categoriesLoaded` on completion.
+///
+/// **Key action flows**
+/// - `.onLoad` — resolves admin permissions; fires parallel `firebase.fetchPromos()` and
+///   `firebase.fetchPromoCategories()` calls; populates `promos` and `categories`.
+/// - `.openAdd` — presents a blank `PromoFormFeature` sheet (`Destination.form`).
+/// - `.openEdit(promo)` — presents `PromoFormFeature` sheet pre-filled with the existing promo.
+/// - `.openDetail(promo)` — presents `PromoDetailFeature` sheet for read-only viewing (with
+///   manage actions available to admin users).
+/// - `.toggleEnabled(promo)` — if the promo is currently enabled, calls
+///   `firebase.deactivatePromo` and updates the list on `.promoDeactivated`; if disabled,
+///   presents `PromoDetailFeature` with `isPickingActivationDates = true` so the user can
+///   choose activation dates before re-enabling.
+/// - `.toggleShowDisabled` — flips the `showAll` admin toggle between active and inactive promos.
+/// - `.toggleCategory(cat)` — adds/removes a category from `selectedCategories` chip filter.
+/// - `.setLanguage(lang)` — updates `language` and propagates the change into any open
+///   `PromoDetailFeature` destination state so it re-renders in the new locale immediately.
+/// - `.deleteTapped(promo)` — sets `promoToDelete` (the view renders a confirmation dialog);
+///   `.deleteConfirmed` removes the promo optimistically from the list and calls
+///   `firebase.deletePromo`; `.cancelDelete` clears `promoToDelete`.
+/// - `.destination(.presented(.detail(.delegate(.editRequested))))` — swaps the active
+///   destination from detail to form, passing the current promo for editing.
+/// - `.destination(.presented(.detail(.delegate(.didToggle(promo)))))` — patches the updated
+///   promo back into the `promos` array after a toggle inside the detail sheet.
+/// - `.destination(.presented(.form(.saveSucceeded(promo))))` — dismisses the form sheet and
+///   either inserts a newly created promo at index 0 or replaces the existing entry.
+///
+/// **Navigation**
+/// `Destination` (modal sheets, no `NavigationStack` path):
+/// - `.detail(PromoDetailFeature)` — read/toggle/edit view for a single promo.
+/// - `.form(PromoFormFeature)` — create or edit form for a promo offer.
+///
+/// **Side effects**
+/// - `firebase.fetchPromos()` and `firebase.fetchPromoCategories()` — concurrent Firebase reads on load.
+/// - `firebase.deactivatePromo(id)` — Firebase write to mark a promo inactive.
+/// - `firebase.deletePromo(id)` — Firebase write to permanently remove a promo document.
 @Reducer
 struct PromosFeature {
 

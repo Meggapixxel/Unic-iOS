@@ -22,7 +22,38 @@ struct StockChecklistItem: Identifiable, Equatable {
 
 // MARK: - StockChecklistFeature
 
-/// TCA feature for building a stock checklist by barcode scanning, with quantity adjustment and JSON export.
+/// Manages an ad-hoc stock-count checklist that accumulates items by barcode scanning and
+/// lets the user adjust per-item quantities; the resulting list can be exported as a JSON payload.
+///
+/// **Entry point**
+/// `.onLoad` is dispatched when the checklist sheet appears. It calls
+/// `flexiBeeClient.loadIfNeeded()` to ensure the stock index is warm, then dispatches
+/// `.loaded([])` — items start empty and are added exclusively through scanning.
+///
+/// **Key action flows**
+/// - `.onLoad` — ensures the FlexiBee cache is populated; initialises `items` to an empty array.
+/// - `.scanTapped` — sets `showScanner = true` to reveal the in-view barcode scanner.
+/// - `.barcodeScanned(barcode)` — hides the scanner, sets `isLoading = true`, resolves the
+///   barcode to a FlexiBee article via `firebaseClient.lookupBarcodeArticle`, matches the
+///   normalised code against the local stock index, and dispatches `.barcodeSearchCompleted`.
+/// - `.barcodeSearchCompleted(.success(item?))` — if a match is found, either increments the
+///   quantity of an existing checklist entry or appends a new one with quantity 1; if no match
+///   is found, sets `errorMessage` to a localised "barcode not found" string.
+/// - `.barcodeSearchCompleted(.failure)` — surfaces `error.localizedDescription` in `errorMessage`.
+/// - `.increment(code)` / `.decrement(code)` — adjust the quantity of an item by article code;
+///   decrementing to zero removes the item from `items`.
+/// - `.scannerDismissed` — resets `showScanner = false` (e.g. user dismisses without scanning).
+/// - `.errorDismissed` — clears `errorMessage`.
+/// - `.dismiss` — no-op at this layer; the parent feature (`StockFeature`) owns sheet dismissal.
+///
+/// **Navigation**
+/// No `Path` or `Destination` reducers; navigation is limited to the `showScanner` bool flag
+/// which the view uses to present an inline or sheet barcode-scanning component.
+///
+/// **Side effects**
+/// - `flexiBeeClient.loadIfNeeded()` — ensures the local FlexiBee stock cache is up-to-date.
+/// - `firebaseClient.lookupBarcodeArticle(_:)` — async Firebase read mapping a raw barcode
+///   string to a FlexiBee article code, used to populate checklist entries.
 @Reducer
 struct StockChecklistFeature {
     /// Observable state for the stock checklist screen.

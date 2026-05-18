@@ -4,8 +4,78 @@ import Foundation
 
 // MARK: - InvoiceDetailFeature
 
-/// TCA feature that manages the full lifecycle of a single FlexiBee invoice detail screen,
-/// including line-item loading, payment-status changes, PDF sharing, stock movements, and deletion.
+/// Manages the full lifecycle of a single FlexiBee invoice detail screen, covering line-item
+/// display, payment-status mutation, cash-receipt creation, stock-movement linkage, PDF sharing,
+/// accounting mark, and invoice deletion.
+///
+/// ## Entry point
+/// `onLoad` is dispatched when `InvoiceDetailView` appears. It fetches three resources in
+/// parallel from FlexiBee: the filtered line items for the invoice, the linked stock movement
+/// (if any), and the cash-receipt document ID (if any). Results are delivered via `loaded`.
+///
+/// ## Key action flows
+///
+/// - **`onLoad`** — Sets `isLoading = true`, then concurrently fetches line items
+///   (`fetchLineItemsForInvoice`), the stock movement (`fetchStockMovement`), and the cash
+///   receipt ID (`fetchCashReceiptId`). On success dispatches `loaded`; on failure dispatches
+///   `failed`.
+///
+/// - **`editTapped`** — Presents `.editForm(InvoiceFormPlaceholderFeature)` carrying the
+///   current invoice. Only reachable when `canEdit == true` (invoice is not paid).
+///   On `.submitted`, refreshes the invoice via `fetchSingleInvoice` then re-runs `onLoad`
+///   to reload line items. On `.dismiss`, simply closes the sheet.
+///
+/// - **`deleteTapped`** — Presents `.deleteAlert(ConfirmationDialogFeature)`.
+///   On `.confirmed` dispatches `deleteConfirmed`, which sequentially calls
+///   `deleteStockMovement` (to unlink the warehouse record) then `deleteInvoice`.
+///   On success dispatches `deleteCompleted` (parent pops the screen); on failure dispatches
+///   `failed`.
+///
+/// - **`setPaymentStatus(_:_:)`** — Presents `.statusChange(StatusChangeFeature)` pre-loaded
+///   with the target status and payment method. On `.confirmed`, dispatches
+///   `statusChangeConfirmed` which calls `createCashReceipt` (when paying by cash) and
+///   `updateInvoicePaymentStatus`, then re-fetches the invoice via `fetchSingleInvoice` to
+///   update local state.
+///
+/// - **`accountingTapped`** — Calls `markAsAccounted`, then re-fetches the invoice so that
+///   `isAccounted` reflects the updated value without requiring a full reload.
+///
+/// - **`openStockMovement`** — Presents `.stockMovement(StockMovementPlaceholderFeature)`
+///   seeded with the invoice ID, number, and current line items. On `.submitted`, re-runs
+///   `onLoad` to pick up the newly created movement record.
+///
+/// - **`shareInvoicePDF`** — Fetches the invoice PDF from
+///   `/faktura-vydana/<id>.pdf` via `flexiBeeClient.fetchPDF`, then dispatches `pdfLoaded`
+///   to surface the share sheet.
+///
+/// - **`shareCashReceiptPDF`** — Fetches `/pokladni-pohyb/<receiptId>.pdf`. Requires
+///   `cashReceiptId` to be non-nil.
+///
+/// - **`shareBothPDFs`** — Fetches the invoice and cash-receipt PDFs concurrently using
+///   `async let`, then bundles them into a single `PDFShareItem` with two files. Falls back
+///   to `shareInvoicePDF` if no receipt ID is available.
+///
+/// - **`pdfShareDismissed`** — Clears `pdfShareItem` after the system share sheet closes.
+///
+/// - **`productTapped`, `clientTapped`** — No-op within this reducer; navigation is handled
+///   by the parent feature via action bubbling.
+///
+/// ## Navigation (Destination)
+/// All presentations are single-slot `@Presents var destination: Destination.State?`:
+/// - `.editForm` — Invoice edit sheet (`InvoiceFormPlaceholderFeature`).
+/// - `.stockMovement` — Stock-movement creation sheet (`StockMovementPlaceholderFeature`).
+/// - `.statusChange` — Payment-method picker sheet (`StatusChangeFeature`).
+/// - `.deleteAlert` — Destructive-action confirmation alert (`ConfirmationDialogFeature`).
+///
+/// ## Side effects
+/// - `fetchLineItemsForInvoice` / `fetchStockMovement` / `fetchCashReceiptId` — parallel reads
+///   on `onLoad`.
+/// - `fetchSingleInvoice` — re-fetches the invoice after an edit submission or status change.
+/// - `updateInvoicePaymentStatus` — mutates payment status in FlexiBee.
+/// - `createCashReceipt` — creates a cash-register entry when paying by cash (hotove).
+/// - `markAsAccounted` — posts the accounting flag to FlexiBee.
+/// - `deleteStockMovement` + `deleteInvoice` — sequential destructive calls on delete confirm.
+/// - `fetchPDF` — downloads binary PDF data for the invoice or cash receipt.
 @Reducer
 struct InvoiceDetailFeature {
     /// Observable state for the invoice detail screen.

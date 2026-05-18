@@ -21,8 +21,58 @@ struct MonthlyRevenuePoint: Identifiable, Equatable {
 
 // MARK: - Sales Feature
 
-/// TCA reducer managing the Sales tab: invoice listing, analytics (revenue, top clients, products),
-/// period navigation, and invoice creation/navigation.
+/// Manages the Sales tab, which surfaces two complementary views of FlexiBee invoice data:
+/// a searchable/filterable invoice list and an analytics dashboard (revenue chart, top clients,
+/// top products) scoped to a navigable month or year period.
+///
+/// ## Entry point
+/// `onLoad` is dispatched by the parent (`ProfileFeature`) when the Sales tab first appears.
+/// It immediately hydrates state from the in-memory FlexiBee cache and then calls
+/// `flexiBeeClient.loadIfNeeded()` to fetch fresh data from the network if the cache is stale.
+///
+/// ## Key action flows
+///
+/// - **`onLoad`** — Reads cached invoices, movement items, and stock names synchronously, then
+///   fires a background task that awaits `loadIfNeeded()` and dispatches `syncCompleted` plus
+///   `binding` actions to update movements and the stock-name lookup dictionary.
+///
+/// - **`forceSync`** — Triggered by a pull-to-refresh gesture. Sets `isLoading = true`, calls
+///   `flexiBeeClient.forceSync()` to bypass the cache, then dispatches `syncCompleted` and
+///   refreshes movement/stock data identically to `onLoad`.
+///
+/// - **`syncCompleted`** — Lands updated invoices and the last-sync timestamp; clears the
+///   loading indicator. All computed analytics properties (`totalRevenue`, `topClients`,
+///   `topProducts`, `monthlyRevenue`, etc.) recompute automatically from `allInvoices`.
+///
+/// - **`goToPrevPeriod` / `goToNextPeriod`** — Shift `selectedDate` by one month or year.
+///   Forward navigation is gated by `canGoNext` so users cannot scroll past today.
+///   The `periodChanged` action switches between `.month` and `.year` granularity.
+///
+/// - **`createInvoiceTapped`** — Presents the `.createInvoice` destination sheet backed by
+///   `InvoiceFormPlaceholderFeature`.
+///
+/// - **`invoiceCreated`** — Dismisses the sheet, triggers `forceSync`, then dispatches
+///   `invoiceTapped` for the newly created invoice so the parent can push the detail screen.
+///
+/// - **`destination(.presented(.createInvoice(.dismiss)))`** — Handles the sheet being closed
+///   without a submission: dismisses the destination and force-syncs to pick up any server-side
+///   saves.
+///
+/// - **`invoiceTapped`, `seeAllTopClientsTapped`, `seeAllTopProductsTapped`, `clientTapped`** —
+///   No-op within this reducer; all navigation for these is delegated upward to
+///   `ProfileFeature` via action bubbling.
+///
+/// ## Navigation
+/// The only `Destination` sheet owned by this reducer is `.createInvoice(InvoiceFormPlaceholderFeature)`,
+/// which hosts the invoice creation UI. Invoice detail, client detail, and top-list drill-downs
+/// are pushed via `ProfileFeature`'s `@Reducer enum Path`.
+///
+/// ## Side effects
+/// - `flexiBeeClient.loadIfNeeded()` — conditional network sync on first load.
+/// - `flexiBeeClient.forceSync()` — unconditional full refresh on pull-to-refresh or after
+///   a successful invoice creation/dismissal.
+/// - All FlexiBee reads (`invoices()`, `salesMovementItems()`, `stockWithPrices()`) run on
+///   `MainActor` via `MainActor.run` inside `.run` effects to satisfy Swift 6 concurrency rules.
 @Reducer
 struct SalesFeature {
     /// Observable state for the Sales tab.

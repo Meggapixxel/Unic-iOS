@@ -4,7 +4,38 @@ import ComposableArchitecture
 import Foundation
 import SwiftUI
 
-/// TCA feature managing the create/edit salon form including validation, dirty-state tracking, and Firebase persistence.
+/// Manages the create/edit salon modal form, covering field binding, dirty-state detection,
+/// discard-confirmation, and Firebase persistence for both new and existing salons.
+///
+/// **Entry point**
+/// `.onLoad` is dispatched by the form view's `.task` modifier. It fetches available
+/// `WorksOnTag` values from Firebase and populates `availableTags` via `.tagsLoaded`.
+/// The form is pre-populated on `init(salon:)` when editing, or blank on `init()` for creation.
+///
+/// **Key action flows**
+/// - `.onLoad` — calls `firebase.loadWorksOnTags()` (async); result dispatched as `.tagsLoaded`.
+/// - `.saveTapped` — validates that `name` is non-empty, sets `isSaving = true`, then branches:
+///   - Edit path: calls `FirebaseService.shared.updateSalonBasicInfo(...)` with geocoding if the
+///     address or city changed (`previousAddress` / `previousCity` passed for comparison).
+///   - Create path: calls `FirebaseService.shared.createSalon(...)`, pulling `createdBy` from
+///     `authClient.currentUser()`.
+///   On success, dispatches `.saveSucceeded(salon)` (observed by the parent to update its list)
+///   and calls `@Dependency(\.dismiss)` to close the sheet.
+/// - `.saveSucceeded(_)` — clears `isSaving`; the returned salon is consumed by the parent.
+/// - `.saveFailed(_)` — clears `isSaving` and sets `errorMessage` to display an alert.
+/// - `.requestDismiss` — if `isDirty` shows the discard-changes alert (`showDiscardAlert = true`);
+///   otherwise calls `@Dependency(\.dismiss)` immediately. The sheet also sets
+///   `.interactiveDismissDisabled(store.isDirty)` so swipe-to-dismiss follows the same guard.
+/// - `.forceDiscard` — hides the alert and calls `@Dependency(\.dismiss)`.
+/// - `.dismissDiscardAlert` — hides the alert without dismissing.
+///
+/// **Navigation** — no child destinations; the form is a self-contained modal sheet.
+///
+/// **Side effects**
+/// - `firebase.loadWorksOnTags()` — Firestore read on load.
+/// - `FirebaseService.shared.updateSalonBasicInfo(...)` — Firestore write + optional geocoding
+///   (edit flow).
+/// - `FirebaseService.shared.createSalon(...)` — Firestore write (create flow).
 @Reducer
 struct SalonFormFeature {
 

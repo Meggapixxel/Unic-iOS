@@ -1,7 +1,31 @@
 import ComposableArchitecture
 import Foundation
 
-/// TCA feature for the users list, loading app users and navigating to their activity screens.
+/// Manages the users list screen, loading all app users and enabling navigation to each user's
+/// activity timeline via a `NavigationStack`.
+///
+/// **Entry point**
+/// `.onLoad` is dispatched by the view's `.task` or `.onAppear`. It fetches all users from
+/// Firebase and then filters the result based on the current user's role.
+///
+/// **Key action flows**
+/// - `.onLoad` — sets `isLoading = true`, calls `firebase.fetchAllUsers()`, and dispatches
+///   `.loaded` on success or `.failed` on error.
+/// - `.loaded(_)` — clears `isLoading` and applies role-based filtering: admins see all users;
+///   non-admins see only users with the same role as themselves (using `auth.currentUser()?.role`).
+/// - `.userTapped(_)` — appends a `UserActivityFeature.State(user:)` to the navigation stack,
+///   pushing the activity screen for the selected user.
+/// - `.path` — forwarded through `forEach(\.path, action: \.path)` so child reducers (currently
+///   `UserActivityFeature`) receive their own actions.
+/// - `.failed(_)` — clears `isLoading` and stores the error string for display.
+///
+/// **Navigation — `Path` destinations**
+/// | Case | Trigger |
+/// |---|---|
+/// | `.userActivity(UserActivityFeature)` | `.userTapped(_)` |
+///
+/// **Side effects**
+/// - `firebase.fetchAllUsers()` — Firestore read on `.onLoad`.
 @Reducer
 struct UsersFeature {
     /// Observable state for the users list screen.

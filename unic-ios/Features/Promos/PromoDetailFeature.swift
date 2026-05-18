@@ -1,7 +1,37 @@
 import ComposableArchitecture
 import Foundation
 
-/// TCA feature for viewing and toggling a single promo offer, with activation-date picking.
+/// Displays the full detail of a single `PromoOffer` and, for admin users, allows toggling
+/// it between enabled and disabled states with date-range selection when enabling.
+///
+/// **Entry point**
+/// Presented as a modal sheet by `PromosFeature` via `.openDetail(promo)`, or opened directly
+/// with `isPickingActivationDates = true` when the parent calls `.toggleEnabled` on a disabled
+/// promo. No separate load action — the promo is passed in via the `State` initialiser.
+///
+/// **Key action flows**
+/// - `.closeTapped` — calls `@Dependency(\.dismiss)` to close the sheet.
+/// - `.editTapped` — sends `.delegate(.editRequested)` so `PromosFeature` can swap the
+///   destination from detail to the edit form without dismissing.
+/// - `.toggleEnabled` — if currently enabled, immediately calls `firebase.deactivatePromo(id)`;
+///   if currently disabled, sets `isPickingActivationDates = true` to show the date picker.
+/// - `.activateDateConfirmed` — hides the picker, sets `isTogglingEnabled = true`, then calls
+///   `firebase.activatePromo(id, activateFrom, activateTo)`.
+/// - `.activatePickerDismissed` — user cancelled the date picker; resets `isPickingActivationDates`.
+/// - `.toggleSucceeded(promo)` — updates `state.promo` with the server response and sends
+///   `.delegate(.didToggle(promo))` so `PromosFeature` can patch its list.
+/// - `.toggleFailed` — clears the `isTogglingEnabled` spinner without surfacing an alert
+///   (error handling is handled by the parent or left silent).
+///
+/// **Navigation**
+/// No `Path` or nested `Destination`. The activation-date picker is an inline sheet controlled
+/// by the `isPickingActivationDates` bool state.
+///
+/// **Side effects**
+/// - `firebase.deactivatePromo(id)` — Firebase write to mark the promo inactive.
+/// - `firebase.activatePromo(id, validFrom, validTo)` — Firebase write to re-enable the promo
+///   with the user-chosen date range.
+/// Both calls run inside `Effect.run` and report results via `.toggleSucceeded` / `.toggleFailed`.
 @Reducer
 struct PromoDetailFeature {
     /// Observable state for the promo detail sheet.

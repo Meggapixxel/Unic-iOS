@@ -1,7 +1,34 @@
 import ComposableArchitecture
 import Foundation
 
-/// TCA feature for creating or editing a promo offer with per-language title and description fields.
+/// Handles the create/edit form for a `PromoOffer`, collecting per-language title and
+/// description fields plus a category picker, then saving the result to Firebase.
+///
+/// **Entry point**
+/// Presented as a modal sheet by `PromosFeature` via `.openAdd` (blank form) or `.openEdit(promo)`
+/// (pre-filled). The `State` initialiser populates fields from `existing` when provided.
+/// No `.onLoad` action — all state is ready at init time.
+///
+/// **Key action flows**
+/// - `.binding` — two-way binds all text fields and `category` via `BindingReducer`.
+/// - `.closeTapped` — calls `@Dependency(\.dismiss)` to close the sheet without saving.
+/// - `.saveTapped` — guards `isValid` (English title non-empty), builds a `PromoContent`
+///   dictionary keyed by `AppLanguage.rawValue` (skipping blank locale entries), constructs
+///   a `PromoOffer` model (reusing the existing ID and dates if editing), sets `isSaving = true`,
+///   and calls `firebase.savePromo(promo)`.
+/// - `.saveSucceeded(promo)` — clears `isSaving`; the parent `PromosFeature` intercepts this
+///   action via `.destination(.presented(.form(.saveSucceeded)))` to dismiss the sheet and
+///   update the promo list.
+/// - `.saveFailed(msg)` — clears `isSaving` and sets `alertMessage` for an error alert.
+/// - `.dismissAlert` — clears `alertMessage`.
+///
+/// **Navigation**
+/// No `Path` or `Destination`; the form is itself a modal sheet with no child navigation.
+///
+/// **Side effects**
+/// - `firebase.savePromo(_:)` — async Firebase write that either creates a new promo document
+///   or updates the existing one (determined by whether `PromoOffer.id` is nil); runs inside
+///   `Effect.run` and reports results via `.saveSucceeded` / `.saveFailed`.
 @Reducer
 struct PromoFormFeature {
     /// Observable state for the promo create/edit form.

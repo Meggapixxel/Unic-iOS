@@ -6,7 +6,25 @@ import SwiftUI
 
 // MARK: - Feature
 
-/// TCA feature backing the in-app PDF catalog viewer, managing the share-sheet presentation state.
+/// Backs the in-app PDF catalog viewer screen; its sole responsibility is toggling the system
+/// share sheet that lets users export the bundled `catalog.pdf` file.
+///
+/// **Entry point**
+/// Pushed onto `StockFeature`'s `NavigationStack` path via `.openCatalog`. No async loading
+/// is required — the PDF is read from the app bundle synchronously inside `PDFKitView`.
+///
+/// **Key action flows**
+/// - `.shareTapped` — sets `isSharing = true`, which triggers the `CatalogView` sheet binding
+///   to present a `UIActivityViewController` wrapping the bundle PDF URL.
+/// - `.shareCompleted` — resets `isSharing = false` when the share sheet is dismissed.
+///
+/// **Navigation**
+/// No `Path` or `Destination` reducers. The share sheet is driven entirely by the `isSharing`
+/// boolean state bound to a `.sheet` modifier in `CatalogView`.
+///
+/// **Side effects**
+/// None — the PDF is loaded from the app bundle on a background `DispatchQueue` inside
+/// `PDFKitView.makeUIView`, entirely outside the TCA effect system.
 @Reducer
 struct CatalogFeature {
     /// Observable state for the catalog viewer.

@@ -3,7 +3,53 @@
 import ComposableArchitecture
 import Foundation
 
-/// TCA reducer for the Profile tab, managing user stats, plan history, logout, and deep navigation into sub-screens.
+/// TCA reducer for the Profile tab, displaying the current user's in-plan KPIs, plan history, and providing
+/// role-gated navigation to activity logs, sales, users, clients, and plan management.
+///
+/// **Entry point**
+/// `ProfileView` dispatches `.onLoad` (not `.onAppear`) once the view is ready. `.onLoad` resolves
+/// permission flags synchronously from `authClient`, then launches an async effect that refreshes the
+/// current user from Firebase, conditionally fetches activity entries (only when an active plan exists),
+/// and always fetches plan history.
+///
+/// **Key action flows**
+/// - `.onLoad` — Resolves `canViewSales`, `canViewUsers`, `canManagePlans` from `authClient` synchronously.
+///   Then runs a single `Effect.run` that:
+///   1. Calls `auth.refreshCurrentUser()`.
+///   2. If the refreshed user has an active plan, fetches `firebase.fetchUserActivity(userId)` → `.activityLoaded`.
+///   3. Always fetches `firebase.fetchPlanHistory(userId)` → `.planHistoryLoaded`.
+/// - `.logoutTapped` — Sets `showLogoutConfirm = true` to show a confirmation dialog.
+/// - `.logoutConfirmed` — Calls `auth.logout()` synchronously; `AppFeature`'s auth stream drives the
+///   transition back to `.auth`.
+/// - `.navigateToActivity` — Pushes `UserActivityFeature` onto the navigation stack.
+/// - `.navigateToSales` — Pushes `SalesFeature` (guarded by `canViewSales`).
+/// - `.navigateToUsers` — Pushes `UsersFeature` (guarded by `canViewUsers`).
+/// - `.navigateToClients` — Reads cached FlexiBee invoices synchronously, aggregates revenue by client,
+///   and pushes `AllTopClientsFeature` (guarded by `canViewSales`).
+/// - `.navigateToPlans` — Pushes `PlansFeature` (guarded by `canManagePlans`).
+///
+/// **Navigation (`Path`)**
+/// Uses a `@Reducer enum Path` / `StackState<Path.State>` navigation stack with these destinations:
+/// - `.userActivity` — User's chronological activity log; tapping "Plans" from here pushes `.plans`.
+/// - `.sales` — Sales dashboard; supports sub-navigation to `.invoiceDetail`, `.allTopClients`,
+///   `.allTopProducts`, and `.clientDetail` all pushed flat onto the same stack.
+/// - `.invoiceDetail` — Single invoice view; handles `.deleteCompleted` (pops + forces FlexiBee sync),
+///   `.productTapped` (pushes `.productDetail`), and `.clientTapped` (pushes `.clientDetail`).
+/// - `.allTopClients` — Ranked client list; `.clientTapped` pushes `.clientDetail`.
+/// - `.allTopProducts` — Ranked product list; `.productTapped` pushes `.productDetail`.
+/// - `.clientDetail` — Client's full invoice history; `.invoiceTapped` pushes `.invoiceDetail`.
+/// - `.users` — User list; `.userTapped` pushes `.userActivity` for the selected user.
+/// - `.plans` — Plan management screen (also reachable from `userActivity`).
+/// - `.productDetail` — Read-only product detail pushed from invoice or top-products screens.
+///
+/// **Side effects**
+/// - `auth.refreshCurrentUser()` — Firebase user refresh on every `.onLoad`.
+/// - `firebase.fetchUserActivity(_:)` — Fetches activity entries when an active plan is present.
+/// - `firebase.fetchPlanHistory(_:)` — Fetches completed plan history unconditionally on load.
+/// - `flexiBeeClient.invoices()` — Synchronous cache read when navigating to clients.
+/// - `flexiBeeClient.stockWithPrices()` — Synchronous cache read when navigating to product detail.
+/// - `flexiBeeClient.forceSync()` — Async re-sync triggered after an invoice is deleted.
+/// - `auth.logout()` — Synchronous Firebase sign-out on confirmation.
 @Reducer
 struct ProfileFeature {
 

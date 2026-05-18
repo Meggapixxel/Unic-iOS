@@ -1,7 +1,30 @@
 import ComposableArchitecture
 import Foundation
 
-/// Root TCA reducer for the authenticated main-app experience, composing the four primary tabs and the plan banner.
+/// Root TCA reducer for the authenticated main-app experience, composing the four primary tab reducers
+/// (Salons, Promos, Stock, Profile) and the floating `PlanBannerFeature` overlay.
+///
+/// **Entry point**
+/// Created by `AppFeature` via `.welcome(.delegate(.readyToEnter(user, salons)))`. Optionally seeds
+/// `salons.salons` with data preloaded during the welcome phase to avoid a duplicate Firebase fetch.
+/// `MainView` dispatches `.onAppear`, which currently produces no effect (reserved for future use).
+///
+/// **Key action flows**
+/// - `.binding` — Handled by `BindingReducer`; primarily drives `selectedTab` changes when the user taps
+///   a bottom-tab button.
+/// - `.salons / .promos / .stock / .profile / .planBanner` — Forwarded transparently to their respective
+///   child reducers via `Scope`. `MainFeature` itself does not intercept these actions.
+/// - `.onAppear` — No-op at this level; each child feature owns its own load lifecycle.
+///
+/// **Navigation**
+/// Tab selection is bound through `$selectedTab` (four `Tab` cases: `.salons`, `.promos`, `.stock`,
+/// `.profile`). Deep navigation within each tab is managed entirely by the child feature's own
+/// `Path` / `Destination` state.
+///
+/// **Side effects**
+/// None at this level. All async work (Firebase fetches, FlexiBee sync, auth refresh) is delegated
+/// to child reducers (`SalonsFeature`, `PromosFeature`, `StockFeature`, `ProfileFeature`,
+/// `PlanBannerFeature`).
 @Reducer
 struct MainFeature {
     /// State shared across all tabs of the main interface.

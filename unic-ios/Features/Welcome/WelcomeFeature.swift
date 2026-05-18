@@ -1,7 +1,32 @@
 import ComposableArchitecture
 import Foundation
 
-/// TCA reducer for the post-login splash/loading screen that preloads salon data before entering the main interface.
+/// TCA reducer for the post-login splash/loading screen that preloads salon data and enforces a minimum
+/// display duration before handing control to `MainFeature`.
+///
+/// **Entry point**
+/// Activated by `AppFeature` when `.authStateChanged(user)` fires and the app is not already in `.main`.
+/// `WelcomeView` dispatches `.onAppear`, which kicks off two parallel effects.
+///
+/// **Key action flows**
+/// - `.onAppear` — Fires two concurrent `Effect.run` tasks via `.merge`:
+///   1. **Data fetch** — calls `firebaseClient.fetchAllSalons()`. On success → `.dataLoaded(salons)`;
+///      on failure → `.dataFailed` (proceeds with an empty list so the app is never blocked).
+///   2. **Minimum timer** — sleeps for 1 second via `continuousClock`, then fires `.minTimeElapsed`.
+/// - `.dataLoaded(salons)` — Stores salons in state, sets `isDataReady = true`. If `canProceed` is also
+///   true, immediately sends `.delegate(.readyToEnter)`.
+/// - `.dataFailed` — Sets `isDataReady = true` with an empty salon list. Same `canProceed` check.
+/// - `.minTimeElapsed` — Sets `minTimePassed = true`. Same `canProceed` check.
+/// - `.delegate(.readyToEnter(user, salons))` — Surfaced to `AppFeature`, which transitions the app to
+///   `.main(MainFeature.State(currentUser:preloadedSalons:))`.
+///
+/// **Navigation**
+/// No internal navigation stack. Transition out is driven exclusively via the `.delegate` action to the
+/// parent `AppFeature`.
+///
+/// **Side effects**
+/// - `firebaseClient.fetchAllSalons()` — one-shot Firebase read; result is handed off to `MainFeature`.
+/// - `continuousClock.sleep(for: .seconds(1))` — guarantees a minimum splash display time.
 @Reducer
 struct WelcomeFeature {
     /// State for the welcome/loading phase.

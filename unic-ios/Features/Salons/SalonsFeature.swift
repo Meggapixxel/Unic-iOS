@@ -4,7 +4,54 @@ import ComposableArchitecture
 import Foundation
 import IdentifiedCollections
 
-/// TCA feature managing the salons list, search, filtering, sorting, and navigation to salon detail, test-drive, and route planner screens.
+/// Manages the main salons list screen, providing search, multi-filter, sort, and map-toggle capabilities
+/// alongside navigation to salon detail, test-drive, and route-planner screens.
+///
+/// **Entry point**
+/// `.onLoad` is dispatched by the view's `.task` modifier (or equivalent). It is guarded so that a
+/// second call while salons are already populated is a no-op, preventing redundant fetches when
+/// navigating back from a child screen.
+///
+/// **Key action flows**
+/// - `.onLoad` — fires two concurrent async calls: `fetchAllSalons()` and `loadWorksOnTags()`.
+///   Salons are stored in `State.salons` via `.salonsLoaded`; tags are cached in the Firebase client.
+/// - `.salonTapped(_)` — pushes a `SalonDetailFeature` onto the navigation stack.
+/// - `.openAdd` — guarded by `auth.canEditSalon()`; presents the `SalonFormFeature` modal.
+/// - `.salonSaved(_)` — upserts the salon into `State.salons`, dismisses the form sheet, and
+///   propagates the updated value into any open `salonDetail` element already in the stack.
+/// - `.salonDeleted(_)` — removes the salon from `State.salons` and pops the detail screen if it
+///   is at the top of the navigation stack.
+/// - `.clearFilters` — resets `languageFilter` and `dateRangeFilter` to empty sets.
+/// - Binding actions for `searchText`, `statusFilter`, `sortOption`, `sortAscending`, `showMap`,
+///   `showFilterPopover`, `showStatusInfo`, `languageFilter`, and `dateRangeFilter` all flow
+///   through `BindingReducer`, causing `displayedSalons` and `statCounts` to recompute on the fly.
+///
+/// **Path propagation (child → parent)**
+/// - `.path(.element(_, .testDrive(.salonTapped(_))))` — pushes a new `salonDetail` for the tapped
+///   salon, allowing the test-drive list to act as a secondary entry point to detail.
+/// - `.path(.element(_, .salonDetail(.salonUpdated(_))))` — forwards to `.salonSaved` to keep the
+///   parent list in sync after an in-detail edit.
+/// - `.path(.element(_, .salonDetail(.statusAdded(_))))` — reads the updated salon from the open
+///   detail state and forwards to `.salonSaved`.
+/// - `.path(.element(_, .salonDetail(.deleteFinished)))` — reads the salonId from the detail state
+///   and forwards to `.salonDeleted`; the detail reducer has already called `@Dependency(\.dismiss)`.
+///
+/// **Navigation — `Path` destinations**
+/// | Case | Trigger |
+/// |---|---|
+/// | `.salonDetail(SalonDetailFeature)` | `.salonTapped(_)` or test-drive `.salonTapped` |
+/// | `.testDrive(TestDriveFeature)` | Pushed by the view (e.g. the test-drive toolbar button) |
+/// | `.routePlanner(RoutePlannerFeature)` | Pushed by the view (e.g. the route-planner toolbar button) |
+///
+/// **Navigation — `Destination` sheet**
+/// | Case | Trigger |
+/// |---|---|
+/// | `.form(SalonFormFeature)` | `.openAdd` (create flow) |
+///
+/// **Side effects**
+/// - `firebase.fetchAllSalons()` — Firestore read; called once on load.
+/// - `firebase.loadWorksOnTags()` — Firestore read; runs concurrently with the salons fetch on load.
+/// - All filtering, searching, and sorting are pure computed properties — no async work.
 @Reducer
 struct SalonsFeature {
 

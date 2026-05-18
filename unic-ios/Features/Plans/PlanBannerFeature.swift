@@ -1,7 +1,27 @@
 import ComposableArchitecture
 import Foundation
 
-/// TCA reducer that fetches and exposes the current active plan for the floating plan-progress banner.
+/// TCA reducer that fetches and exposes the active plan used to drive the floating progress banner
+/// overlaid on the main tab interface.
+///
+/// **Entry point**
+/// `MainView` (or the banner host view) dispatches `.load` once, typically on appearance. There is no
+/// automatic refresh; the banner reflects a single fetch per session.
+///
+/// **Key action flows**
+/// - `.load` — Sets `isLoading = true` (implicitly via the fetch) and calls
+///   `firebaseClient.fetchActivePlan()` asynchronously.
+///   - On success → `.loaded(plan?)`: stores the returned plan in state. When `plan` is non-nil,
+///     `shouldShow` becomes `true` and the banner becomes visible.
+///   - On failure → `.failed`: silently swallowed; banner remains hidden (`plan` stays `nil`).
+/// - `.loaded(nil)` — No active plan exists; banner stays hidden.
+/// - `.loaded(plan)` — Active plan found; sets `state.plan`, making `shouldShow` return `true`.
+///
+/// **Navigation**
+/// None — this feature has no `Path` or `Destination`. It is a leaf, display-only reducer.
+///
+/// **Side effects**
+/// - `firebaseClient.fetchActivePlan()` — one-shot Firebase read on `.load`; errors are suppressed.
 @Reducer
 struct PlanBannerFeature {
     /// State controlling banner visibility.

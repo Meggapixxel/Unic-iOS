@@ -9,6 +9,11 @@ import IdentifiedCollections
 // MARK: - TestDriveFeature
 
 /// Stub reducer bridging TCA navigation to the legacy test-drive ViewModel screen.
+///
+/// Holds the list of salons to display in the test-drive view. Has no async side effects of its own —
+/// it is an empty reducer (`EmptyReducer`). The single action `.salonTapped(_)` is intercepted by
+/// the parent `SalonsFeature`, which pushes a `SalonDetailFeature` onto the navigation stack.
+/// Replace with a full TCA reducer once the screen is migrated away from its ViewModel.
 @Reducer
 struct TestDriveFeature {
     /// Holds the salons displayed in the test-drive list.
@@ -26,6 +31,10 @@ struct TestDriveFeature {
 // MARK: - RoutePlannerFeature
 
 /// Stub reducer bridging TCA navigation to the legacy route-planner ViewModel screen.
+///
+/// Holds the ordered list of salons passed into the route planner. Has no actions and no async
+/// side effects (`EmptyReducer`). The view owned by this feature is still ViewModel-based.
+/// Replace with a full TCA reducer once the screen is migrated.
 @Reducer
 struct RoutePlannerFeature {
     /// Holds the salons passed to the route planner for ordering.

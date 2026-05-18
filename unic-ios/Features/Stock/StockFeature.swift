@@ -5,8 +5,48 @@ import Foundation
 // MARK: - Stock Feature
 // StockSortField (.name / .code / .quantity) is defined in FlexiBeeScreen+ViewModel.swift
 
-/// TCA reducer managing the Stock tab: loading warehouse data, search, sort, section collapse,
-/// barcode scanning, and navigation to product detail and catalog.
+/// Manages the Stock tab, which displays all FlexiBee warehouse items grouped by product line.
+/// Supports real-time search/sort, collapsible sections, barcode scanning, and navigation to
+/// per-product detail and the in-app PDF catalog.
+///
+/// **Entry point**
+/// `.onLoad` is dispatched when the Stock tab's view first appears (`.task` / `.onAppear`).
+/// It immediately reads any already-cached items from `flexiBeeClient`, then calls
+/// `flexiBeeClient.loadIfNeeded()` to refresh stale data in the background.
+///
+/// **Key action flows**
+/// - `.onLoad` — seeds `allStock` from cache, then fires a background `loadIfNeeded()` task;
+///   result arrives via `.syncCompleted`.
+/// - `.forceSync` — sets `isLoading = true` and calls `flexiBeeClient.forceSync()`, which
+///   triggers a full network refresh; result arrives via `.syncCompleted`.
+/// - `.syncCompleted(stock, date)` — stores the refreshed item list and `lastSyncDate`.
+/// - `.syncFailed(msg)` — clears the loading spinner and surfaces an error banner.
+/// - `.toggleSection(line)` / `.collapseAll` / `.expandAll` — mutate `collapsedSections`
+///   (a `Set<String>`) to show or hide product-line rows in the grouped list.
+/// - `.openProduct(item)` — pushes a `ProductDetailFeature` onto the `NavigationStack` path.
+/// - `.openCatalog` — pushes a `CatalogFeature` onto the path.
+/// - `.openChecklist` — presents a `StockChecklistFeature` sheet via `Destination.checklist`.
+/// - `.openBarcodeScanner` — presents a `BarcodeScannerFeature` sheet via `Destination.barcodeScanner`.
+/// - `.barcodeScanned(barcode)` — dismisses the scanner, looks up the barcode article in
+///   Firebase (`firebaseClient.lookupBarcodeArticle`), normalises the resulting article code,
+///   matches it against `allStock`, and dispatches `.barcodeSearchCompleted`.
+/// - `.barcodeSearchCompleted(product?)` — if a match was found, pushes `ProductDetailFeature`
+///   onto the path; otherwise does nothing (error handling is silent at this layer).
+///
+/// **Navigation**
+/// - `Path` (`NavigationStack`):
+///   - `.productDetail(ProductDetailFeature)` — detail screen for a single stock item.
+///   - `.catalog(CatalogFeature)` — in-app PDF catalog viewer with share capability.
+/// - `Destination` (modal sheets):
+///   - `.checklist(StockChecklistFeature)` — barcode-driven stocktake checklist with JSON export.
+///   - `.barcodeScanner(BarcodeScannerFeature)` — camera barcode scanner; on success forwards
+///     the scanned string back to the parent via `.barcodeScanned`.
+///
+/// **Side effects**
+/// - `flexiBeeClient.loadIfNeeded()` / `flexiBeeClient.forceSync()` — network calls to the
+///   FlexiBee ERP API; executed on a background `Effect.run`.
+/// - `firebaseClient.lookupBarcodeArticle(_:)` — Firebase async read that maps a raw EAN/QR
+///   barcode to a FlexiBee article code; used to open the correct product detail screen.
 @Reducer
 struct StockFeature {
     /// Observable state for the Stock tab.

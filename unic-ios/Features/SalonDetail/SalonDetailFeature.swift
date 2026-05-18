@@ -4,7 +4,51 @@ import ComposableArchitecture
 import Foundation
 import IdentifiedCollections
 
-/// TCA feature managing the salon detail screen: status changes, form editing, history, and deletion.
+/// Manages the salon detail screen, handling inline status display, status-history browsing, salon editing, and deletion.
+/// It propagates saves and deletes back to the parent `SalonsFeature` via published actions.
+///
+/// **Entry point**
+/// `.onLoad` is dispatched when the detail view appears. It checks role-based permissions
+/// (`canEditSalon`, `canDeleteSalon`, `isAdmin`) and immediately fires a Firebase fetch of the
+/// latest status history entry for the salon, keeping the inline "last contact" row fresh.
+///
+/// **Key action flows**
+/// - `.onLoad` — sets `canEdit`, `canDelete`, `canEditHistory` from `authClient`, then fetches
+///   `fetchLatestStatusEntry(salonId)` and dispatches `.latestEntryLoaded`.
+/// - `.editTapped` — presents the `SalonFormFeature` sheet pre-populated with the current salon.
+/// - `.deleteTapped` — presents a `deleteConfirmation` alert.
+/// - `.deleteConfirmed` — calls `firebase.deleteSalon(salonId)`, then dispatches `.deleteFinished`
+///   which sets `shouldDismiss = true` and calls `@Dependency(\.dismiss)` to pop the detail screen.
+///   The parent `SalonsFeature` observes `.deleteFinished` to remove the salon from its list.
+/// - `.addStatusTapped` — guarded by `auth.currentUser()`; presents `AddStatusFeature` sheet
+///   pre-loaded with the current status, salonId, and user ID.
+/// - `.statusAdded(_)` — inserts the new entry at the head of `statusHistory`, updates
+///   `latestEntry`, and mutates `salon.status` in place; no extra network call needed.
+/// - `.openStatusHistory` — presents the `StatusHistoryFeature` sheet; triggers `loadHistory` only
+///   when the local cache is empty.
+/// - `.updateNote(_, entryId:)` — calls `firebase.updateStatusEntryNote` then re-fetches the full
+///   history via `loadHistory` to keep the displayed list consistent.
+/// - `.deleteEntry(_)` — removes the entry from local state optimistically, then calls
+///   `firebase.deleteStatusHistoryEntry` in the background.
+/// - `.salonUpdated(_)` — receives the saved `Salon` from the form sheet (forwarded from
+///   `destination(.presented(.form(.saveSucceeded(_))))`) and updates `state.salon` in place,
+///   dismissing the form.
+///
+/// **Navigation — `Destination` sheet**
+/// | Case | Trigger |
+/// |---|---|
+/// | `.form(SalonFormFeature)` | `.editTapped` |
+/// | `.addStatus(AddStatusFeature)` | `.addStatusTapped` |
+/// | `.statusHistory(StatusHistoryFeature)` | `.openStatusHistory` |
+/// | `.deleteConfirmation` | `.deleteTapped` (renders as a confirmation alert in the view) |
+///
+/// **Side effects**
+/// - `firebase.fetchLatestStatusEntry(salonId)` — Firestore read on `.onLoad`.
+/// - `firebase.fetchStatusHistory(salonId)` — Firestore read when history is opened or after a
+///   note update; also called inside `AddStatusFeature.saveTapped` to retrieve the persisted entry.
+/// - `firebase.deleteSalon(salonId)` — Firestore write on `.deleteConfirmed`.
+/// - `firebase.updateStatusEntryNote(...)` / `firebase.deleteStatusHistoryEntry(...)` — Firestore
+///   writes forwarded from `StatusHistoryFeature`.
 @Reducer
 struct SalonDetailFeature {
 
@@ -272,7 +316,32 @@ struct SalonDetailFeature {
 
 // MARK: - AddStatusFeature
 
-/// TCA feature for the "Add Status" sheet, including location capture and optional article / demo-date selection.
+/// Manages the "Add Status" sheet, capturing the user's current location, optional demo date or
+/// test-drive articles, and persisting a new status history entry to Firebase.
+///
+/// **Entry point**
+/// `.onLoad` is dispatched by the sheet view's `.task`. It populates `stockItems` from
+/// `flexiBeeClient.stockWithPrices()` (synchronous, no network call).
+///
+/// **Key action flows**
+/// - `.saveTapped` — guarded by `isSaving`; assembles note text from article codes + free-text,
+///   calls `locationClient.fetchLocation()` (async), and on success writes to Firebase via
+///   `firebase.addStatusHistoryEntry(...)`. It then re-fetches history to obtain the persisted
+///   entry's server-assigned ID, dispatches `.entryAdded(entry, updatedSalon: nil)`, and calls
+///   `@Dependency(\.dismiss)` to close the sheet.
+/// - `.entryAdded` — clears `isSaving`; the parent `SalonDetailFeature` handles the payload.
+/// - `.failed(_)` — clears `isSaving`; if the error is `location_unavailable` it sets
+///   `locationError = true`, which triggers an alert in the view.
+/// - `.locationErrorDismissed` — resets `locationError` to `false`.
+/// - `.cancelTapped` — calls `@Dependency(\.dismiss)` without saving.
+///
+/// **Navigation** — no child destinations; the sheet is dismissed by the reducer directly.
+///
+/// **Side effects**
+/// - `locationClient.fetchLocation()` — async location lookup; sheet cannot save without it.
+/// - `firebase.addStatusHistoryEntry(...)` — Firestore write.
+/// - `firebase.fetchStatusHistory(salonId)` — Firestore read immediately after the write to
+///   retrieve the server-assigned document ID for the new entry.
 @Reducer
 struct AddStatusFeature {
     /// Observable state for the add-status form.
@@ -396,7 +465,27 @@ struct AddStatusFeature {
 
 // MARK: - StatusHistoryFeature
 
-/// Child feature that models the status history list; actual data loading is delegated to the parent via action forwarding.
+/// Child feature that renders the status history list sheet; all data fetching and mutation is
+/// delegated to the parent `SalonDetailFeature` via action forwarding.
+///
+/// **Entry point**
+/// The sheet is presented by `SalonDetailFeature` in response to `.openStatusHistory`. If the
+/// parent's history cache is empty at that point, the parent immediately dispatches `.loadHistory`
+/// into this child, which sets `isLoading = true` and returns `.none` — the parent intercepts it
+/// and performs the actual Firestore fetch.
+///
+/// **Key action flows**
+/// - `.loadHistory` — sets `isLoading = true` and refreshes `canEditHistory` from `authClient`;
+///   the effect itself is `.none` — the parent `SalonDetailFeature` intercepts this action and runs
+///   `loadHistory(salonId:)`.
+/// - `.historyLoaded(_)` — clears `isLoading` and populates `history` (entries with nil IDs are
+///   filtered out).
+/// - `.updateNote(_, entryId:)` — returns `.none`; forwarded to the parent which calls Firebase.
+/// - `.deleteEntry(_)` — returns `.none`; forwarded to the parent which calls Firebase.
+///
+/// **Navigation** — no destinations; purely a list presentation.
+///
+/// **Side effects** — none directly; all async work is owned by the parent.
 @Reducer
 struct StatusHistoryFeature {
     /// Observable state for the status history sheet.

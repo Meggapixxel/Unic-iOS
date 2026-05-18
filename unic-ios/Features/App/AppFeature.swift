@@ -1,7 +1,36 @@
 import ComposableArchitecture
 import Foundation
 
-/// Root TCA reducer that manages the top-level navigation between loading, authentication, welcome, and main app states.
+/// Root TCA reducer that manages the top-level application lifecycle, switching between loading, authentication,
+/// welcome (preload), and main tab-bar states based on Firebase auth events.
+///
+/// **Entry point**
+/// `AppView` dispatches `.onAppear` once, which opens a long-lived `AsyncStream` via `authClient.observeAuthState()`.
+/// Every emission from that stream fires `.authStateChanged(_:)`, driving all subsequent state transitions.
+///
+/// **Key action flows**
+/// - `.onAppear` — Starts the `observeAuthState()` stream as a long-running `Effect.run`. The effect never
+///   cancels for the lifetime of the app, so auth changes (sign-in, sign-out, token refresh) are always handled.
+/// - `.authStateChanged(nil)` — User is signed out (or no session on cold launch). Transitions to `.auth` unless
+///   already there, preventing redundant resets.
+/// - `.authStateChanged(user)` — User is authenticated. If already in `.main`, updates `currentUser` and
+///   `profile.currentUser` in place (handles silent token refreshes without navigating away). If in any other
+///   state, transitions to `.welcome` to begin the preload phase.
+/// - `.welcome(.delegate(.readyToEnter(user, salons)))` — `WelcomeFeature` has finished preloading; the app
+///   transitions to `.main`, passing the preloaded salons to avoid a second Firebase round-trip.
+///
+/// **Navigation / state machine**
+/// ```
+/// .loading ──(first auth event)──► .auth
+///                                  .welcome ──(readyToEnter)──► .main
+///         ──(user present)──────── .welcome
+/// .main   ──(sign-out)──────────── .auth
+/// ```
+/// There is no `Path` or `Destination`; navigation is expressed as enum-case replacement on `State`.
+///
+/// **Side effects**
+/// - `authClient.observeAuthState()` — continuous Firebase Auth listener (never cancelled).
+/// - No direct Firebase data fetching; data loading is delegated to `WelcomeFeature`.
 @Reducer
 struct AppFeature {
 
