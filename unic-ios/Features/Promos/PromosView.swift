@@ -187,11 +187,10 @@ struct PromoDetailView: View {
                                 Color(.systemGray5)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 220)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
-                            .scaledToFill()
+                            .scaledToFit()
                             .frame(maxWidth: .infinity)
-                            .frame(height: 220)
-                            .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     VStack(alignment: .leading, spacing: 8) {
