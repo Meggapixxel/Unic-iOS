@@ -21,6 +21,8 @@ struct PromoOffer: Codable, Identifiable, Equatable {
     let createdBy: String
     /// Product category this promo belongs to (see `categories`).
     var category: String
+    /// Optional URL of a promotional image.
+    var imageURL: String?
 
     /// Canonical list of product categories a promo can be assigned to.
     static let categories: [String] = [
@@ -77,7 +79,8 @@ struct PromoOffer: Codable, Identifiable, Equatable {
         validTo: Date? = nil,
         createdBy: String,
         category: String = "Other",
-        content: [String: PromoContent] = [:]
+        content: [String: PromoContent] = [:],
+        imageURL: String? = nil
     ) {
         self.id = id
         self.validFrom = validFrom
@@ -85,6 +88,7 @@ struct PromoOffer: Codable, Identifiable, Equatable {
         self.createdBy = createdBy
         self.category = category
         self.content = content.isEmpty ? ["en": PromoContent(title: title, description: description)] : content
+        self.imageURL = imageURL
     }
 
     /// Custom decoder that migrates legacy flat `title`/`description` fields into the `content` map.
@@ -95,6 +99,7 @@ struct PromoOffer: Codable, Identifiable, Equatable {
         validTo   = try? c.decode(Date.self, forKey: .validTo)
         createdBy = try c.decode(String.self, forKey: .createdBy)
         category  = (try? c.decode(String.self, forKey: .category)) ?? "Other"
+        imageURL  = try? c.decode(String.self, forKey: .imageURL)
         if let contentDict = try? c.decode([String: PromoContent].self, forKey: .content) {
             content = contentDict
         } else {
@@ -105,7 +110,7 @@ struct PromoOffer: Codable, Identifiable, Equatable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, content, validFrom, validTo, createdBy, category
+        case id, content, validFrom, validTo, createdBy, category, imageURL
         case title, description
     }
 
@@ -118,5 +123,6 @@ struct PromoOffer: Codable, Identifiable, Equatable {
         try c.encodeIfPresent(validTo, forKey: .validTo)
         try c.encode(createdBy, forKey: .createdBy)
         try c.encode(category, forKey: .category)
+        try c.encodeIfPresent(imageURL, forKey: .imageURL)
     }
 }

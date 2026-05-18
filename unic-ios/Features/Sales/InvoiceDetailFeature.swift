@@ -200,7 +200,7 @@ struct InvoiceDetailFeature {
                         let rawItems = try await flexiBeeClient.fetchLineItemsForInvoice(invoiceId)
                         let items = await MainActor.run { rawItems.filter { !$0.productName.isEmpty && $0.quantity > 0 } }
                         let movementResult = try? await flexiBeeClient.fetchStockMovement(invoiceNumber)
-                        let cashId = try? await flexiBeeClient.fetchCashReceiptId(invoiceId)
+                        let cashId = try? await flexiBeeClient.fetchCashReceiptId(invoiceNumber)
                         await send(.loaded(
                             items: items,
                             movement: movementResult?.0,
@@ -258,18 +258,39 @@ struct InvoiceDetailFeature {
             case let .statusChangeConfirmed(status, method):
                 state.destination = nil
                 let invoiceId = state.invoice.id
+                let invoiceNumber = state.invoice.invoiceNumber
                 let invoice = state.invoice
+                let lineItems = state.lineItems
                 let flexiBeeClient = flexiBeeClient
                 return .run { [flexiBeeClient] send in
                     do {
+                        if status == .paid {
+                            // Step 1: Zaúčtování
+                            try await flexiBeeClient.markAsAccounted(invoiceId)
+                            // Step 2: Stock movement (vydej) — create only if not already exists
+                            let existingMovement = try? await flexiBeeClient.fetchStockMovement(invoiceNumber)
+                            if existingMovement == nil {
+                                let movementLines = lineItems
+                                    .filter { $0.isValid }
+                                    .map { NewStockMovementLine(productCode: "code:\($0.cenikCode)", quantity: $0.quantity) }
+                                if !movementLines.isEmpty {
+                                    let movement = NewStockMovement(
+                                        description: "Vydej k \(invoiceNumber)",
+                                        lines: movementLines
+                                    )
+                                    try await flexiBeeClient.createStockMovement(movement)
+                                }
+                            }
+                        }
+                        // Step 3: Cash receipt (only for cash payments)
                         if status == .paid, method == .hotove {
                             try await flexiBeeClient.createCashReceipt(invoice)
                         }
+                        // Step 4: Update payment status
                         try await flexiBeeClient.updateInvoicePaymentStatus(invoiceId, status, method)
                         let updated = try await flexiBeeClient.fetchSingleInvoice(invoiceId) ?? invoice
                         await send(.statusChangeCompleted(updated))
                     } catch {
-                        // Fallback: treat current invoice as unchanged
                         await send(.statusChangeCompleted(invoice))
                         await send(.failed(error.localizedDescription))
                     }
