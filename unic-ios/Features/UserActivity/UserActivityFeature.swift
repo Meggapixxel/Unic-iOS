@@ -1,21 +1,31 @@
 import ComposableArchitecture
 import Foundation
 
+/// TCA feature for the user-activity screen, supporting day-by-day and custom date-range views with per-status statistics.
 @Reducer
 struct UserActivityFeature {
+    /// Observable state for the user activity screen.
     @ObservableState
     struct State: Equatable {
+        /// The user whose activity is being displayed.
         var user: AppUser
+        /// All status history entries belonging to the user, sorted newest-first.
         var entries: [UserActivityEntry] = []
         var isLoading = false
         var error: String?
+        /// Whether the date control shows a single-day picker or a custom range selector.
         var groupMode: GroupMode = .day
+        /// The day selected in single-day mode.
         var selectedDate: Date
+        /// Start of the custom date range.
         var customStart: Date
+        /// End of the custom date range.
         var customEnd: Date
+        /// The maximum selectable date (today at load time).
         var maxDate: Date
         var canDeleteActivity = false
 
+        /// Controls how dates are grouped in the activity view.
         enum GroupMode: String, CaseIterable, Equatable {
             case day, custom
         }
@@ -30,6 +40,7 @@ struct UserActivityFeature {
             self.customStart = Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now
         }
 
+        /// Entries that fall within the currently active date selection (single day or custom range).
         var filteredEntries: [UserActivityEntry] {
             let cal = Calendar(identifier: .gregorian)
             switch groupMode {
@@ -42,16 +53,19 @@ struct UserActivityFeature {
             }
         }
 
+        /// Count of filtered entries grouped by their salon status.
         var filteredStatusCounts: [SalonStatus: Int] {
             Dictionary(grouping: filteredEntries, by: \.status).mapValues(\.count)
         }
 
+        /// Filtered entries grouped by calendar day (start-of-day key), sorted newest-first.
         var filteredEntriesByDay: [(Date, [UserActivityEntry])] {
             let cal = Calendar(identifier: .gregorian)
             let grouped = Dictionary(grouping: filteredEntries) { cal.startOfDay(for: $0.timestamp) }
             return grouped.sorted { $0.key > $1.key }
         }
 
+        /// Human-readable label for the currently selected day (e.g. "Today", "Yesterday", "3 May").
         var dayLabel: String {
             let cal = Calendar(identifier: .gregorian)
             if cal.isDateInToday(selectedDate) { return "Today" }

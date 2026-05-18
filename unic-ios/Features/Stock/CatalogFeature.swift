@@ -6,10 +6,13 @@ import SwiftUI
 
 // MARK: - Feature
 
+/// TCA feature backing the in-app PDF catalog viewer, managing the share-sheet presentation state.
 @Reducer
 struct CatalogFeature {
+    /// Observable state for the catalog viewer.
     @ObservableState
     struct State: Equatable {
+        /// `true` while the system share sheet is being displayed.
         var isSharing: Bool = false
     }
 
@@ -34,6 +37,7 @@ struct CatalogFeature {
 
 // MARK: - View
 
+/// View displaying the bundled `catalog.pdf` via PDFKit with a share toolbar button.
 struct CatalogView: View {
     @Bindable var store: StoreOf<CatalogFeature>
 
@@ -76,6 +80,7 @@ struct CatalogView: View {
 
 // MARK: - Activity Sheet (generic URL share)
 
+/// `UIViewControllerRepresentable` wrapper presenting `UIActivityViewController` for a list of shareable items.
 private struct ActivitySheet: UIViewControllerRepresentable {
     let items: [Any]
     func makeUIViewController(context: Context) -> UIActivityViewController {
@@ -86,9 +91,11 @@ private struct ActivitySheet: UIViewControllerRepresentable {
 
 // MARK: - PDFKit bridge
 
+/// `UIViewRepresentable` that loads and displays a PDF document from a file URL using `PDFView`.
 private struct PDFKitView: UIViewRepresentable {
     let url: URL
 
+    /// Creates a `PDFView` configured for vertical continuous scrolling, then loads the document on a background thread.
     func makeUIView(context: Context) -> PDFView {
         let pdfView = PDFView()
         pdfView.autoScales = true

@@ -5,8 +5,11 @@ import Foundation
 // MARK: - Stock Feature
 // StockSortField (.name / .code / .quantity) is defined in FlexiBeeScreen+ViewModel.swift
 
+/// TCA reducer managing the Stock tab: loading warehouse data, search, sort, section collapse,
+/// barcode scanning, and navigation to product detail and catalog.
 @Reducer
 struct StockFeature {
+    /// Observable state for the Stock tab.
     @ObservableState
     struct State: Equatable {
         var searchText: String = ""
@@ -19,9 +22,12 @@ struct StockFeature {
         @Presents var destination: Destination.State?
 
         // Backing store — populated on load/sync
+        /// Raw list of all stock items; drives all derived computed properties.
         var allStock: [FlexiBeeStockItem] = []
+        /// Product-line names that are currently collapsed in the section list.
         var collapsedSections: Set<String> = []
 
+        /// Items after applying search text and sort order.
         var filteredStock: [FlexiBeeStockItem] {
             let q = searchText.lowercased()
             let items: [FlexiBeeStockItem] = searchText.isEmpty
@@ -41,9 +47,12 @@ struct StockFeature {
             }
         }
 
+        /// Sum of quantities across all stock items.
         var totalStockUnits: Double { allStock.reduce(0) { $0 + $1.quantity } }
+        /// Number of items with 2 or fewer units remaining.
         var lowStockCount: Int { allStock.filter { $0.quantity <= 2 }.count }
 
+        /// Filtered stock grouped by product line, with unknown lines sorted last.
         var groupedStock: [(line: String, items: [FlexiBeeStockItem])] {
             let grouped = Dictionary(grouping: filteredStock, by: \.productLine)
             return grouped.keys.sorted { a, b in
@@ -225,6 +234,9 @@ struct StockFeature {
         .forEach(\.path, action: \.path)
     }
 
+    /// Strips all non-alphanumeric characters and uppercases an article code for barcode matching.
+    /// - Parameter s: Raw article code string.
+    /// - Returns: Normalized uppercase code with punctuation removed.
     nonisolated private static func normalizeKod(_ s: String) -> String {
         s.replacingOccurrences(of: #"[^A-Za-z0-9]+"#, with: "", options: .regularExpression)
          .uppercased()
@@ -235,11 +247,15 @@ extension StockFeature.Path.State: Equatable {}
 
 // MARK: - Product Detail Feature (leaf)
 
+/// Leaf TCA reducer for the product detail screen showing stock level and pricing.
 @Reducer
 struct ProductDetailFeature {
+    /// Observable state for a single product's detail view.
     @ObservableState
     struct State: Equatable {
+        /// The stock item being displayed.
         var product: FlexiBeeStockItem
+        /// When `true`, the purchase price row is visible.
         var showPurchaseDetails: Bool = false
     }
 
@@ -264,6 +280,7 @@ struct ProductDetailFeature {
 
 // MARK: - Barcode Scanner Feature (leaf)
 
+/// Minimal leaf TCA reducer that bridges the camera barcode scanner to the parent feature.
 @Reducer
 struct BarcodeScannerFeature {
     @ObservableState

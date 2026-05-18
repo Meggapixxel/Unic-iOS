@@ -3,6 +3,7 @@
 import ComposableArchitecture
 import SwiftUI
 
+/// Root view for the Salons tab, hosting the navigation stack and all salon list UI.
 struct SalonsView: View {
     @Bindable var store: StoreOf<SalonsFeature>
 
@@ -36,6 +37,7 @@ struct SalonsView: View {
 
     // MARK: - Main Content
 
+    /// Renders a loading spinner, an error view, the map view, or the salon list depending on current state.
     @ViewBuilder
     private var mainContent: some View {
         if store.isLoading {
@@ -54,6 +56,7 @@ struct SalonsView: View {
 
     // MARK: - List
 
+    /// Plain list of displayed salons with a stats/filter footer and the test-drive navigation row.
     private var salonList: some View {
         List {
             Section {
@@ -102,6 +105,7 @@ struct SalonsView: View {
 
     // MARK: - Toolbar
 
+    /// Toolbar items: filter popover (leading), and add / route-planner / map toggle (trailing).
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
@@ -147,6 +151,7 @@ struct SalonsView: View {
 
 // MARK: - Stats Row
 
+/// Horizontal row of coloured stat badges summarising salon counts by category.
 private struct StatsRow: View {
     let counts: SalonsFeature.State.StatCounts
 
@@ -162,6 +167,7 @@ private struct StatsRow: View {
 
 // MARK: - Status Filter Chips
 
+/// Horizontally scrollable chip strip for filtering the salon list by status, with a help button.
 private struct StatusFilterChipsView: View {
     @Binding var statusFilter: Set<SalonStatus>
     @Binding var showStatusInfo: Bool
@@ -204,6 +210,7 @@ private struct StatusFilterChipsView: View {
 
 // MARK: - Filter Popover
 
+/// Popover containing sort options (with direction toggle), date-added ranges, and language filters.
 private struct SalonsFilterPopoverView: View {
     @Bindable var store: StoreOf<SalonsFeature>
 
@@ -298,11 +305,13 @@ private struct SalonsFilterPopoverView: View {
 
 // MARK: - Map View
 
+/// Full-screen native map showing filtered salon pins with status colours and a "center on user" button.
 private struct SalonsMapView: View {
     @Bindable var store: StoreOf<SalonsFeature>
     @ObservedObject private var locationManager = LocationManager.shared
     @State private var centerOnUser = false
 
+    /// Number of currently displayed salons that have a geocoded coordinate.
     private var mappedCount: Int {
         store.displayedSalons.filter { $0.coordinate != nil }.count
     }

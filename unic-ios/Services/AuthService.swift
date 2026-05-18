@@ -3,6 +3,7 @@ import Combine
 import FirebaseAuth
 import FirebaseFirestore
 
+/// Typed errors surfaced by `AuthService` for known Firebase authentication failure modes.
 enum AuthError: LocalizedError {
     case userNotFound
     case wrongPassword
@@ -17,10 +18,15 @@ enum AuthError: LocalizedError {
     }
 }
 
+/// Singleton service that manages Firebase Authentication state and exposes role-based permission checks.
+///
+/// On init it restores the last known `AppUser` from `UserDefaults` so views render immediately,
+/// then patches it via a Firestore snapshot once Firebase confirms the auth state.
 @MainActor
 final class AuthService: ObservableObject {
     static let shared = AuthService()
 
+    /// The currently authenticated user, or `nil` if logged out.
     @Published private(set) var currentUser: AppUser?
 
     var isLoggedIn: Bool  { currentUser != nil }
@@ -95,6 +101,11 @@ final class AuthService: ObservableObject {
         }
     }
 
+    /// Signs in with email and password, fetches the user profile from Firestore, and updates `currentUser`.
+    /// - Parameters:
+    ///   - email: The user's email address.
+    ///   - password: The user's password.
+    /// - Throws: `AuthError.userNotFound`, `AuthError.wrongPassword`, or `AuthError.unknown`.
     func login(email: String, password: String) async throws {
         AppLogger.log(.info, "Auth", "Login attempt: \(email)")
         do {
@@ -115,6 +126,7 @@ final class AuthService: ObservableObject {
         }
     }
 
+    /// Signs out the current user, clears the cached profile from `UserDefaults`, and sets `currentUser` to `nil`.
     func logout() {
         AppLogger.log(.info, "Auth", "Logout: \(currentUser?.id ?? "unknown")")
         do {
@@ -126,6 +138,8 @@ final class AuthService: ObservableObject {
         currentUser = nil
     }
 
+    /// Re-fetches the current user's Firestore profile and refreshes `currentUser`.
+    /// - Returns: The refreshed `AppUser`, or the last cached value if Firebase is unavailable.
     func refreshCurrentUser() async -> AppUser? {
         guard let uid = Auth.auth().currentUser?.uid else { return currentUser }
         AppLogger.log(.debug, "Auth", "Refreshing current user: uid=\(uid)")

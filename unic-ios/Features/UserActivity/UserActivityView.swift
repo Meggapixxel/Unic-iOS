@@ -2,6 +2,7 @@ import ComposableArchitecture
 import MapKit
 import SwiftUI
 
+/// Scrollable activity log for a single user, with date controls, status statistics chips, and a per-day route map.
 struct UserActivityView: View {
     @Bindable var store: StoreOf<UserActivityFeature>
 
@@ -131,6 +132,9 @@ struct UserActivityView: View {
         .task { store.send(.onLoad) }
     }
 
+    /// Returns a human-readable section header for the given calendar day.
+    /// - Parameter date: The start-of-day date for the section.
+    /// - Returns: "Today", "Yesterday", or a formatted weekday + date string.
     private func sectionHeader(_ date: Date) -> String {
         let cal = Calendar(identifier: .gregorian)
         if cal.isDateInToday(date) { return String.activity_today }
@@ -141,6 +145,7 @@ struct UserActivityView: View {
 
 // MARK: - Stat Chip
 
+/// Compact chip displaying the activity count for a single salon status, colour-coded by status.
 private struct StatChip: View {
     let status: SalonStatus
     let count: Int
@@ -164,6 +169,7 @@ private struct StatChip: View {
 
 // MARK: - Activity Entry Card
 
+/// Card view for a single activity entry showing the salon name, status badge, time, and optional note.
 private struct ActivityEntryCard: View {
     let entry: UserActivityEntry
 
@@ -211,15 +217,20 @@ private struct ActivityEntryCard: View {
 
 // MARK: - Route Map
 
+/// Non-interactive map showing sequentially numbered pins for a day's activity entries connected by a polyline.
 private struct RouteMapView: View {
+    /// Entries to display, pre-filtered to those with a non-nil coordinate, sorted oldest-first.
     let entries: [UserActivityEntry]
 
     @State private var position: MapCameraPosition = .automatic
 
+    /// Coordinates extracted from entries in chronological order.
     private var coordinates: [CLLocationCoordinate2D] {
         entries.compactMap(\.coordinate)
     }
 
+    /// Computes a map region that tightly fits all entry coordinates with padding.
+    /// - Returns: An `MKCoordinateRegion` centred on the bounding box of all coordinates.
     private func makeRegion() -> MKCoordinateRegion {
         let coords = coordinates
         guard !coords.isEmpty else {

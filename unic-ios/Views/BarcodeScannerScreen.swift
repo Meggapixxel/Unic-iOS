@@ -1,7 +1,10 @@
 import SwiftUI
 
+/// Full-screen overlay that hosts `BarcodeScannerView` with a dismiss button and a hint label.
 struct BarcodeScannerScreen: View {
+    /// Called with the scanned barcode string once a code is successfully read.
     let onScan: (String) -> Void
+    /// Called when the user taps the close button.
     let onDismiss: () -> Void
 
     var body: some View {

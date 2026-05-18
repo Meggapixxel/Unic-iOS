@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import SwiftUI
 
+/// Email/password login screen backed by ``AuthFeature``.
 struct AuthView: View {
     @Bindable var store: StoreOf<AuthFeature>
 

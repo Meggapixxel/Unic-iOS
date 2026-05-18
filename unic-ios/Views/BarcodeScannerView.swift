@@ -3,7 +3,10 @@ import UIKit
 @preconcurrency import AVFoundation
 import AudioToolbox
 
+/// SwiftUI wrapper around `BarcodeScannerViewController`.
+/// Fires `onScan` exactly once per presentation with the decoded barcode string.
 struct BarcodeScannerView: UIViewControllerRepresentable {
+    /// Called on the main actor with the first successfully decoded barcode value.
     let onScan: (String) -> Void
 
     func makeUIViewController(context: Context) -> BarcodeScannerViewController {
@@ -17,7 +20,10 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
     func makeCoordinator() -> Void {}
 }
 
+/// UIKit view controller that manages an `AVCaptureSession` for barcode scanning.
+/// Triggers haptic feedback on a successful scan and stops the session to prevent multiple callbacks.
 final class BarcodeScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDelegate {
+    /// Called exactly once with the decoded barcode string.
     var onScan: ((String) -> Void)?
 
     private var captureSession: AVCaptureSession?

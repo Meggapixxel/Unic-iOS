@@ -1,14 +1,20 @@
 import ComposableArchitecture
 import Foundation
 
+/// Root TCA reducer that manages the top-level navigation between loading, authentication, welcome, and main app states.
 @Reducer
 struct AppFeature {
 
+    /// The current phase of the application lifecycle.
     @ObservableState
     enum State: Equatable {
+        /// Initial state while the auth session is being determined.
         case loading
+        /// The user is unauthenticated and must log in.
         case auth(AuthFeature.State)
+        /// The user is authenticated and the app is preloading data before entering.
         case welcome(WelcomeFeature.State)
+        /// The user is fully authenticated and the main tab interface is active.
         case main(MainFeature.State)
 
         static func == (lhs: Self, rhs: Self) -> Bool {
@@ -22,8 +28,11 @@ struct AppFeature {
         }
     }
 
+    /// Actions that drive top-level app state transitions.
     enum Action {
+        /// Triggers the auth-state observation stream on first appearance.
         case onAppear
+        /// Fired whenever Firebase auth emits a new user value (nil means signed out).
         case authStateChanged(AppUser?)
         case auth(AuthFeature.Action)
         case welcome(WelcomeFeature.Action)

@@ -12,10 +12,12 @@ private let _planDayMonthYearFmt: DateFormatter = {
     let f = DateFormatter(); f.dateFormat = "d MMMM yyyy"; return f
 }()
 
+/// Formats a plan period as "d MMMM – d MMMM yyyy" (e.g. "1 May – 31 May 2026").
 func planPeriodString(from start: Date, to end: Date) -> String {
     "\(_planDayMonthFmt.string(from: start)) – \(_planDayMonthYearFmt.string(from: end))"
 }
 
+/// Formats a single date as "d MMMM yyyy" (e.g. "31 May 2026").
 func planDateString(_ date: Date) -> String {
     _planDayMonthYearFmt.string(from: date)
 }
@@ -23,6 +25,7 @@ func planDateString(_ date: Date) -> String {
 
 // MARK: - Sync Date Label
 
+/// Trailing label that shows a spinner while loading or the last-synced date and time otherwise.
 struct SyncDateLabel: View {
     let isLoading: Bool
     let lastSyncDate: Date?
@@ -44,7 +47,9 @@ struct SyncDateLabel: View {
 
 // MARK: - Loading Overlay
 
+/// Full-screen semi-transparent overlay with a spinner and optional status text.
 struct LoadingOverlay: View {
+    /// Status text shown below the spinner; defaults to a generic "Loading…" string.
     var text: String = String.loading
 
     var body: some View {
@@ -61,11 +66,14 @@ struct LoadingOverlay: View {
 
 // MARK: - Stat Card (unified KPICard + MiniStatsCard)
 
+/// Versatile KPI card supporting both a standard (left-aligned) and compact (centered) layout.
 struct StatCard: View {
+    /// The formatted metric value (e.g. a currency string or count).
     let value: String
     let label: String
     let icon: String
     let color: Color
+    /// When `true`, uses a compact centered layout suited for narrow columns.
     var compact: Bool = false
 
     var body: some View {
@@ -89,6 +97,7 @@ struct StatCard: View {
 
 // MARK: - Sales Enums
 
+/// The two sub-tabs available in the Sales feature.
 enum SalesSection: String, CaseIterable {
     case analytics, invoices
     var label: String {
@@ -99,11 +108,16 @@ enum SalesSection: String, CaseIterable {
     }
 }
 
+/// Granularity options for the sales analytics period picker.
 enum SalesPeriod: String, CaseIterable {
     case month = "month"; case year = "year"
     var displayName: String {
         switch self { case .month: return String.period_month; case .year: return String.period_year }
     }
+    /// Computes the calendar-aligned date range for the period that contains `date`.
+    /// The upper bound is capped at `now` so future dates are excluded from aggregations.
+    /// - Parameter date: Any date within the desired period.
+    /// - Returns: The inclusive start and end timestamps.
     func dateRange(for date: Date) -> (from: Date, to: Date) {
         let cal = Calendar.current; let now = Date()
         switch self {
@@ -122,13 +136,16 @@ enum SalesPeriod: String, CaseIterable {
 
 // MARK: - PDFShareItem
 
+/// Wraps one or more PDF files to be shared via `UIActivityViewController`.
 struct PDFShareItem: Identifiable {
     let id = UUID()
+    /// The PDF files included in the share, each with its intended filename.
     let files: [(data: Data, filename: String)]
 
     init(data: Data, filename: String) { files = [(data, filename)] }
     init(files: [(data: Data, filename: String)]) { self.files = files }
 
+    /// Writes each file to the temp directory and returns their URLs for the share sheet.
     var tempURLs: [URL] {
         files.compactMap { file in
             let url = FileManager.default.temporaryDirectory.appendingPathComponent(file.filename)
@@ -138,6 +155,7 @@ struct PDFShareItem: Identifiable {
     }
 }
 
+/// SwiftUI wrapper around `UIActivityViewController` for sharing `PDFShareItem` files.
 struct ShareSheet: UIViewControllerRepresentable {
     let item: PDFShareItem
     func makeUIViewController(context: Context) -> UIActivityViewController {
@@ -148,6 +166,7 @@ struct ShareSheet: UIViewControllerRepresentable {
 
 // MARK: - Sync Status Row
 
+/// Compact inline row showing a sync spinner and the last-synced timestamp.
 struct SyncStatusRow: View {
     let isLoading: Bool
     let lastSyncDate: Date?
@@ -176,6 +195,7 @@ struct SyncStatusRow: View {
 
 // MARK: - SalonSortOption
 
+/// Sort options available in the salon list screen.
 enum SalonSortOption: String, CaseIterable, Identifiable {
     case name = "name"; case leadTemp = "leadTemp"; case status = "status"; case dateAdded = "dateAdded"
     var id: String { rawValue }
@@ -206,8 +226,10 @@ extension LeadTemp {
 
 // MARK: - LeadTempBadge
 
+/// Rounded-rectangle badge displaying the lead temperature letter (A/B/C) with color feedback.
 struct LeadTempBadge: View {
     let temp: LeadTemp
+    /// Whether this badge is the currently selected temperature.
     let isSelected: Bool
     var body: some View {
         Text(temp.rawValue)
@@ -221,7 +243,9 @@ struct LeadTempBadge: View {
 
 // MARK: - TestDriveListRow
 
+/// Navigation row for the Test Drive section, showing a flask icon and the active test-drive count.
 struct TestDriveListRow: View {
+    /// Number of active test drives.
     let count: Int
     var body: some View {
         HStack(spacing: 14) {
@@ -243,6 +267,7 @@ struct TestDriveListRow: View {
 
 // MARK: - FilterSection / FilterRow
 
+/// Labeled container for a group of filter controls, using a small-caps section header.
 struct FilterSection<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
@@ -254,6 +279,7 @@ struct FilterSection<Content: View>: View {
     }
 }
 
+/// A tappable row with a checkmark circle indicator, used inside `FilterSection`.
 struct FilterRow: View {
     let title: String
     let isSelected: Bool
@@ -276,6 +302,7 @@ struct FilterRow: View {
 
 // MARK: - StockSortField
 
+/// Fields by which the stock list can be sorted.
 enum StockSortField: String, CaseIterable {
     case section, name, quantity
 }
@@ -339,6 +366,7 @@ extension SalonStatus {
 
 // MARK: - StatBadge
 
+/// Small vertical badge showing a numeric value with animated transitions and a label below it.
 struct StatBadge: View {
     let title: String; let value: Int; let color: Color
     var body: some View {
@@ -353,6 +381,7 @@ struct StatBadge: View {
 
 // MARK: - FilterChip / FilterChipsView
 
+/// Pill-shaped toggle button used in horizontal filter chip rows.
 struct FilterChip: View {
     let title: String; let isSelected: Bool; let action: () -> Void
     var body: some View {
@@ -366,6 +395,7 @@ struct FilterChip: View {
     }
 }
 
+/// Horizontally scrolling chip row for salon status filtering with a "?" info button.
 struct FilterChipsView: View {
     @Binding var statusOptions: Options<SalonStatus>
     @Binding var showStatusInfo: Bool
@@ -390,6 +420,7 @@ struct FilterChipsView: View {
 
 // MARK: - SalonRowView
 
+/// Standard list row for a salon showing name, status badge, address, and contact icons.
 struct SalonRowView: View {
     let salon: Salon
     var body: some View {
@@ -428,6 +459,7 @@ private func flagEmoji(for languageCode: String) -> String {
 
 // MARK: - ActionButton
 
+/// Vertical icon + label action button with a tinted rounded background.
 struct ActionButton: View {
     let title: String; let icon: String; let color: Color; let action: () -> Void
     var body: some View {
@@ -444,6 +476,7 @@ struct ActionButton: View {
 
 // MARK: - SectionHeader
 
+/// Bold section header label styled with primary foreground color.
 struct SectionHeader: View {
     let title: String
     var body: some View {
@@ -453,6 +486,7 @@ struct SectionHeader: View {
 
 // MARK: - StatusHistoryRow
 
+/// Card-style row showing a status-history entry's status color, name, date, and optional note.
 struct StatusHistoryRow: View {
     let entry: StatusHistoryEntry
     var body: some View {
@@ -476,9 +510,11 @@ struct StatusHistoryRow: View {
 
 // MARK: - EditNoteSheet
 
+/// Modal sheet for editing the note on a status-history entry, presented at `.medium` detent.
 struct EditNoteSheet: View {
     let entry: StatusHistoryEntry
     @Binding var isPresented: Bool
+    /// Called when the user taps the checkmark, with the trimmed note text (or `nil` if empty).
     let onSave: (String?) -> Void
     @State private var noteText: String
 
@@ -519,6 +555,7 @@ struct EditNoteSheet: View {
 
 // MARK: - InvoiceStatusBadge
 
+/// Capsule badge displaying a payment status label with the corresponding color.
 struct InvoiceStatusBadge: View {
     let status: PaymentStatus
     var body: some View {
@@ -532,6 +569,7 @@ struct InvoiceStatusBadge: View {
 
 // MARK: - StatusInfoView
 
+/// Full-screen reference sheet listing all salon statuses with descriptions and next-action prompts.
 struct StatusInfoView: View {
     @Binding var isPresented: Bool
     var body: some View {
@@ -563,6 +601,7 @@ struct StatusInfoView: View {
 
 // MARK: - Glass Effect
 
+/// View modifier that applies a glass effect on iOS 26+ or falls back to ultra-thin material.
 struct GlassBackgroundModifier<S: Shape>: ViewModifier {
     let shape: S
     func body(content: Content) -> some View {
@@ -577,6 +616,7 @@ struct GlassBackgroundModifier<S: Shape>: ViewModifier {
 }
 
 extension View {
+    /// Applies `GlassBackgroundModifier` with the given shape.
     func glassBackground<S: Shape>(in shape: S) -> some View {
         modifier(GlassBackgroundModifier(shape: shape))
     }
@@ -593,6 +633,7 @@ extension View {
 
 // MARK: - CloseButton
 
+/// Standardized `xmark.circle.fill` button used in toolbars and overlays to dismiss a modal.
 struct CloseButton: View {
     let action: () -> Void
     var body: some View {
@@ -606,6 +647,7 @@ struct CloseButton: View {
 
 // MARK: - StatusBadge
 
+/// Rounded badge showing a salon's current status name with the corresponding color.
 struct StatusBadge: View {
     let status: SalonStatus
     var body: some View {
@@ -621,6 +663,7 @@ struct StatusBadge: View {
 
 // MARK: - ErrorView
 
+/// Generic error state view with an orange warning icon, message text, and a retry button.
 struct ErrorView: View {
     let message: String
     let retry: () -> Void
@@ -638,10 +681,12 @@ struct ErrorView: View {
 
 // MARK: - LocationManager
 
+/// Main-actor singleton that wraps `CLLocationManager` and exposes one-shot async location fetches.
 @MainActor
 final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = LocationManager()
     private let manager = CLLocationManager()
+    /// The current Core Location authorization status.
     @Published private(set) var authStatus: CLAuthorizationStatus = .notDetermined
     private var locationContinuation: CheckedContinuation<CLLocationCoordinate2D?, Never>?
 
@@ -655,6 +700,7 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
     func requestPermission() { manager.requestWhenInUseAuthorization() }
     var isAuthorized: Bool { authStatus == .authorizedWhenInUse || authStatus == .authorizedAlways }
 
+    /// Requests a single location update and returns the coordinate, or `nil` if unauthorized or failed.
     func fetchCurrentLocation() async -> CLLocationCoordinate2D? {
         guard isAuthorized else { return nil }
         return await withCheckedContinuation { continuation in
@@ -686,6 +732,7 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
 
 // MARK: - SalonAnnotation
 
+/// `MKAnnotation` subclass that carries a `Salon` so the map delegate can reference it on selection.
 final class SalonAnnotation: NSObject, MKAnnotation {
     let salon: Salon
     let coordinate: CLLocationCoordinate2D
@@ -697,9 +744,13 @@ final class SalonAnnotation: NSObject, MKAnnotation {
 
 // MARK: - SalonNativeMapView
 
+/// `UIViewRepresentable` wrapping `MKMapView` with clustering, callout detail buttons, and a
+/// navigation shortcut that opens Google Maps or Apple Maps.
 struct SalonNativeMapView: UIViewRepresentable {
     let salons: [Salon]
+    /// Called when the user taps the detail-disclosure button in a salon callout.
     let onSelect: (Salon) -> Void
+    /// When set to `true` the map switches to user-tracking mode and then resets the binding to `false`.
     @Binding var centerOnUser: Bool
 
     private static let annotationId = "SalonPin"
@@ -809,6 +860,7 @@ extension Salon {
 
 // MARK: - StockWithPriceRow
 
+/// Stock list row showing product code, name, optional volume badge, a color-coded quantity badge, and price.
 struct StockWithPriceRow: View {
     let item: FlexiBeeStockItem
 

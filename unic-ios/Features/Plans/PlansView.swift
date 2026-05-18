@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import SwiftUI
 
+/// List view for all plans, with swipe-to-delete/edit actions and a sheet for creating or modifying plans.
 struct PlansView: View {
     @Bindable var store: StoreOf<PlansFeature>
 
@@ -74,6 +75,7 @@ struct PlansView: View {
 
 // MARK: - PlansFormView
 
+/// Modal form for creating a new plan or editing an existing one, presented as a sheet from ``PlansView``.
 struct PlansFormView: View {
     @Bindable var store: StoreOf<PlansFormFeature>
 
@@ -152,11 +154,14 @@ struct PlansFormView: View {
 
 // MARK: - Plan Row
 
+/// A single row in the plans list showing the period, duration, per-day/total targets, and an active/done/upcoming badge.
 private struct PlanRow: View {
     let plan: Plan
 
+    /// Formatted date-range string for the plan's start and end dates.
     private var period: String { planPeriodString(from: plan.startDate, to: plan.endDate) }
 
+    /// Number of calendar days covered by the plan, with a minimum of 1.
     private var durationDays: Int {
         max(1, Calendar.current.dateComponents([.day], from: plan.startDate, to: plan.endDate).day ?? 1)
     }
@@ -191,6 +196,11 @@ private struct PlanRow: View {
         .padding(.vertical, 4)
     }
 
+    /// Inline chip showing a metric icon, optional per-day target, and optional period total.
+    /// - Parameters:
+    ///   - icon: SF Symbol name for the metric type.
+    ///   - perDay: Daily target; omitted from display when zero.
+    ///   - total: Period total target; omitted from display when nil or zero.
     @ViewBuilder
     private func targetChip(icon: String, perDay: Int, total: Int?) -> some View {
         HStack(spacing: 3) {
@@ -206,6 +216,7 @@ private struct PlanRow: View {
         .font(.caption)
     }
 
+    /// Badge indicating whether the plan is currently active, already past, or upcoming.
     @ViewBuilder
     private var statusBadge: some View {
         if plan.isActive {

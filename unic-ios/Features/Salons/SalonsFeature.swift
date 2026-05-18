@@ -4,11 +4,13 @@ import ComposableArchitecture
 import Foundation
 import IdentifiedCollections
 
+/// TCA feature managing the salons list, search, filtering, sorting, and navigation to salon detail, test-drive, and route planner screens.
 @Reducer
 struct SalonsFeature {
 
     // MARK: - Path
 
+    /// Navigation stack destinations reachable from the salons list.
     @Reducer
     enum Path {
         case salonDetail(SalonDetailFeature)
@@ -18,6 +20,7 @@ struct SalonsFeature {
 
     // MARK: - Destination
 
+    /// Modal destinations presented from the salons list.
     @Reducer
     enum Destination {
         case form(SalonFormFeature)
@@ -25,18 +28,26 @@ struct SalonsFeature {
 
     // MARK: - State
 
+    /// Observable state for the salons list screen.
     @ObservableState
     struct State: Equatable {
+        /// Full unfiltered collection of loaded salons.
         var salons: IdentifiedArrayOf<Salon> = []
         var isLoading = false
+        /// Current text entered in the search field.
         var searchText = ""
+        /// Active status filter chips; empty means "all".
         var statusFilter: Set<SalonStatus> = []
         var sortOption: SalonSortOption = .name
         var sortAscending: Bool = true
+        /// When `true`, the map view is shown instead of the list.
         var showMap = false
         var showFilterPopover = false
+        /// Controls visibility of the status legend sheet.
         var showStatusInfo = false
+        /// Active language filter; empty means all languages.
         var languageFilter: Set<String> = []
+        /// Active date-range filter IDs; empty means no date constraint.
         var dateRangeFilter: Set<DateRangeOption.ID> = []
         var path: StackState<Path.State> = StackState()
         @Presents var destination: Destination.State?
@@ -44,10 +55,12 @@ struct SalonsFeature {
 
         // MARK: Computed
 
+        /// Salons after applying all active filters and the current sort order.
         var displayedSalons: IdentifiedArrayOf<Salon> {
             IdentifiedArrayOf(uniqueElements: filteredAndSorted(includeStatus: true))
         }
 
+        /// Aggregate counts used by the stats row, computed from the non-status-filtered subset.
         var statCounts: StatCounts {
             let base = filteredAndSorted(includeStatus: false)
             return StatCounts(
@@ -59,15 +72,20 @@ struct SalonsFeature {
             )
         }
 
+        /// Unique non-empty languages found across all loaded salons, sorted alphabetically.
         var availableLanguages: [LanguageOption] {
             let langs = Set(salons.compactMap(\.language).filter { !$0.isEmpty })
             return langs.sorted().map { LanguageOption(id: $0) }
         }
 
+        /// `true` when at least one language or date-range filter is active.
         var hasAnyFilter: Bool {
             !languageFilter.isEmpty || !dateRangeFilter.isEmpty
         }
 
+        /// Applies all active filters and returns salons in the current sort order.
+        /// - Parameter includeStatus: When `false`, the status chip filter is skipped (used for stat counts).
+        /// - Returns: Filtered and sorted array of salons.
         private func filteredAndSorted(includeStatus: Bool) -> [Salon] {
             var result = Array(salons)
 
@@ -117,10 +135,12 @@ struct SalonsFeature {
             }
         }
 
+        /// Numeric sort priority for lead temperature (A < B < C < nil).
         private func leadTempOrder(_ temp: LeadTemp?) -> Int {
             switch temp { case .A: return 0; case .B: return 1; case .C: return 2; case nil: return 3 }
         }
 
+        /// Numeric sort priority for salon status in the default pipeline order.
         private func statusOrder(_ status: SalonStatus) -> Int {
             switch status {
             case .new: return 0; case .contacted: return 1; case .testDrive: return 2
@@ -128,11 +148,13 @@ struct SalonsFeature {
             }
         }
 
+        /// Aggregated salon counts displayed in the stats row.
         struct StatCounts: Equatable {
             var total: Int
             var new: Int
             var contacted: Int
             var ordered: Int
+            /// Number of salons currently in the test-drive status (always from the full list).
             var testDrive: Int
         }
     }

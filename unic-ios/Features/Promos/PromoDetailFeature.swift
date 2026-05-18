@@ -1,16 +1,25 @@
 import ComposableArchitecture
 import Foundation
 
+/// TCA feature for viewing and toggling a single promo offer, with activation-date picking.
 @Reducer
 struct PromoDetailFeature {
+    /// Observable state for the promo detail sheet.
     @ObservableState
     struct State: Equatable {
+        /// The promo offer being displayed; updated in-place after a toggle.
         var promo: PromoOffer
+        /// Whether the current user has permission to enable/disable or edit promos.
         var canManagePromos: Bool
+        /// The language used to render localised title and description.
         var language: AppLanguage
+        /// `true` while a Firebase enable/disable call is in-flight.
         var isTogglingEnabled = false
+        /// `true` when the activation-date picker sheet is being shown.
         var isPickingActivationDates = false
+        /// Start date chosen in the activation picker.
         var activateFrom: Date
+        /// End date chosen in the activation picker.
         var activateTo: Date
 
         init(promo: PromoOffer, canManagePromos: Bool, language: AppLanguage) {
@@ -28,13 +37,16 @@ struct PromoDetailFeature {
         case binding(BindingAction<State>)
         case closeTapped
         case editTapped
+        /// Toggles the promo between enabled and disabled; shows date picker when enabling.
         case toggleEnabled
+        /// Confirms the chosen activation dates and triggers the Firebase activate call.
         case activateDateConfirmed
         case activatePickerDismissed
         case toggleSucceeded(PromoOffer)
         case toggleFailed
         case delegate(Delegate)
 
+        /// Actions forwarded to the parent feature.
         @CasePathable
         enum Delegate: Equatable {
             case editRequested

@@ -4,9 +4,14 @@ import SwiftUI
 
 // MARK: - Invoice Detail View
 
+/// Full-screen detail view for a single FlexiBee invoice, driven by `InvoiceDetailFeature`.
+/// Displays a progress timeline, header, dates, notes, line items, and a stock-movement section,
+/// with bottom-bar actions for deletion, accounting, payment, and PDF sharing.
 struct InvoiceDetailView: View {
     @Bindable var store: StoreOf<InvoiceDetailFeature>
+    /// Whether the line-items disclosure group is expanded.
     @State private var itemsExpanded = false
+    /// Whether the stock-movement disclosure group is expanded.
     @State private var stockExpanded = false
 
     var body: some View {
@@ -351,9 +356,12 @@ struct InvoiceDetailView: View {
 
 // MARK: - PDF Share Sheet View
 
+/// Wraps `UIActivityViewController` to present the PDF share sheet from SwiftUI.
 private struct PDFShareSheetView: UIViewControllerRepresentable {
+    /// The PDF data to share, potentially containing multiple files.
     let item: PDFShareItem
 
+    /// - Returns: A `UIActivityViewController` pre-loaded with the PDF temp-file URLs.
     func makeUIViewController(context: Context) -> UIActivityViewController {
         UIActivityViewController(activityItems: item.tempURLs, applicationActivities: nil)
     }
@@ -362,6 +370,7 @@ private struct PDFShareSheetView: UIViewControllerRepresentable {
 
 // MARK: - Payment Method Picker View
 
+/// Bottom sheet that lets the user pick the payment method before confirming a status change.
 private struct PaymentMethodPickerView: View {
     let store: StoreOf<StatusChangeFeature>
 
@@ -390,6 +399,7 @@ private struct PaymentMethodPickerView: View {
     }
 }
 
+/// A single row in the payment-method picker sheet.
 private struct _PaymentMethodRow: View {
     let method: PaymentMethod
     let isSelected: Bool
@@ -414,11 +424,13 @@ private struct _PaymentMethodRow: View {
 
 // MARK: - Invoice Timeline
 
+/// `PreferenceKey` used to propagate the computed scale factor from child to parent in `InvoiceTimeline`.
 private struct _TimelineScaleKey: PreferenceKey {
     static var defaultValue: CGFloat { 1 }
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = min(value, nextValue()) }
 }
 
+/// Horizontal step-indicator that animates each stage of the invoice lifecycle.
 private struct InvoiceTimeline: View {
     let isAccounted: Bool
     let stockMovementCreated: Bool
@@ -463,10 +475,13 @@ private struct InvoiceTimeline: View {
 
 // MARK: - Invoice Timeline Step
 
+/// A single icon + label step in the invoice timeline, springs in on first appearance.
 private struct InvoiceTimelineStep: View {
     let icon: String
     let label: String
+    /// Whether this stage has been completed.
     let done: Bool
+    /// Delay (in seconds) before the spring entrance animation fires.
     let delay: Double
 
     @State private var appeared = false
@@ -496,8 +511,11 @@ private struct InvoiceTimelineStep: View {
 
 // MARK: - Invoice Timeline Connector
 
+/// Horizontal line between two timeline steps; fills with green when the preceding stage is complete.
 private struct InvoiceTimelineConnector: View {
+    /// Whether the preceding stage is complete, causing the line to animate to full width.
     let done: Bool
+    /// Delay (in seconds) before the fade-in animation fires.
     let delay: Double
 
     @State private var appeared = false
@@ -526,6 +544,8 @@ private struct InvoiceTimelineConnector: View {
 
 // MARK: - Stock Movement Bridge View
 
+/// Bridges the TCA `StockMovementPlaceholderFeature` store to the MVVM `StockMovementScreen`,
+/// converting TCA state into a `PendingMovement` and forwarding the outcome back as TCA actions.
 private struct StockMovementBridgeView: View {
     let store: StoreOf<StockMovementPlaceholderFeature>
 

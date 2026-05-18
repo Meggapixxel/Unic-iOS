@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import SwiftUI
 
+/// Full-screen splash shown while the app preloads data after a successful login.
 struct WelcomeView: View {
     let store: StoreOf<WelcomeFeature>
 

@@ -20,19 +20,24 @@ final class InvoiceFormViewModel: ObservableObject {
     }()
     @Published var selectedFirm: FlexiBeeFirm?
     @Published var issueDate = Date()
+    /// Default due date is 14 days after issue.
     @Published var dueDate = Calendar.current.date(byAdding: .day, value: 14, to: Date()) ?? Date()
     @Published var paymentMethod: PaymentMethod = .prevod
     @Published var notes = ""
     @Published var lineItems: [InvoiceLineItemDraft] = []
+    /// Live search text bound to the firm picker's search field.
     @Published var firmPickerSearch = ""
 
     @Published private(set) var firms: [FlexiBeeFirm] = []
     @Published private(set) var priceList: [FlexiBeeCenikItem] = []
     @Published private(set) var isFirmsLoading = false
+    /// Whether existing line items are being fetched for an invoice being edited.
     @Published private(set) var isLoadingItems = false
     @Published private(set) var isSubmitting = false
     @Published private(set) var submitError: String?
+    /// Set to `true` after a successful create or update, signalling the parent view to dismiss.
     @Published private(set) var didSucceed = false
+    /// The newly created client, set after `createClient` succeeds; observed by the firm picker to auto-close.
     @Published private(set) var justCreatedClient: FlexiBeeFirm?
 
     @Published var showBarcodeScanner = false
@@ -41,9 +46,12 @@ final class InvoiceFormViewModel: ObservableObject {
 
     @Published var showFirmPicker = false
     @Published var showProductPicker = false
+    /// The line-item `id` that triggered the product picker, used to patch the correct row on selection.
     @Published var productPickerForItemID: UUID?
 
+    /// The invoice being edited, or `nil` when creating a new invoice.
     let editingInvoice: FlexiBeeInvoice?
+    /// When set, the matching firm is pre-selected after firms are loaded.
     let preSelectClientCode: String?
     private var isPrepared = false
 
@@ -52,6 +60,7 @@ final class InvoiceFormViewModel: ObservableObject {
     private let submitAction: (NewInvoice) async throws -> Void
     private let deleteClientAction: (String) async throws -> Void
 
+    /// Whether the form is editing an existing invoice (as opposed to creating a new one).
     var isEditing: Bool { editingInvoice != nil }
     var title: String { String.create_invoice_title }
     var submitLabel: String { isEditing ? String.save : String.create_invoice_submit }
@@ -59,10 +68,12 @@ final class InvoiceFormViewModel: ObservableObject {
     var canCreateClient: Bool { AuthService.shared.canCreateClient }
     var canDeleteClient: Bool { AuthService.shared.canDeleteClient }
 
+    /// `true` when a client is selected and at least one line item is valid.
     var isValid: Bool {
         selectedFirm != nil && lineItems.contains { $0.isValid }
     }
 
+    /// Sum of all valid line item totals.
     var grandTotal: Double {
         lineItems.reduce(0) { $0 + $1.total }
     }
@@ -90,6 +101,8 @@ final class InvoiceFormViewModel: ObservableObject {
         }
     }
 
+    /// Loads firms and the FlexiBee price list (idempotent — subsequent calls are no-ops).
+    /// In edit mode also fetches the invoice's existing line items.
     func prepare() async {
         guard !isPrepared else { return }
         isPrepared = true
@@ -168,6 +181,9 @@ final class InvoiceFormViewModel: ObservableObject {
         s.replacingOccurrences(of: #"[^A-Za-z0-9]+"#, with: "", options: .regularExpression).uppercased()
     }
 
+    /// Creates a new FlexiBee firm, reloads the firms list, and selects the new client.
+    /// - Parameter firm: The new firm data to submit.
+    /// - Throws: A FlexiBee API error if creation fails.
     func createClient(_ firm: NewFirm) async throws {
         let created = try await FlexiBeeService.shared.createFirm(firm)
         firms = await reloadFirmsAction()
@@ -175,12 +191,17 @@ final class InvoiceFormViewModel: ObservableObject {
         justCreatedClient = created
     }
 
+    /// Deletes a FlexiBee firm and removes it from the local list.
+    /// Clears `selectedFirm` if the deleted firm was selected.
+    /// - Throws: A FlexiBee API error if deletion fails.
     func deleteClient(_ firm: FlexiBeeFirm) async throws {
         try await deleteClientAction(firm.id)
         firms.removeAll { $0.id == firm.id }
         if selectedFirm?.id == firm.id { selectedFirm = nil }
     }
 
+    /// Builds a `NewInvoice` from the current form state and delegates to `submitAction`.
+    /// Sets `didSucceed = true` on success or populates `submitError` on failure.
     func submit() async {
         guard let firm = selectedFirm, isValid else { return }
         isSubmitting = true
@@ -208,6 +229,7 @@ final class InvoiceFormViewModel: ObservableObject {
 
 // MARK: - Create Client ViewModel
 
+/// ViewModel for the "Create Client" sheet within the invoice form flow.
 @MainActor
 final class CreateClientViewModel: ObservableObject {
     @Published var name = ""
@@ -221,6 +243,8 @@ final class CreateClientViewModel: ObservableObject {
 
     var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
 
+    /// Validates and submits the new client via `formVM.createClient`, then sets `didSucceed = true`.
+    /// - Parameter formVM: The parent invoice form view model that owns the firm list.
     func submit(using formVM: InvoiceFormViewModel) async {
         guard isValid else { return }
         isSubmitting = true

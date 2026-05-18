@@ -24,8 +24,11 @@ final class RouteViewModel: ObservableObject {
 
     // MARK: - Selection Phase
 
+    /// Salons available for selection (those with a valid coordinate).
     @Published var availableSalons: [Salon] = []
+    /// Set of `salonId` values the user has selected for inclusion in the route.
     @Published var selectedIds: Set<String> = []
+    /// Whether the selection phase is showing the map instead of the list.
     @Published var showSelectionMap = false
     @Published var selectionMapPosition: MapCameraPosition = .automatic
 
@@ -40,13 +43,20 @@ final class RouteViewModel: ObservableObject {
 
     // MARK: - Route Phase
 
+    /// Ordered list of stops for the active route (after nearest-neighbor optimization).
     @Published var stops: [Salon] = []
+    /// Accumulated polyline coordinates from all MKDirections segments.
     @Published var routePolylineCoordinates: [CLLocationCoordinate2D] = []
+    /// Total route distance in meters.
     @Published var totalDistance: CLLocationDistance = 0
+    /// Estimated total travel time in seconds.
     @Published var totalTime: TimeInterval = 0
     @Published var transportType: MKDirectionsTransportType = .automobile
+    /// Whether a directions calculation task is in progress.
     @Published var isCalculating = false
+    /// Fraction (0–1) of direction segments that have been calculated.
     @Published var calculationProgress: Double = 0
+    /// Whether the route-map phase is currently visible.
     @Published var showRoute = false
 
     // Alert
@@ -61,8 +71,10 @@ final class RouteViewModel: ObservableObject {
     // MARK: - Computed
 
     var selectedCount: Int { selectedIds.count }
+    /// Whether enough salons are selected to build a route (minimum 2).
     var canBuildRoute: Bool { selectedIds.count >= 2 }
 
+    /// Human-readable distance string using the system locale's preferred unit scale.
     var formattedDistance: String {
         let measurement = Measurement(value: totalDistance, unit: UnitLength.meters)
         let formatter = MeasurementFormatter()
@@ -71,6 +83,7 @@ final class RouteViewModel: ObservableObject {
         return formatter.string(from: measurement)
     }
 
+    /// Human-readable travel time string (hours and minutes, dropping leading zeros).
     var formattedTime: String {
         let formatter = DateComponentsFormatter()
         formatter.allowedUnits = [.hour, .minute]
@@ -94,6 +107,7 @@ final class RouteViewModel: ObservableObject {
         ))
     }
 
+    /// Cancels any in-flight route task and dismisses the planner sheet.
     func dismiss() {
         currentTask?.cancel()
         isPresented?.wrappedValue = false
@@ -101,6 +115,7 @@ final class RouteViewModel: ObservableObject {
 
     // MARK: - Selection
 
+    /// Adds the salon to the selection if not already present, or removes it if it is.
     func toggleSelection(_ salon: Salon) {
         if selectedIds.contains(salon.salonId) {
             selectedIds.remove(salon.salonId)
@@ -109,20 +124,24 @@ final class RouteViewModel: ObservableObject {
         }
     }
 
+    /// Returns `true` if the salon is currently in the selection.
     func isSelected(_ salon: Salon) -> Bool {
         selectedIds.contains(salon.salonId)
     }
 
+    /// Selects all available salons (those with coordinates).
     func selectAll() {
         selectedIds = Set(availableSalons.map(\.salonId))
     }
 
+    /// Clears the entire selection.
     func deselectAll() {
         selectedIds.removeAll()
     }
 
     // MARK: - Build Route
 
+    /// Optimizes stop order and transitions to the route-map phase, then triggers direction calculation.
     func buildRoute() {
         let selected = availableSalons.filter { selectedIds.contains($0.salonId) }
         guard selected.count >= 2 else { return }
@@ -256,6 +275,8 @@ final class RouteViewModel: ObservableObject {
 
     // MARK: - Stop Management
 
+    /// Removes a stop at the given index and recalculates directions if 2+ stops remain.
+    /// - Parameter index: The zero-based index of the stop to remove.
     func removeStop(at index: Int) {
         guard stops.indices.contains(index) else { return }
         stops.remove(at: index)
@@ -269,6 +290,7 @@ final class RouteViewModel: ObservableObject {
         }
     }
 
+    /// Changes the transport type and recalculates the route if it differs from the current value.
     func setTransportType(_ type: MKDirectionsTransportType) {
         guard type != transportType else { return }
         transportType = type
@@ -277,6 +299,7 @@ final class RouteViewModel: ObservableObject {
         }
     }
 
+    /// Cancels the route task, clears all route data, and returns to the selection phase.
     func backToSelection() {
         currentTask?.cancel()
         showRoute = false
@@ -288,6 +311,7 @@ final class RouteViewModel: ObservableObject {
 
     // MARK: - Open in Apple Maps
 
+    /// Opens the current route in Apple Maps using the ordered stop list and the active transport type.
     func openInAppleMaps() {
         let mapItems = stops.compactMap { salon -> MKMapItem? in
             guard let coord = salon.coordinate else { return nil }

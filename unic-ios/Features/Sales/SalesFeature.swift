@@ -4,10 +4,14 @@ import Foundation
 
 // MARK: - Monthly Revenue Model
 
+/// A single data point used to plot monthly revenue on a chart.
 struct MonthlyRevenuePoint: Identifiable, Equatable {
     let id = UUID()
+    /// Short month label displayed on the chart axis (e.g. "Jan").
     let label: String
+    /// First day of the month this point represents.
     let month: Date
+    /// Total invoice revenue for the month.
     let revenue: Double
 
     static func == (lhs: Self, rhs: Self) -> Bool {
@@ -17,23 +21,34 @@ struct MonthlyRevenuePoint: Identifiable, Equatable {
 
 // MARK: - Sales Feature
 
+/// TCA reducer managing the Sales tab: invoice listing, analytics (revenue, top clients, products),
+/// period navigation, and invoice creation/navigation.
 @Reducer
 struct SalesFeature {
+    /// Observable state for the Sales tab.
     @ObservableState
     struct State: Equatable {
+        /// Currently active tab segment (invoices vs. analytics).
         var section: SalesSection = .invoices
+        /// Aggregation period for analytics (month or year).
         var period: SalesPeriod = .year
+        /// The reference date used to compute the current analytics period.
         var selectedDate: Date
+        /// Today's date, used to cap forward navigation.
         var today: Date
         var searchText: String = ""
+        /// Active payment-status filter; `nil` means all statuses.
         var statusFilter: PaymentStatus?
         var isLoading: Bool = false
         var lastSyncDate: Date?
         @Presents var destination: Destination.State?
 
         // Backing data
+        /// All issued invoices, loaded from cache or network.
         var allInvoices: [FlexiBeeInvoice] = []
+        /// All warehouse outflow movement items used for top-products analytics.
         var allMovementItems: [FlexiBeeStockMovementItem] = []
+        /// Maps article code → product name for movement items that lack a full name.
         var stockNameLookup: [String: String] = [:]
 
         init() {
@@ -45,6 +60,7 @@ struct SalesFeature {
 
         // MARK: Computed — period analytics
 
+        /// Invoices whose issue date falls within the current analytics period.
         var periodInvoices: [FlexiBeeInvoice] {
             let (from, to) = period.dateRange(for: selectedDate)
             return allInvoices.filter {
@@ -53,6 +69,7 @@ struct SalesFeature {
             }
         }
 
+        /// All invoices filtered by search text and the active status filter (not period-bounded).
         var filteredInvoices: [FlexiBeeInvoice] {
             var result = allInvoices
             if !searchText.isEmpty {
@@ -68,21 +85,27 @@ struct SalesFeature {
             return result
         }
 
+        /// Sum of all invoice totals in the selected period.
         var totalRevenue: Double { periodInvoices.reduce(0) { $0 + $1.total } }
+        /// Sum of totals for invoices with `.paid` status in the selected period.
         var paidRevenue: Double { periodInvoices.filter { $0.paymentStatus == .paid }.reduce(0) { $0 + $1.total } }
+        /// Sum of totals for unpaid and overdue invoices in the selected period.
         var unpaidRevenue: Double {
             periodInvoices.filter {
                 $0.paymentStatus == .unpaid || $0.paymentStatus == .overdue
             }.reduce(0) { $0 + $1.total }
         }
+        /// Number of overdue invoices in the selected period.
         var overdueCount: Int { periodInvoices.filter { $0.paymentStatus == .overdue }.count }
 
+        /// Clients ranked by total invoice revenue descending in the selected period.
         var topClients: [(name: String, revenue: Double)] {
             Dictionary(grouping: periodInvoices) { $0.clientName }
                 .map { (name: $0.key, revenue: $0.value.reduce(0) { $0 + $1.total }) }
                 .sorted { $0.revenue > $1.revenue }
         }
 
+        /// Products ranked by total quantity issued from warehouse in the selected period.
         var topProducts: [(code: String, name: String, quantity: Double)] {
             let (from, to) = period.dateRange(for: selectedDate)
             let inPeriod = allMovementItems.filter {
@@ -103,6 +126,7 @@ struct SalesFeature {
             let f = DateFormatter(); f.locale = Locale.current; f.dateFormat = "MMM"; return f
         }()
 
+        /// Revenue grouped by month within the selected period, sorted chronologically.
         var monthlyRevenue: [MonthlyRevenuePoint] {
             let cal = Calendar.current
             let (from, _) = period.dateRange(for: selectedDate)
@@ -121,8 +145,10 @@ struct SalesFeature {
                 .sorted { $0.month < $1.month }
         }
 
+        /// `true` when there is at least one invoice in the currently selected period.
         var hasPeriodData: Bool { !periodInvoices.isEmpty }
 
+        /// Formatted label for the period navigation header (e.g. "May 2026" or "2026").
         var periodLabel: String {
             switch period {
             case .month: return Self.monthYearFmt.string(from: selectedDate)
@@ -130,6 +156,7 @@ struct SalesFeature {
             }
         }
 
+        /// `true` when the user can navigate forward to the next period (not already at the current period).
         var canGoNext: Bool {
             let cal = Calendar.current
             let gran: Calendar.Component = period == .month ? .month : .year
@@ -325,11 +352,15 @@ struct SalesFeature {
 // MARK: - Placeholder sub-features (referenced from Destination/Path)
 // InvoiceFormPlaceholderFeature is a lightweight leaf until a full TCA form feature is built.
 
+/// Lightweight TCA leaf that carries context for the invoice create/edit sheet until a full form reducer is implemented.
 @Reducer
 struct InvoiceFormPlaceholderFeature {
+    /// State passed into the invoice form sheet.
     @ObservableState
     struct State: Equatable {
+        /// When non-nil, the form opens in edit mode for this invoice.
         var editingInvoice: FlexiBeeInvoice? = nil
+        /// When non-nil, the client picker is pre-populated with this code.
         var preSelectClientCode: String? = nil
     }
 
@@ -345,8 +376,10 @@ struct InvoiceFormPlaceholderFeature {
 
 // MARK: - AllTopProductsFeature
 
+/// TCA reducer for the "See All Top Products" drill-down list with search filtering.
 @Reducer
 struct AllTopProductsFeature {
+    /// Observable state for the full top-products list.
     @ObservableState
     struct State: Equatable {
         var searchText: String = ""
@@ -357,6 +390,7 @@ struct AllTopProductsFeature {
             lhs.products.map(\.code) == rhs.products.map(\.code)
         }
 
+        /// Products filtered by the current search text.
         var filtered: [(code: String, name: String, quantity: Double)] {
             guard !searchText.isEmpty else { return products }
             let q = searchText.lowercased()
@@ -379,8 +413,10 @@ struct AllTopProductsFeature {
 
 // MARK: - AllTopClientsFeature
 
+/// TCA reducer for the "See All Top Clients" drill-down list with search filtering.
 @Reducer
 struct AllTopClientsFeature {
+    /// Observable state for the full top-clients list.
     @ObservableState
     struct State: Equatable {
         var searchText: String = ""
@@ -391,6 +427,7 @@ struct AllTopClientsFeature {
             lhs.clients.map(\.name) == rhs.clients.map(\.name)
         }
 
+        /// Clients filtered by the current search text.
         var filtered: [(name: String, revenue: Double)] {
             guard !searchText.isEmpty else { return clients }
             let q = searchText.lowercased()
@@ -411,6 +448,8 @@ struct AllTopClientsFeature {
 
 // MARK: - ClientDetailFeature
 
+/// TCA reducer for the client detail screen, showing invoice history and summary stats,
+/// with support for creating new invoices and editing the client record.
 @Reducer
 struct ClientDetailFeature {
 
@@ -420,26 +459,41 @@ struct ClientDetailFeature {
         case editClient(ClientEditFeature)
     }
 
+    /// Observable state for the client detail screen.
     @ObservableState
     struct State: Equatable {
         var clientName: String
+        /// Short FlexiBee address-book code, used to fetch firm details and filter invoices.
         var clientCode: String?
+        /// Tax identification number (IČ), loaded asynchronously.
         var clientIc: String? = nil
+        /// VAT number (DIČ), loaded asynchronously.
         var clientDic: String? = nil
+        /// Whether the current user may create invoices.
         var canEdit: Bool = false
+        /// Whether the current user may edit client records.
         var canEditClient: Bool = false
+        /// All invoices belonging to this client.
         var invoices: [FlexiBeeInvoice]
         @Presents var destination: Destination.State?
 
+        /// Lifetime revenue across all invoices for this client.
         var totalRevenue:  Double { invoices.reduce(0) { $0 + $1.total } }
+        /// Revenue from fully paid invoices.
         var paidRevenue:   Double { invoices.filter { $0.paymentStatus == .paid }.reduce(0) { $0 + $1.total } }
+        /// Revenue from unpaid and partially-paid invoices.
         var unpaidRevenue: Double { invoices.filter { $0.paymentStatus == .unpaid || $0.paymentStatus == .partial }.reduce(0) { $0 + $1.total } }
+        /// Revenue from overdue invoices.
         var overdueRevenue: Double { invoices.filter { $0.paymentStatus == .overdue }.reduce(0) { $0 + $1.total } }
+        /// Number of overdue invoices.
         var overdueCount:  Int    { invoices.filter { $0.paymentStatus == .overdue }.count }
 
+        /// Date of the client's earliest invoice, or `nil` when unavailable.
         var firstOrderDate: Date? { invoices.compactMap(\.issueDate).min() }
+        /// Date of the client's most recent invoice, or `nil` when unavailable.
         var lastOrderDate:  Date? { invoices.compactMap(\.issueDate).max() }
 
+        /// Invoices sorted newest-first.
         var sortedInvoices: [FlexiBeeInvoice] {
             invoices.sorted { ($0.issueDate ?? .distantPast) > ($1.issueDate ?? .distantPast) }
         }
@@ -539,19 +593,25 @@ extension SalesFeature.Destination.State: Equatable {}
 
 // MARK: - ClientEditFeature
 
+/// TCA reducer for the inline client-edit form that updates a FlexiBee address-book entry.
 @Reducer
 struct ClientEditFeature {
+    /// Observable state for the client edit form.
     @ObservableState
     struct State: Equatable {
+        /// Short FlexiBee code identifying the firm to update.
         var firmCode: String
         var name: String
         var ic: String
         var dic: String
         var email: String
         var phone: String
+        /// `true` while the network PUT request is in flight.
         var isSubmitting: Bool = false
+        /// Non-nil when the submit request fails.
         var errorMessage: String? = nil
 
+        /// Returns `true` when the name field contains at least one non-whitespace character.
         var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 

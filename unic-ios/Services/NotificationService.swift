@@ -1,6 +1,7 @@
 import Foundation
 import UserNotifications
 
+/// Manages local push-notification scheduling for test-drive deadline reminders.
 final class NotificationService: @unchecked Sendable {
     static let shared = NotificationService()
     private init() {}
@@ -9,6 +10,8 @@ final class NotificationService: @unchecked Sendable {
 
     // MARK: - Permission
 
+    /// Requests notification authorization from the user if the status is `notDetermined`.
+    /// - Returns: `true` if notifications are authorized after the request.
     func requestPermission() async -> Bool {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
@@ -18,6 +21,7 @@ final class NotificationService: @unchecked Sendable {
         return (try? await center.requestAuthorization(options: [.alert, .badge, .sound])) ?? false
     }
 
+    /// Returns whether the user has already granted notification authorization.
     func isAuthorized() async -> Bool {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         return settings.authorizationStatus == .authorized
@@ -25,6 +29,9 @@ final class NotificationService: @unchecked Sendable {
 
     // MARK: - Schedule
 
+    /// Cancels all previously scheduled test-drive notifications and reschedules two per active entry:
+    /// one the day before the deadline and one on the deadline itself, both firing at 10:00 AM.
+    /// - Parameter entries: The current list of active test-drive entries.
     func scheduleTestDriveReminders(for entries: [TestDriveEntry]) async {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()

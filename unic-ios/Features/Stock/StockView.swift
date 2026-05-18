@@ -4,6 +4,8 @@ import SwiftUI
 
 // MARK: - Stock View
 
+/// Root view for the Stock tab. Hosts a `NavigationStack` with search, sort, barcode scanning,
+/// checklist sheet, and drill-down to product detail or catalog.
 struct StockView: View {
     @Bindable var store: StoreOf<StockFeature>
 
@@ -127,6 +129,8 @@ struct StockView: View {
 
 // MARK: - Stock List Content
 
+/// Internal view that renders the scrollable stock list with grouped sections, stats header,
+/// and a floating scroll-to-top button.
 private struct StockListContent: View {
     let store: StoreOf<StockFeature>
     @State private var showScrollToTop = false
@@ -208,6 +212,7 @@ private struct StockListContent: View {
         }
     }
     
+    /// Returns a tappable row for a single stock item that navigates to its detail screen.
     private func stockItemButton(_ item: FlexiBeeStockItem) -> some View {
         Button { store.send(.openProduct(item)) } label: {
             HStack(spacing: 8) {
@@ -254,6 +259,7 @@ private struct StockListContent: View {
 
 // MARK: - Preference Key
 
+/// Tracks the vertical scroll offset of the stock list to show or hide the scroll-to-top button.
 private struct StockScrollOffsetPreferenceKey: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
@@ -261,6 +267,7 @@ private struct StockScrollOffsetPreferenceKey: PreferenceKey {
 
 // MARK: - Product Detail View
 
+/// Displays full details for a single stock item including quantity, sell price, and optionally purchase price.
 struct ProductDetailView: View {
     @Bindable var store: StoreOf<ProductDetailFeature>
 
@@ -354,6 +361,7 @@ struct ProductDetailView: View {
 
 // MARK: - Barcode Scanner Wrapper
 
+/// Wraps the UIKit `BarcodeScannerScreen` to bridge scan and dismiss events into TCA actions.
 struct BarcodeScannerWrapper: View {
     let store: StoreOf<BarcodeScannerFeature>
 
@@ -367,6 +375,7 @@ struct BarcodeScannerWrapper: View {
 
 // MARK: - Stock Checklist View
 
+/// Modal sheet view for performing a physical stock count via barcode scanner with +/- quantity controls.
 struct StockChecklistView: View {
     @Bindable var store: StoreOf<StockChecklistFeature>
 

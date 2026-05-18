@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import SwiftUI
 
+/// Root view that switches between loading, auth, welcome, and main screens based on ``AppFeature`` state.
 struct AppView: View {
     @Bindable var store: StoreOf<AppFeature>
 

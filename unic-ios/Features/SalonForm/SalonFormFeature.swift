@@ -4,11 +4,13 @@ import ComposableArchitecture
 import Foundation
 import SwiftUI
 
+/// TCA feature managing the create/edit salon form including validation, dirty-state tracking, and Firebase persistence.
 @Reducer
 struct SalonFormFeature {
 
     // MARK: - State
 
+    /// Observable state shared between the create and edit flows.
     @ObservableState
     struct State: Equatable {
         // Fields
@@ -16,6 +18,7 @@ struct SalonFormFeature {
         var city: String = ""
         var address: String = ""
         var phone: String = ""
+        /// Instagram handle without the leading `@` or URL prefix.
         var instagram: String = ""
         var website: String = ""
         var facebook: String = ""
@@ -26,22 +29,27 @@ struct SalonFormFeature {
         var selectedWorksOn: [String] = []
 
         // Meta
+        /// `true` when editing an existing salon; `false` for creation.
         var isEdit: Bool = false
         var isSaving: Bool = false
+        /// Tags available for the "Works On" multi-select.
         var availableTags: [WorksOnTag] = []
         var errorMessage: String? = nil
         var showDiscardAlert: Bool = false
 
         // Reference to the original salon when editing
         var originalSalonId: String? = nil
+        /// Snapshot of the salon at load time, used for dirty-state comparison.
         var originalSalon: Salon? = nil
 
         // MARK: Computed
 
+        /// `true` when the name field contains at least one non-whitespace character.
         var isValid: Bool {
             !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
 
+        /// `true` when any field has changed from its original value (or any field is non-empty in create mode).
         var isDirty: Bool {
             guard let original = originalSalon else {
                 let hasText = !name.isEmpty || !address.isEmpty || !phone.isEmpty
@@ -84,6 +92,9 @@ struct SalonFormFeature {
             self.selectedWorksOn = salon.worksOn ?? []
         }
 
+        /// Strips common Instagram URL prefixes and trailing slashes/`@` symbols from a raw string.
+        /// - Parameter raw: The raw Instagram URL or handle to normalise.
+        /// - Returns: A bare handle string such as `"mysalon"`.
         static func normalizedInstagram(_ raw: String) -> String {
             raw
                 .replacingOccurrences(of: "https://www.instagram.com/", with: "")
@@ -226,6 +237,7 @@ struct SalonFormFeature {
 }
 
 private extension String {
+    /// Returns the trimmed string, or `nil` if the result would be empty.
     var trimmedOrNil: String? {
         let t = trimmingCharacters(in: .whitespacesAndNewlines)
         return t.isEmpty ? nil : t
@@ -234,6 +246,7 @@ private extension String {
 
 // MARK: - SalonFormView
 
+/// Modal form for creating or editing a salon, with sections for basic info, contacts, CRM fields, and notes.
 struct SalonFormView: View {
     @Bindable var store: StoreOf<SalonFormFeature>
 

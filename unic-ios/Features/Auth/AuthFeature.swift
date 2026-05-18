@@ -1,20 +1,28 @@
 import ComposableArchitecture
 import Foundation
 
+/// TCA reducer handling email/password authentication via Firebase.
 @Reducer
 struct AuthFeature {
+    /// Form state for the login screen.
     @ObservableState
     struct State: Equatable {
         var email = ""
         var password = ""
+        /// Whether a login network request is in-flight.
         var isLoading = false
+        /// Human-readable error message shown below the form when login fails.
         var errorMessage: String?
     }
 
+    /// Actions available on the authentication screen.
     enum Action: BindableAction {
         case binding(BindingAction<State>)
+        /// User tapped the login button; triggers credential validation and network call.
         case loginTapped
+        /// Login succeeded; auth-state observation in ``AppFeature`` will handle the transition.
         case loginSucceeded
+        /// Login failed with the given error description.
         case loginFailed(String)
     }
 

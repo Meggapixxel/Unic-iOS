@@ -3,6 +3,7 @@
 import ComposableArchitecture
 import SwiftUI
 
+/// Profile tab root view displaying user info, in-plan KPI rings, plan history, and navigation rows.
 struct ProfileView: View {
     @Bindable var store: StoreOf<ProfileFeature>
 
@@ -187,12 +188,18 @@ struct ProfileView: View {
 
     // MARK: - Helpers
 
+    /// Returns the two-letter uppercase initials derived from a user's first and last name.
+    /// - Parameter user: The user whose initials are needed.
+    /// - Returns: A string of up to two uppercase characters.
     private func initials(_ user: AppUser) -> String {
         let f = user.firstName.first.map(String.init) ?? ""
         let l = user.lastName.first.map(String.init) ?? ""
         return (f + l).uppercased()
     }
 
+    /// Maps a user role to its representative accent color.
+    /// - Parameter role: The role to convert.
+    /// - Returns: A `Color` used for avatars and highlights.
     private func roleColor(_ role: UserRole) -> Color {
         switch role {
         case .admin:   return .red
@@ -204,12 +211,17 @@ struct ProfileView: View {
 
 // MARK: - Ring Progress View
 
+/// Circular progress ring displaying a numeric value against a target, with a label beneath.
 struct RingProgressView: View {
+    /// Achieved count to display inside the ring.
     let value: Int
+    /// Goal count; the ring fills proportionally.
     let target: Int
+    /// Short label shown below the ring.
     let label: String
     let color: Color
 
+    /// Fractional progress clamped to `[0, 1]`.
     private var progress: Double {
         guard target > 0 else { return 0 }
         return min(Double(value) / Double(target), 1.0)
@@ -245,6 +257,7 @@ struct RingProgressView: View {
 
 // MARK: - Client Stat Chip
 
+/// Compact inline stat display showing a bold count above a descriptive caption label.
 struct ClientStatChip: View {
     let count: Int
     let label: String
@@ -264,6 +277,7 @@ struct ClientStatChip: View {
 
 // MARK: - Plan History Row
 
+/// Single row in the plan-history list showing the period dates and achieved vs. target numbers.
 struct PlanHistoryRowView: View {
     let entry: UserPlanHistoryEntry
 
@@ -292,6 +306,7 @@ struct PlanHistoryRowView: View {
 // MARK: - TCA Bridge Views for TestDrive and RoutePlanner in SalonsFeature path
 // These wrap the legacy views for use in the NavigationStack destination.
 
+/// TCA-compatible bridge that wraps the legacy `TestDriveScreen` for use inside a `NavigationStack` destination.
 struct TestDriveView: View {
     let store: StoreOf<TestDriveFeature>
 
@@ -303,6 +318,7 @@ struct TestDriveView: View {
     }
 }
 
+/// TCA-compatible bridge that wraps the legacy `RoutePlannerScreen` for use inside a `NavigationStack` destination.
 struct RoutePlannerView: View {
     let store: StoreOf<RoutePlannerFeature>
 

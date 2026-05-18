@@ -11,6 +11,7 @@ import CoreLocation
 import FirebaseCore
 @preconcurrency import FirebaseFirestore
 
+/// Typed errors thrown by `FirebaseService` for known Firestore failure scenarios.
 enum FirebaseError: LocalizedError {
     case documentNotFound
     case decodingFailed
@@ -25,6 +26,7 @@ enum FirebaseError: LocalizedError {
     }
 }
 
+/// A generic named tag backed by its Firestore document ID.
 struct TagItem: Identifiable, Hashable {
     let id: String
     let name: String
@@ -33,6 +35,10 @@ struct TagItem: Identifiable, Hashable {
 typealias WorksOnTag = TagItem
 typealias ArticleTag = TagItem
 
+/// Main Firestore data service for the UNIC app.
+///
+/// Provides async methods for salons, status history, tags, users, plans, promos,
+/// and barcode lookups. Also publishes a real-time salons snapshot via `startListening()`.
 @MainActor
 final class FirebaseService: ObservableObject {
     static let shared = FirebaseService()
@@ -54,6 +60,10 @@ final class FirebaseService: ObservableObject {
         try? doc.data(as: Salon.self)
     }
 
+    /// Fetches up to `limit` salons ordered by name and refreshes the `salons` publisher.
+    /// - Parameter limit: Maximum number of documents to return (default 50).
+    /// - Returns: Decoded `Salon` array.
+    /// - Throws: A Firestore error if the query fails.
     func fetchSalons(limit: Int = 50) async throws -> [Salon] {
         isLoading = true
         defer { isLoading = false }
@@ -73,6 +83,9 @@ final class FirebaseService: ObservableObject {
         return salons
     }
 
+    /// Fetches every salon in the collection (no limit) and refreshes the `salons` publisher.
+    /// - Returns: All decoded `Salon` documents ordered by name.
+    /// - Throws: A Firestore error if the query fails.
     func fetchAllSalons() async throws -> [Salon] {
         isLoading = true
         defer { isLoading = false }
@@ -92,6 +105,10 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Search
 
+    /// Searches salons by name or address using a local case-insensitive filter (Firestore has no full-text search).
+    /// - Parameter query: The search string; an empty query returns the first 50 salons.
+    /// - Returns: Salons whose name or address contains the query.
+    /// - Throws: A Firestore error if the underlying fetch fails.
     func searchSalons(query: String) async throws -> [Salon] {
         guard !query.isEmpty else {
             return try await fetchSalons()
@@ -109,6 +126,10 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Filter by Status
 
+    /// Fetches all salons that have a specific status, ordered by name.
+    /// - Parameter status: The salon status to filter on.
+    /// - Returns: Matching `Salon` documents.
+    /// - Throws: A Firestore error if the query fails.
     func fetchSalonsByStatus(_ status: SalonStatus) async throws -> [Salon] {
         let snapshot = try await db.collection("salons")
             .whereField("status", isEqualTo: status.rawValue)
@@ -122,6 +143,10 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Get Single Salon
 
+    /// Fetches a single salon by its Firestore document ID.
+    /// - Parameter id: The salon's Firestore document ID.
+    /// - Returns: The decoded `Salon`, or `nil` if the document does not exist.
+    /// - Throws: A Firestore or decoding error.
     func getSalon(id: String) async throws -> Salon? {
         let doc = try await db.collection("salons").document(id).getDocument()
         guard doc.exists else { return nil }
@@ -130,30 +155,35 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Update Salon
 
+    /// Updates only the `status` field of a salon document.
     func updateSalonStatus(salonId: String, status: SalonStatus) async throws {
         try await db.collection("salons").document(salonId).updateData([
             "status": status.rawValue
         ])
     }
 
+    /// Updates only the `notes` field of a salon document.
     func updateSalonNotes(salonId: String, notes: String) async throws {
         try await db.collection("salons").document(salonId).updateData([
             "notes": notes
         ])
     }
 
+    /// Updates the `leadTemp` field of a salon document; pass `nil` to clear it.
     func updateSalonLeadTemp(salonId: String, leadTemp: LeadTemp?) async throws {
         try await db.collection("salons").document(salonId).updateData([
             "leadTemp": leadTemp?.rawValue as Any
         ])
     }
 
+    /// Updates the `language` field (BCP-47 code) of a salon document.
     func updateSalonLanguage(salonId: String, language: String) async throws {
         try await db.collection("salons").document(salonId).updateData([
             "language": language
         ])
     }
 
+    /// Replaces the `worksOn` tag-ID array of a salon document.
     func updateSalonWorksOn(salonId: String, worksOn: [String]) async throws {
         try await db.collection("salons").document(salonId).updateData([
             "worksOn": worksOn
@@ -182,6 +212,10 @@ final class FirebaseService: ObservableObject {
         }
     }
 
+    /// Adds a new works-on tag, or returns the existing document ID if the name already exists.
+    /// - Parameter name: The tag name to add.
+    /// - Returns: The Firestore document ID of the existing or newly created tag.
+    /// - Throws: A Firestore error if the write fails.
     func addWorksOnTag(_ name: String) async throws -> String {
         let existing = try await db.collection("worksOnTags")
             .whereField("name", isEqualTo: name)
@@ -198,6 +232,7 @@ final class FirebaseService: ObservableObject {
         return ref.documentID
     }
 
+    /// Updates the `nextStep` free-text field of a salon document; pass `nil` to clear it.
     func updateSalonNextStep(salonId: String, nextStep: String?) async throws {
         try await db.collection("salons").document(salonId).updateData([
             "nextStep": nextStep as Any
@@ -347,6 +382,9 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Status History
 
+    /// Returns the most recent status-history entry for a salon, ordered by `timestamp` descending.
+    /// - Returns: The latest `StatusHistoryEntry`, or `nil` if no entries exist.
+    /// - Throws: A Firestore error if the query fails.
     func fetchLatestStatusEntry(salonId: String) async throws -> StatusHistoryEntry? {
         let snapshot = try await db.collection("salons")
             .document(salonId)
@@ -358,6 +396,9 @@ final class FirebaseService: ObservableObject {
         return try doc.data(as: StatusHistoryEntry.self)
     }
 
+    /// Fetches the full status-history subcollection for a salon, newest first.
+    /// - Returns: All decoded `StatusHistoryEntry` documents.
+    /// - Throws: A Firestore error if the query fails.
     func fetchStatusHistory(salonId: String) async throws -> [StatusHistoryEntry] {
         let snapshot = try await db.collection("salons")
             .document(salonId)
@@ -370,6 +411,15 @@ final class FirebaseService: ObservableObject {
         }
     }
 
+    /// Appends a new status-history entry and denormalizes the latest entry onto the salon document.
+    /// Also manages `testDriveStartDate` and `demoDate` fields based on the new status.
+    /// - Parameters:
+    ///   - salonId: The salon to update.
+    ///   - status: The new salon status.
+    ///   - note: An optional free-text note attached to the entry.
+    ///   - createdBy: The UID of the user creating the entry.
+    ///   - date: An explicit activity date; if `nil` the current date is used.
+    ///   - userLocation: The GPS location of the user at the time of the entry, if available.
     func addStatusHistoryEntry(salonId: String, status: SalonStatus, note: String?, createdBy: String?, date: Date? = nil, userLocation: Location? = nil) async throws {
         AppLogger.log(.info, "Firebase", "addStatusEntry: salonId=\(salonId) status=\(status.rawValue)")
         let now = Timestamp(date: Date())
@@ -408,6 +458,7 @@ final class FirebaseService: ObservableObject {
 
     }
 
+    /// Deletes a single status-history document from the salon's `statusHistory` subcollection.
     func deleteStatusHistoryEntry(salonId: String, entryId: String) async throws {
         AppLogger.log(.info, "Firebase", "deleteStatusEntry: salonId=\(salonId) entryId=\(entryId)")
         try await db.collection("salons")
@@ -417,6 +468,7 @@ final class FirebaseService: ObservableObject {
             .delete()
     }
 
+    /// Updates the `note` field on an existing status-history entry; pass `nil` to clear it.
     func updateStatusEntryNote(salonId: String, entryId: String, note: String?) async throws {
         try await db.collection("salons")
             .document(salonId)
@@ -427,6 +479,7 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Delete Salon
 
+    /// Deletes a salon document from Firestore (hard delete — subcollections must be cleaned up separately).
     func deleteSalon(salonId: String) async throws {
         AppLogger.log(.info, "Firebase", "deleteSalon: id=\(salonId)")
         try await db.collection("salons").document(salonId).delete()
@@ -530,6 +583,9 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Users
 
+    /// Fetches all user documents from the `users` collection.
+    /// - Returns: Decoded `AppUser` array (without active-plan data).
+    /// - Throws: A Firestore error if the query fails.
     func fetchAllUsers() async throws -> [AppUser] {
         AppLogger.log(.debug, "Firebase", "fetchAllUsers")
         let snapshot = try await db.collection("users").getDocuments()
@@ -546,6 +602,11 @@ final class FirebaseService: ObservableObject {
         }
     }
 
+    /// Fetches all status-history entries created by a specific user across all salons,
+    /// then resolves salon names in parallel using a `TaskGroup`.
+    /// - Parameter userId: The Firestore UID to filter on.
+    /// - Returns: Decoded `UserActivityEntry` array, newest first.
+    /// - Throws: A Firestore error if the collection-group query fails.
     func fetchUserActivity(userId: String) async throws -> [UserActivityEntry] {
         AppLogger.log(.debug, "Firebase", "fetchUserActivity: userId=\(userId)")
         let snapshot = try await db.collectionGroup("statusHistory")
@@ -599,6 +660,7 @@ final class FirebaseService: ObservableObject {
 
     @Published private(set) var testDriveDuration: Int = 7
 
+    /// Loads the `testDrive.duration` value from the `config` collection and updates `testDriveDuration`.
     func loadTestDriveConfig() async {
         do {
             let doc = try await db.collection("config").document("testDrive").getDocument()
@@ -637,6 +699,10 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Barcode Lookup
 
+    /// Looks up a barcode in the `barcodes` Firestore collection and returns the associated article code.
+    /// - Parameter barcode: The scanned barcode string.
+    /// - Returns: The FlexiBee article code, or `nil` if the barcode is not in the database.
+    /// - Throws: A Firestore error if the document read fails.
     func lookupBarcodeArticle(_ barcode: String) async throws -> String? {
         let doc = try await db.collection("barcodes").document(barcode).getDocument()
         guard doc.exists else { return nil }
@@ -655,6 +721,9 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Plans
 
+    /// Returns the currently active plan (one whose date range covers now), if any.
+    /// - Returns: The active `Plan`, or `nil` if no plan is currently running.
+    /// - Throws: A Firestore error if the query fails.
     func fetchActivePlan() async throws -> Plan? {
         let now = Timestamp(date: Date())
         let snapshot = try await db.collection("plans")
@@ -666,6 +735,9 @@ final class FirebaseService: ObservableObject {
         return plans.first { $0.isActive }
     }
 
+    /// Fetches all plan documents ordered by `startDate` descending.
+    /// - Returns: All decoded `Plan` documents.
+    /// - Throws: A Firestore error if the query fails.
     func fetchAllPlans() async throws -> [Plan] {
         let snapshot = try await db.collection("plans")
             .order(by: "startDate", descending: true)
@@ -673,6 +745,10 @@ final class FirebaseService: ObservableObject {
         return try snapshot.documents.compactMap { try $0.data(as: Plan.self) }
     }
 
+    /// Creates or updates a plan document and returns the refreshed value.
+    /// - Parameter plan: The plan to persist. If `plan.id` is `nil` a new document is created.
+    /// - Returns: The saved `Plan` as read back from Firestore.
+    /// - Throws: A Firestore or decoding error.
     func savePlan(_ plan: Plan) async throws -> Plan {
         let encoder = Firestore.Encoder()
         var data = try encoder.encode(plan)
@@ -691,10 +767,15 @@ final class FirebaseService: ObservableObject {
         return saved
     }
 
+    /// Deletes a plan document from Firestore.
+    /// - Parameter id: The Firestore document ID of the plan to delete.
     func deletePlan(id: String) async throws {
         try await db.collection("plans").document(id).delete()
     }
 
+    /// Fetches the default plan configuration from `config/defaultPlan`, if one has been set.
+    /// - Returns: A `DefaultPlan`, or `nil` if the document does not exist.
+    /// - Throws: A Firestore error if the read fails.
     func fetchDefaultPlan() async throws -> DefaultPlan? {
         AppLogger.log(.debug, "Firebase", "fetchDefaultPlan")
         let doc = try await db.collection("config").document("defaultPlan").getDocument()
@@ -711,6 +792,11 @@ final class FirebaseService: ObservableObject {
         )
     }
 
+    /// Fetches the plan-history subcollection for a user, ordered by result creation date descending.
+    /// Only entries that include a `result` map are returned.
+    /// - Parameter userId: The Firestore UID of the user.
+    /// - Returns: Archived plan entries with their actuals.
+    /// - Throws: A Firestore error if the query fails.
     func fetchPlanHistory(userId: String) async throws -> [UserPlanHistoryEntry] {
         AppLogger.log(.debug, "Firebase", "fetchPlanHistory: userId=\(userId)")
         let snapshot = try await db.collection("users").document(userId).collection("planHistory")
@@ -742,6 +828,11 @@ final class FirebaseService: ObservableObject {
         return entries
     }
 
+    /// Distributes a new plan to every user's `planHistory` subcollection.
+    /// Before writing the new plan it archives any open (result-free) plan entry by counting
+    /// the user's activity in that period and writing the result back.
+    /// - Parameter plan: The plan to propagate to all users.
+    /// - Throws: A Firestore error if any write fails (individual archive failures are swallowed).
     func setPlanForAllUsers(plan: Plan) async throws {
         AppLogger.log(.info, "Firebase", "setPlanForAllUsers: planId=\(plan.id ?? "new")")
         let usersSnapshot = try await db.collection("users").getDocuments()
@@ -807,16 +898,21 @@ final class FirebaseService: ObservableObject {
 
     // MARK: - Promo Offers
 
+    /// Returns the list of promo category names from `config/promos`.
     func fetchPromoCategories() async throws -> [String] {
         let doc = try await db.collection("config").document("promos").getDocument()
         return doc.data()?["categories"] as? [String] ?? []
     }
 
+    /// Fetches all promo-offer documents from the `promos` collection.
     func fetchPromos() async throws -> [PromoOffer] {
         let snapshot = try await db.collection("promos").getDocuments()
         return snapshot.documents.compactMap { try? $0.data(as: PromoOffer.self) }
     }
 
+    /// Creates or overwrites a promo-offer document and returns the refreshed value.
+    /// - Parameter promo: The promo to persist. If `promo.id` is `nil` a new document is created.
+    /// - Returns: The saved `PromoOffer` as read back from Firestore.
     func savePromo(_ promo: PromoOffer) async throws -> PromoOffer {
         let encoder = Firestore.Encoder()
         var data = try encoder.encode(promo)
@@ -831,6 +927,8 @@ final class FirebaseService: ObservableObject {
         return try await fetchPromo(ref: docRef)
     }
 
+    /// Sets the `validFrom` and `validTo` timestamps on a promo, making it active.
+    /// - Returns: The updated `PromoOffer`.
     func activatePromo(id: String, validFrom: Date, validTo: Date) async throws -> PromoOffer {
         let docRef = db.collection("promos").document(id)
         try await docRef.updateData([
@@ -840,6 +938,8 @@ final class FirebaseService: ObservableObject {
         return try await fetchPromo(ref: docRef)
     }
 
+    /// Removes the `validFrom` and `validTo` fields from a promo, deactivating it.
+    /// - Returns: The updated `PromoOffer`.
     func deactivatePromo(id: String) async throws -> PromoOffer {
         let docRef = db.collection("promos").document(id)
         try await docRef.updateData([
@@ -856,6 +956,7 @@ final class FirebaseService: ObservableObject {
         return saved
     }
 
+    /// Deletes a promo-offer document from Firestore.
     func deletePromo(id: String) async throws {
         try await db.collection("promos").document(id).delete()
     }

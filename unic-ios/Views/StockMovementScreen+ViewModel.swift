@@ -88,6 +88,7 @@ final class StockMovementViewModel: ObservableObject {
     /// Computed so the picker always reflects the latest price list from `FlexiBeeService`.
     var priceList: [FlexiBeeCenikItem] { FlexiBeeService.shared.priceList }
 
+    /// `true` when at least one regular item or bundle component is valid and ready to submit.
     var isValid: Bool {
         items.contains { $0.isValid } ||
         bundleSections.contains { $0.components.contains { $0.isValid } }
@@ -119,6 +120,7 @@ final class StockMovementViewModel: ObservableObject {
         return draft.id
     }
 
+    /// Removes component drafts at the given offsets from the specified bundle section.
     func removeBundleComponent(from sectionId: UUID, at offsets: IndexSet) {
         guard let idx = bundleSections.firstIndex(where: { $0.id == sectionId }) else { return }
         bundleSections[idx].components.remove(atOffsets: offsets)

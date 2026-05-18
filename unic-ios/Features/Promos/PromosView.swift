@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import SwiftUI
 
+/// Root view for the Promos tab, showing a filterable list of promo offers with swipe actions.
 struct PromosView: View {
     @Bindable var store: StoreOf<PromosFeature>
 
@@ -122,8 +123,10 @@ struct PromosView: View {
 
 // MARK: - Promo Row
 
+/// List row displaying a promo's localised title, category badge, description preview, and validity period.
 private struct PromoRowView: View {
     let promo: PromoOffer
+    /// Language used to select the localised title and description.
     let language: AppLanguage
 
     var body: some View {
@@ -159,6 +162,7 @@ private struct PromoRowView: View {
 
 // MARK: - Promo Detail
 
+/// Full-screen detail sheet for a single promo, showing localised content, status badges, and the validity period visualisation.
 struct PromoDetailView: View {
     @Bindable var store: StoreOf<PromoDetailFeature>
 
@@ -263,18 +267,22 @@ struct PromoDetailView: View {
 
 // MARK: - Promo Period
 
+/// Card showing a promo's validity period as a labelled progress bar with a human-readable status string.
 private struct PromoPeriodView: View {
     let validFrom: Date
     let validTo: Date
 
+    /// Fraction of the promo's validity period that has elapsed, clamped to `[0, 1]`.
     private var progress: Double {
         let total = validTo.timeIntervalSince(validFrom)
         let elapsed = Date().timeIntervalSince(validFrom)
         return min(max(elapsed / total, 0), 1)
     }
 
+    /// `true` when today falls within the promo's validity window.
     private var isActive: Bool { Date() >= validFrom && Date() <= validTo }
 
+    /// Human-readable countdown or status string (e.g. "3 days left", "Expired").
     private var statusText: String {
         let now = Date()
         if now < validFrom {
@@ -288,6 +296,7 @@ private struct PromoPeriodView: View {
         }
     }
 
+    /// Colour of the progress bar: accent when active, orange when upcoming, gray when expired.
     private var barColor: Color {
         if isActive { return .accentColor }
         return Date() < validFrom ? .orange : .gray
@@ -334,6 +343,7 @@ private struct PromoPeriodView: View {
 
 // MARK: - Promo Form
 
+/// Modal form for creating or editing a promo offer with per-language sections and a category picker.
 struct PromoFormView: View {
     @Bindable var store: StoreOf<PromoFormFeature>
 

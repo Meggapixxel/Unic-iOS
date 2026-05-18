@@ -1,11 +1,13 @@
 import ComposableArchitecture
 import Foundation
 
+/// TCA feature managing the promos list, category filtering, language selection, and enable/disable toggling.
 @Reducer
 struct PromosFeature {
 
     // MARK: - Destination
 
+    /// Modal destinations shown from the promos list.
     @Reducer
     struct Destination {
         @ObservableState
@@ -26,18 +28,26 @@ struct PromosFeature {
 
     // MARK: - State
 
+    /// Observable state for the promos tab.
     @ObservableState
     struct State: Equatable {
+        /// All promos loaded from Firebase.
         var promos: [PromoOffer] = []
+        /// Ordered list of available category strings fetched from Firebase.
         var categories: [String] = []
         var error: String?
         var canManagePromos = false
+        /// When `true` (admin only), shows inactive/disabled promos instead of active ones.
         var showAll = false
+        /// Currently selected display language for promo titles and descriptions.
         var language: AppLanguage = Locale.current.appLanguage
+        /// Active category chips; empty means all categories.
         var selectedCategories: Set<String> = []
+        /// The promo pending deletion confirmation; `nil` when no confirmation is shown.
         var promoToDelete: PromoOffer?
         @Presents var destination: Destination.State?
 
+        /// Category strings that are represented in the current base set of displayed promos.
         var availableCategories: [String] {
             let base = canManagePromos
                 ? (showAll ? promos.filter { !$0.isActive || !$0.isEnabled } : promos.filter { $0.isActive && $0.isEnabled })
@@ -46,6 +56,7 @@ struct PromosFeature {
             return categories.filter { presentInBase.contains($0) }
         }
 
+        /// Promos filtered by the active/inactive toggle and selected category chips.
         var displayed: [PromoOffer] {
             let base: [PromoOffer]
             if canManagePromos {

@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import SwiftUI
 
+/// Four-tab main interface with an overlaid plan-progress banner driven by ``MainFeature``.
 struct MainView: View {
     @Bindable var store: StoreOf<MainFeature>
 
@@ -24,6 +25,7 @@ struct MainView: View {
                     .tag(MainFeature.State.Tab.profile)
             }
 
+            /// Floating plan banner rendered above all tabs; hit-testing disabled so it never intercepts tab gestures.
             TCAPlankBannerView(store: store.scope(state: \.planBanner, action: \.planBanner))
                 .padding(.top, 60)
                 .allowsHitTesting(false)

@@ -10,6 +10,7 @@ import FirebaseCore
 import SwiftUI
 import UserNotifications
 
+/// UIKit application delegate responsible for bootstrapping Firebase and requesting notification permissions.
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
@@ -19,6 +20,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 }
 
+/// Application entry point; wires `AppDelegate` and creates the root TCA store.
 @main
 struct unic_iosApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate

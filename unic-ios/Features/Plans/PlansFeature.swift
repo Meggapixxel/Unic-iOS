@@ -3,41 +3,57 @@ import Foundation
 
 // MARK: - PlansFeature
 
+/// TCA reducer that manages the list of all plans, supporting add, edit, delete, and applying a new plan to all users.
 @Reducer
 struct PlansFeature {
 
     // MARK: - Destination
 
+    /// Modal destinations presented from the plans list.
     @Reducer
     enum Destination {
+        /// Sheet for creating or editing a plan.
         case form(PlansFormFeature)
     }
 
     // MARK: - State
 
+    /// State for the plans list screen.
     @ObservableState
     struct State: Equatable {
+        /// All fetched plans, sorted newest first.
         var plans: [Plan] = []
+        /// Default target values pre-populated in the add-plan form.
         var defaultPlan: DefaultPlan?
         var isLoading = false
+        /// Non-nil when a fetch or delete operation has failed.
         var error: String?
+        /// Whether the current user is allowed to add, edit, or delete plans.
         var canManagePlans = false
+        /// The plan staged for deletion, awaiting user confirmation.
         var pendingDeletePlan: Plan?
         @Presents var destination: Destination.State?
     }
 
     // MARK: - Action
 
+    /// Actions for the plans list.
     enum Action: BindableAction {
         case binding(BindingAction<State>)
+        /// Loads permission flags, all plans, and default plan targets from Firebase.
         case onLoad
         case loaded([Plan])
         case defaultPlanLoaded(DefaultPlan?)
         case failed(String)
+        /// Opens the add-plan form sheet.
         case addTapped
+        /// Opens the form sheet pre-populated with `plan` for editing.
         case editTapped(Plan)
+        /// Stages `plan` for deletion and shows the confirmation dialog.
         case deleteTapped(Plan)
+        /// Deletes the staged plan from Firebase and removes it locally.
         case deleteConfirmed
+        /// Clears the pending-delete state without deleting.
         case cancelDelete
         case destination(PresentationAction<Destination.Action>)
     }
@@ -139,10 +155,13 @@ struct PlansFeature {
 
 // MARK: - PlansFormFeature
 
+/// TCA reducer for the plan create/edit form sheet.
 @Reducer
 struct PlansFormFeature {
+    /// Form state for adding or editing a plan.
     @ObservableState
     struct State: Equatable {
+        /// The plan being edited; `nil` means a new plan is being created.
         var existing: Plan?
         var startDate: Date
         var endDate: Date
@@ -151,10 +170,16 @@ struct PlansFormFeature {
         var testDrivesPerDay: Int = 0
         var testDrivesTotal: Int = 0
         var isSaving = false
+        /// Non-nil when the save operation has failed.
         var error: String?
 
+        /// Whether the form has a valid date range (end must be after start).
         var isValid: Bool { endDate > startDate }
 
+        /// Initialises the form, preferring values from an existing plan, then defaults, then zero/current-date fallbacks.
+        /// - Parameters:
+        ///   - existing: The plan to pre-populate for editing; `nil` for a new plan.
+        ///   - defaults: Organisation-wide default targets used when creating a new plan.
         init(existing: Plan? = nil, defaults: DefaultPlan? = nil) {
             @Dependency(\.date) var date
             let now = date()
@@ -168,11 +193,15 @@ struct PlansFormFeature {
         }
     }
 
+    /// Actions for the plan form.
     enum Action: BindableAction {
         case binding(BindingAction<State>)
+        /// Validates the form and persists the plan to Firebase.
         case saveTapped
+        /// Emitted after a successful save, carrying the persisted plan back to the parent.
         case saved(Plan)
         case failed(String)
+        /// User dismissed the form without saving.
         case cancelTapped
     }
 

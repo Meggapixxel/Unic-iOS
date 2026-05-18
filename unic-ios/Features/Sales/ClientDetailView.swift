@@ -2,6 +2,7 @@
 import ComposableArchitecture
 import SwiftUI
 
+/// Detail view for a single FlexiBee client, showing revenue KPIs and the full invoice history.
 struct ClientDetailView: View {
     @Bindable var store: StoreOf<ClientDetailFeature>
 
@@ -141,6 +142,7 @@ struct ClientDetailView: View {
 
 // MARK: - Client Edit View
 
+/// Modal form for editing an existing FlexiBee client's name, tax identifiers, email, and phone.
 struct ClientEditView: View {
     @Bindable var store: StoreOf<ClientEditFeature>
 

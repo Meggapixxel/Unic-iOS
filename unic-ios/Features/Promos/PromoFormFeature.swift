@@ -1,8 +1,10 @@
 import ComposableArchitecture
 import Foundation
 
+/// TCA feature for creating or editing a promo offer with per-language title and description fields.
 @Reducer
 struct PromoFormFeature {
+    /// Observable state for the promo create/edit form.
     @ObservableState
     struct State: Equatable {
         var titleEn: String = ""
@@ -14,8 +16,10 @@ struct PromoFormFeature {
         var category: String = "Other"
         var isSaving = false
         var alertMessage: String?
+        /// Non-nil when editing an existing offer; `nil` for creation.
         var existing: PromoOffer?
 
+        /// `true` when the English title contains at least one non-whitespace character.
         var isValid: Bool { !titleEn.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
         init(existing: PromoOffer? = nil) {

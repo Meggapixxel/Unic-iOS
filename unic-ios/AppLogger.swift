@@ -16,12 +16,14 @@ final class AppLogger: @unchecked Sendable {
 
     // MARK: - Level
 
+    /// Severity levels for log entries, mirroring `OSLogType` semantics.
     enum Level: String {
         case debug   = "DEBUG"
         case info    = "INFO"
         case warning = "WARN"
         case error   = "ERROR"
 
+        /// Maps the app-level severity to the corresponding `OSLogType`.
         fileprivate var osType: OSLogType {
             switch self {
             case .debug:   return .debug
@@ -34,18 +36,23 @@ final class AppLogger: @unchecked Sendable {
 
     // MARK: - Singleton
 
+    /// Shared singleton instance of `AppLogger`.
     static let shared = AppLogger()
 
     // MARK: - Internals
 
+    /// Path to the active log file (`<Documents>/app.log`).
     private let fileURL:    URL
+    /// Path to the rotated backup log file (`<Documents>/app.log.bak`).
     private let backupURL:  URL
+    /// Serial queue that serialises all file I/O to prevent data races.
     private let queue = DispatchQueue(label: "unic.logger", qos: .utility)
     private let osLog  = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "unic-ios", category: "app")
 
     /// Max size before the file is rotated (~2 MB).
     private static let maxBytes: UInt64 = 2 * 1024 * 1024
 
+    /// Thread-safe formatter shared across log writes.
     private static let formatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
@@ -64,6 +71,11 @@ final class AppLogger: @unchecked Sendable {
 
     // MARK: - Public
 
+    /// Writes a log entry at the given severity level.
+    /// - Parameters:
+    ///   - level: Severity of the message; defaults to `.info`.
+    ///   - category: Subsystem label shown in brackets (e.g. `"FlexiBee"`, `"Auth"`).
+    ///   - message: The message body to record.
     static func log(_ level: Level = .info, _ category: String, _ message: String) {
         shared.write(level: level, category: category, message: message)
     }
@@ -73,10 +85,17 @@ final class AppLogger: @unchecked Sendable {
         (try? String(contentsOf: shared.fileURL, encoding: .utf8)) ?? ""
     }
 
+    /// URL of the active log file on disk; useful for sharing via a `UIActivityViewController`.
     static var logFileURL: URL { shared.fileURL }
 
     // MARK: - Private
 
+    /// Formats and writes a log entry to both `os_log` and the on-disk log file,
+    /// rotating the file when it exceeds `maxBytes`.
+    /// - Parameters:
+    ///   - level: Severity of the entry.
+    ///   - category: Subsystem label.
+    ///   - message: Message body.
     private func write(level: Level, category: String, message: String) {
         let lvlRaw    = level.rawValue
         let osType    = level.osType

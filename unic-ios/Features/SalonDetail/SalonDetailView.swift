@@ -4,6 +4,7 @@ import ComposableArchitecture
 import SwiftUI
 import MapKit
 
+/// Scrollable detail screen for a single salon with quick-action buttons, map, status management, CRM data, notes, and admin controls.
 struct SalonDetailView: View {
     @Bindable var store: StoreOf<SalonDetailFeature>
 
@@ -75,6 +76,7 @@ struct SalonDetailView: View {
 
     // MARK: - Quick Actions
 
+    /// Horizontal row of tappable action buttons for call, Instagram, Facebook, and website.
     private var quickActionsSection: some View {
         HStack(spacing: 12) {
             if let phone = store.salon.phoneNumber {
@@ -121,6 +123,7 @@ struct SalonDetailView: View {
 
     // MARK: - Location Section
 
+    /// Map thumbnail, copyable address row, and raw coordinate row when location data is available.
     @ViewBuilder
     private var locationSection: some View {
         let hasLocation = store.salon.coordinate != nil || store.salon.address != nil
@@ -218,6 +221,7 @@ struct SalonDetailView: View {
 
     // MARK: - Status Section
 
+    /// Card showing the current status badge, latest note, an add-status button, and a link to full history.
     private var statusSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: String.status)
@@ -273,6 +277,7 @@ struct SalonDetailView: View {
 
     // MARK: - CRM Section
 
+    /// Card displaying lead temperature, language flag, works-on tags, and enrichment status.
     private var crmSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "CRM")
@@ -341,6 +346,7 @@ struct SalonDetailView: View {
 
     // MARK: - Notes Section
 
+    /// Renders the salon's free-text notes card when notes are non-empty.
     @ViewBuilder
     private var notesSection: some View {
         if let notes = store.salon.notes, !notes.isEmpty {
@@ -359,6 +365,7 @@ struct SalonDetailView: View {
 
     // MARK: - Delete Section
 
+    /// Destructive delete button, visible only to users with the delete-salon permission.
     @ViewBuilder
     private var deleteSection: some View {
         if store.canDelete {
@@ -384,6 +391,7 @@ struct SalonDetailView: View {
 
     // MARK: - Admin Section
 
+    /// Shows the salon's Firestore document ID for admins; hidden for non-admin roles.
     @ViewBuilder
     private var adminSection: some View {
         if store.canEditHistory { // isAdmin check
@@ -408,6 +416,9 @@ struct SalonDetailView: View {
 
     // MARK: - Helpers
 
+    /// Returns a flag emoji for the given ISO 639-1 language code.
+    /// - Parameter code: Two-letter language code (e.g. `"uk"`, `"cs"`).
+    /// - Returns: Flag emoji string.
     private func languageFlag(_ code: String) -> String {
         switch code {
         case "uk": return "🇺🇦"
@@ -417,6 +428,11 @@ struct SalonDetailView: View {
         }
     }
 
+    /// Opens turn-by-turn navigation in Google Maps (if installed) or Apple Maps.
+    /// - Parameters:
+    ///   - coordinate: Precise coordinates to navigate to; falls back to address search when `nil`.
+    ///   - address: Human-readable address used as the fallback search query.
+    ///   - name: Display name used to label the destination pin.
     private func openNavigation(coordinate: CLLocationCoordinate2D?, address: String, name: String) {
         if let coord = coordinate {
             let encoded = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
@@ -436,6 +452,7 @@ struct SalonDetailView: View {
 
 // MARK: - AddStatusView
 
+/// Modal form for adding a new status history entry, optionally capturing a demo date or test-drive article codes.
 struct AddStatusView: View {
     @Bindable var store: StoreOf<AddStatusFeature>
 
@@ -523,8 +540,10 @@ struct AddStatusView: View {
 
 // MARK: - StatusHistoryView
 
+/// Sheet presenting the full chronological status history for a salon with optional edit and delete support for admins.
 struct StatusHistoryView: View {
     @Bindable var store: StoreOf<StatusHistoryFeature>
+    /// The entry currently being edited in the note-edit sheet; `nil` when no sheet is shown.
     @State private var editingEntry: StatusHistoryEntry?
 
     var body: some View {

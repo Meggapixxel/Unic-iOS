@@ -3,21 +3,29 @@ import Combine
 
 // MARK: - Draft Model
 
+/// Mutable draft for a single invoice line item, used in the create/edit invoice form.
 struct InvoiceLineItemDraft: Identifiable {
     let id = UUID()
     var name: String = ""
+    /// FlexiBee product code; `nil` for "other" / free-text items.
     var productCode: String? = nil
     var quantity: String = "1"
     var unitPrice: String = ""
+    /// When `true` the item is a free-text entry with no product code and a fixed quantity of 1.
     var isOther: Bool = false
 
+    /// Quantity parsed from the user-editable string, accepting both `.` and `,` as decimal separators.
     var quantityDouble: Double { Double(quantity.replacingOccurrences(of: ",", with: ".")) ?? 0 }
+    /// Unit price parsed from the user-editable string, accepting both `.` and `,` as decimal separators.
     var unitPriceDouble: Double { Double(unitPrice.replacingOccurrences(of: ",", with: ".")) ?? 0 }
+    /// `true` when the item has a name, a positive unit price, and (for stock items) a positive quantity.
     var isValid: Bool {
         !name.isEmpty && unitPriceDouble > 0 && (isOther || quantityDouble > 0)
     }
+    /// Computed line total (quantity × unit price).
     var total: Double { quantityDouble * unitPriceDouble }
 
+    /// Converts the draft to the API model, using quantity `1` for "other" items.
     func toNewLine() -> NewInvoiceLine {
         NewInvoiceLine(name: name, productCode: productCode, quantity: isOther ? 1 : quantityDouble, unitPrice: unitPriceDouble)
     }
@@ -25,8 +33,11 @@ struct InvoiceLineItemDraft: Identifiable {
 
 // MARK: - Form View
 
+/// Full-screen invoice creation/editing form driven by `InvoiceFormViewModel`.
+/// Supports firm picking, date selection, line-item management (with barcode scanning), and notes.
 struct InvoiceFormScreen: View {
     @ObservedObject var viewModel: InvoiceFormViewModel
+    /// Called after a successful submit or when the user cancels, so the parent can dismiss the sheet.
     var onDismiss: () -> Void
 
     var body: some View {
@@ -202,6 +213,7 @@ struct InvoiceFormScreen: View {
 
 // MARK: - Line Item Row
 
+/// Editable row for a single invoice line item, with quantity steppers and a unit-price field.
 private struct LineItemRow: View {
     @Binding var item: InvoiceLineItemDraft
 
@@ -273,6 +285,8 @@ private struct LineItemRow: View {
 
 // MARK: - Firm Picker
 
+/// Searchable list of FlexiBee firms for selecting a client on an invoice.
+/// Supports inline deletion (admin only) and navigating to the "Create Client" form.
 struct FirmPickerView: View {
     @ObservedObject var viewModel: InvoiceFormViewModel
     @Binding var isPresented: Bool
@@ -363,6 +377,7 @@ struct FirmPickerView: View {
 
 // MARK: - Create Client View
 
+/// Modal form for creating a new FlexiBee client from within the invoice creation flow.
 struct CreateClientView: View {
     @ObservedObject var formViewModel: InvoiceFormViewModel
     @StateObject private var clientVM = CreateClientViewModel()
@@ -453,8 +468,10 @@ struct CreateClientView: View {
 
 // MARK: - Product Picker
 
+/// Searchable product picker that lets the user choose a FlexiBee price-list item for a line.
 struct ProductPickerForInvoiceView: View {
     let priceList: [FlexiBeeCenikItem]
+    /// Called when the user selects a product; the picker dismisses itself.
     let onSelect: (FlexiBeeCenikItem) -> Void
     @Binding var isPresented: Bool
     @State private var search = ""

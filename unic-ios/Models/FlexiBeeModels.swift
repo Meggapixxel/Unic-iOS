@@ -1,5 +1,6 @@
 import Foundation
 
+/// Shared date formatter for FlexiBee API date strings (yyyy-MM-dd, POSIX locale).
 private let _flexiBeeDateFormatter: DateFormatter = {
     let f = DateFormatter()
     f.locale = Locale(identifier: "en_US_POSIX")
@@ -9,11 +10,15 @@ private let _flexiBeeDateFormatter: DateFormatter = {
 
 // MARK: - Price List
 
+/// A single price-list entry from the FlexiBee `/cenik` endpoint.
 struct FlexiBeeCenikItem: Identifiable, Codable {
     let id: String
     let code: String
+    /// Human-readable product name; may be nil for items without a label.
     let name: String?
+    /// Retail sell price including VAT.
     let sellPriceVAT: Double
+    /// Wholesale purchase price (no VAT).
     let purchasePrice: Double
 
     enum CodingKeys: String, CodingKey, CaseIterable {
@@ -24,6 +29,7 @@ struct FlexiBeeCenikItem: Identifiable, Codable {
         case purchasePrice = "nakupCena"
     }
 
+    /// Comma-separated field list used in FlexiBee API requests for this type.
     static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
 
     init(from decoder: Decoder) throws {
@@ -42,13 +48,16 @@ struct FlexiBeeCenikItem: Identifiable, Codable {
         return 0
     }
 
+    /// Falls back to `code` when `name` is absent.
     var displayName: String { name ?? code }
+    /// Formatted sell price (no decimals), or empty when price is zero.
     var unitPrice: String   { sellPriceVAT > 0 ? String(format: "%.0f", sellPriceVAT) : "" }
 
 }
 
 // MARK: - Stock
 
+/// A resolved stock card combining the price-list code, name, and current quantity.
 struct FlexiBeeStockCard: Identifiable, Codable {
     let id: UUID
     let code: String
@@ -63,11 +72,13 @@ struct FlexiBeeStockCard: Identifiable, Codable {
     }
 }
 
+/// Top-level wrapper for the `/skladova-karta` endpoint response.
 struct FlexiBeeStockWrapper: Decodable {
     let cards: [FlexiBeeStockRaw]
     enum CodingKeys: String, CodingKey { case cards = "skladova-karta" }
 }
 
+/// Raw FlexiBee stock-card record; convert to `FlexiBeeStockCard` via `toCard()`.
 struct FlexiBeeStockRaw: Decodable {
     private let priceListRef:        String?
     private let quantityWithDemand:  String?
@@ -80,6 +91,7 @@ struct FlexiBeeStockRaw: Decodable {
     // "cenik" is FlexiBee shorthand that expands to "cenik@showAs" in response — cannot derive from CodingKeys
     static let requestFields = "cenik,stavMjSPozadavky"
 
+    /// Parses the `cenik@showAs` reference string and returns a typed `FlexiBeeStockCard`.
     func toCard() -> FlexiBeeStockCard {
         var code = ""
         var name = ""
@@ -99,18 +111,21 @@ struct FlexiBeeStockRaw: Decodable {
 
 // MARK: - Response Wrappers
 
+/// Generic FlexiBee JSON root envelope (`{ "winstrom": … }`).
 struct FlexiBeeResponse<T: Decodable>: Decodable {
     let winstrom: T
 }
 
 extension FlexiBeeResponse: Sendable where T: Sendable {}
 
+/// Winstrom body wrapper for the `/cenik` endpoint.
 struct FlexiBeeCenikWrapper: Decodable {
     let cenik: [FlexiBeeCenikItem]
 }
 
 // MARK: - Joined Stock + Price
 
+/// A view model that merges a `FlexiBeeStockCard` with its optional price-list entry.
 struct FlexiBeeStockItem: Identifiable, Hashable {
     let card:  FlexiBeeStockCard
     let price: FlexiBeeCenikItem?
@@ -127,20 +142,26 @@ struct FlexiBeeStockItem: Identifiable, Hashable {
     var purchasePrice:          Double  { price?.purchasePrice ?? 0 }
     var formattedPurchasePrice: String  { purchasePrice.eur }
 
+    /// The brand/product-line prefix extracted from the full name (e.g. "Wella" from "Wella - Color - 60ml").
     var productLine: String {
         guard let range = name.range(of: " - ") else { return "—" }
         return String(name[name.startIndex..<range.lowerBound])
     }
 
+    /// Volume or size segment from the last " - " component of the name, when available.
     var volume: String? {
         let parts = name.components(separatedBy: " - ")
         guard parts.count >= 3 else { return nil }
         return parts.last
     }
 
+    /// Product name with the product-line prefix and volume suffix stripped.
     var productName: String { _parsedProductName(name) }
 }
 
+/// Strips the leading product-line and trailing volume from a raw FlexiBee product name.
+/// - Parameter raw: The full product name string.
+/// - Returns: The middle segment(s) joined by " - ".
 private func _parsedProductName(_ raw: String) -> String {
     let parts = raw.components(separatedBy: " - ")
     guard parts.count >= 2 else { return raw }
@@ -148,9 +169,11 @@ private func _parsedProductName(_ raw: String) -> String {
     return (parts.count >= 3 ? withoutLine.dropLast() : withoutLine).joined(separator: " - ")
 }
 
+/// Decoded FlexiBee error payload; used to extract a human-readable message from failed responses.
 struct FlexiBeeErrorResponse: Decodable {
     let winstrom: Winstrom
 
+    /// Inner container holding the status and any error details.
     struct Winstrom: Decodable {
         let success: String?
         let message: String?
@@ -176,12 +199,14 @@ struct FlexiBeeErrorResponse: Decodable {
 
 // MARK: - Payment Status
 
+/// Invoice payment state derived from the FlexiBee `stavUhrK` field.
 enum PaymentStatus: String, CaseIterable {
     case paid    = "uhrazeno"
     case partial = "castecneUhrazeno"
     case unpaid  = "neuhrazeno"
     case overdue
 
+    /// Localised display label shown in the UI.
     var label: String {
         switch self {
         case .paid:    return String.payment_paid
@@ -195,6 +220,7 @@ enum PaymentStatus: String, CaseIterable {
 
 // MARK: - Invoice
 
+/// An issued invoice (`faktura-vydana`) fetched from FlexiBee.
 struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
     let id:                String
     let code:              String?
@@ -252,18 +278,25 @@ struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
         }
     }
 
+    /// Comma-separated field list used in FlexiBee API requests for this type.
     static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
 
+    /// Total invoice amount (sum including VAT).
     var total:         Double  { Double(totalRaw ?? "") ?? 0 }
+    /// Parsed issue date from the raw string.
     var issueDate:     Date?   { Self.parseDate(issueDateRaw) }
+    /// Parsed payment due date from the raw string.
     var dueDate:       Date?   { Self.parseDate(dueDateRaw) }
+    /// Human-readable invoice identifier; prefers the formatted `code` over the raw `id`.
     var invoiceNumber: String  { code ?? id }
 
+    /// Full client name extracted from the `firma@showAs` reference (e.g. "CODE: Name").
     var clientName: String {
         guard let raw = clientRef, let range = raw.range(of: ": ") else { return clientRef ?? "—" }
         return String(raw[range.upperBound...])
     }
 
+    /// Short code of the client address-book entry, or nil when unavailable.
     var clientCode: String? {
         guard let raw = clientRef, let range = raw.range(of: ": ") else { return nil }
         return String(raw[raw.startIndex..<range.lowerBound])
@@ -274,8 +307,10 @@ struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
         return _flexiBeeDateFormatter.date(from: String(s.prefix(10)))
     }
 
+    /// Typed payment method derived from the raw FlexiBee code.
     var paymentMethod: PaymentMethod? { PaymentMethod(rawValue: paymentMethodCode ?? "") }
 
+    /// Computed payment status; falls back to `.overdue` when unpaid past the due date.
     var paymentStatus: PaymentStatus {
         let s = paymentStatusCode ?? ""
         if s.contains("castecne") { return .partial }
@@ -285,6 +320,7 @@ struct FlexiBeeInvoice: Identifiable, Codable, Hashable {
     }
 }
 
+/// Winstrom body wrapper for the `/faktura-vydana` endpoint.
 struct FlexiBeeInvoicesWrapper: Decodable {
     let invoices: [FlexiBeeInvoice]
     enum CodingKeys: String, CodingKey { case invoices = "faktura-vydana" }
@@ -292,6 +328,7 @@ struct FlexiBeeInvoicesWrapper: Decodable {
 
 // MARK: - Invoice Line Item
 
+/// A single line item (`faktura-vydana-polozka`) belonging to an issued invoice.
 struct FlexiBeeInvoiceItem: Identifiable, Codable, Equatable {
     let id: String
     private let codeRaw:       String?
@@ -310,21 +347,28 @@ struct FlexiBeeInvoiceItem: Identifiable, Codable, Equatable {
         case cenikRef     = "cenik"
     }
 
+    /// Comma-separated field list used in FlexiBee API requests for this type.
     static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
 
+    /// Ordered quantity on this line.
     var quantity:    Double  { Double(quantityRaw ?? "") ?? 0 }
+    /// Line total (VAT included).
     var total:       Double  { Double(totalRaw    ?? "") ?? 0 }
+    /// Price-list article code for this line.
     var productCode: String  { codeRaw ?? "" }
+    /// Parsed product name with brand prefix and volume stripped.
     var productName: String  { _parsedProductName(nameRaw ?? codeRaw ?? "—") }
+    /// Returns `true` when the line has both a code and a positive quantity.
     var isValid:     Bool    { !productCode.isEmpty && quantity > 0 }
 
     // Canonical price list code (CFB/220), used for stock matching
+    /// Canonical price-list code (`CFB/220` form), stripping the `code:` prefix if present.
     var cenikCode: String {
         guard let ref = cenikRef else { return productCode }
         return ref.hasPrefix("code:") ? String(ref.dropFirst(5)) : ref
     }
 
-    // Non-nil only when the item has an explicit ceník reference (real stock item, not a bundle)
+    /// Non-nil only when the item has an explicit ceník reference (real stock item, not a bundle).
     var stockCode: String? {
         guard let ref = cenikRef, !ref.isEmpty else { return nil }
         return ref.hasPrefix("code:") ? String(ref.dropFirst(5)) : ref
@@ -336,6 +380,7 @@ struct FlexiBeeInvoiceItem: Identifiable, Codable, Equatable {
     }
 }
 
+/// Winstrom body wrapper for the `/faktura-vydana-polozka` endpoint.
 struct FlexiBeeInvoiceItemsWrapper: Decodable {
     let items: [FlexiBeeInvoiceItem]
     enum CodingKeys: String, CodingKey { case items = "faktura-vydana-polozka" }
@@ -343,6 +388,7 @@ struct FlexiBeeInvoiceItemsWrapper: Decodable {
 
 // MARK: - Stock Movement (Warehouse outflow header)
 
+/// Header record for a warehouse outflow document (`skladovy-pohyb`).
 struct FlexiBeeStockMovement: Decodable, Sendable {
     let id:    String
     let code:  String
@@ -350,6 +396,7 @@ struct FlexiBeeStockMovement: Decodable, Sendable {
     enum CodingKeys: String, CodingKey { case id; case code = "kod"; case notes = "popis" }
 }
 
+/// Winstrom body wrapper for the `/skladovy-pohyb` endpoint.
 struct FlexiBeeStockMovementWrapper: Decodable, Sendable {
     let movements: [FlexiBeeStockMovement]
     enum CodingKeys: String, CodingKey { case movements = "skladovy-pohyb" }
@@ -357,6 +404,7 @@ struct FlexiBeeStockMovementWrapper: Decodable, Sendable {
 
 // MARK: - Stock Movement Item (Warehouse outflow line)
 
+/// A single line item (`skladovy-pohyb-polozka`) of a warehouse outflow document.
 struct FlexiBeeStockMovementItem: Identifiable, Codable, Equatable, Sendable {
     let id:              String
     private let codeRaw:         String?
@@ -381,16 +429,22 @@ struct FlexiBeeStockMovementItem: Identifiable, Codable, Equatable, Sendable {
     static let apiFields    = "id,kod,nazev,datVyst,mnozMj,sumCelkem,cenik"
     static let bulkApiFields = apiFields + ",doklSklad"
 
+    /// The human-readable movement document code (e.g. "S-0001/2026"), stripped of `code:` prefix.
     var movementCode: String? {
         guard let ref = movementCodeRef, ref.hasPrefix("code:") else { return nil }
         return String(ref.dropFirst(5))
     }
 
+    /// Article code of the product issued.
     var productCode:    String { codeRaw ?? "" }
+    /// Parsed product name with brand prefix and volume stripped.
     var productName:    String { _parsedProductName(nameRaw ?? codeRaw ?? "—") }
+    /// Number of units issued from stock.
     var quantityIssued: Double { Double(quantityRaw ?? "") ?? 0 }
+    /// Line total value (purchase price × quantity).
     var total:          Double { Double(totalRaw ?? "") ?? 0 }
 
+    /// Canonical price-list code, stripping `code:` prefix if present.
     var cenikCode: String {
         guard let ref = cenikRef else { return productCode }
         return ref.hasPrefix("code:") ? String(ref.dropFirst(5)) : ref
@@ -401,9 +455,11 @@ struct FlexiBeeStockMovementItem: Identifiable, Codable, Equatable, Sendable {
         return _flexiBeeDateFormatter.date(from: String(s.prefix(10)))
     }
 
+    /// Returns `true` when the line has a code and a positive issued quantity.
     var isValid: Bool { !productCode.isEmpty && quantityIssued > 0 }
 }
 
+/// Winstrom body wrapper for the `/skladovy-pohyb-polozka` endpoint.
 struct FlexiBeeStockMovementItemsWrapper: Decodable, Sendable {
     let items: [FlexiBeeStockMovementItem]
     enum CodingKeys: String, CodingKey { case items = "skladovy-pohyb-polozka" }
@@ -411,11 +467,13 @@ struct FlexiBeeStockMovementItemsWrapper: Decodable, Sendable {
 
 // MARK: - Payment Method
 
+/// Available payment methods mapped to FlexiBee `formaUhradyCis` codes.
 enum PaymentMethod: String, CaseIterable {
     case prevod = "code:PREVOD"
     case hotove = "code:HOTOVE"
     case karta  = "code:KARTA"
 
+    /// Localised display name for the payment method.
     var displayName: String {
         switch self {
         case .prevod: return String.payment_method_prevod
@@ -424,6 +482,7 @@ enum PaymentMethod: String, CaseIterable {
         }
     }
 
+    /// SF Symbol name representing this payment method.
     var icon: String {
         switch self {
         case .prevod: return "building.columns"
@@ -435,6 +494,7 @@ enum PaymentMethod: String, CaseIterable {
 
 // MARK: - Firm (Client / Address Book)
 
+/// A FlexiBee address-book entry (`adresar`) representing a client or partner.
 struct FlexiBeeFirm: Identifiable, Decodable, Equatable {
     let id:    String
     let code:  String
@@ -456,12 +516,14 @@ struct FlexiBeeFirm: Identifiable, Decodable, Equatable {
 
     static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
 
+    /// Falls back to `code` when `name` is nil or empty.
     var displayName: String {
         let n = name ?? ""
         return n.isEmpty ? code : n
     }
 }
 
+/// Winstrom body wrapper for the `/adresar` endpoint.
 struct FlexiBeeFirmWrapper: Decodable {
     let firms: [FlexiBeeFirm]
     enum CodingKeys: String, CodingKey { case firms = "adresar" }
@@ -469,6 +531,7 @@ struct FlexiBeeFirmWrapper: Decodable {
 
 // MARK: - Create Invoice Request
 
+/// A single line item used when creating or updating an invoice in FlexiBee.
 struct NewInvoiceLine: Encodable {
     let name:        String
     let productCode: String?
@@ -498,6 +561,13 @@ struct NewInvoiceLine: Encodable {
         try c.encode(false,            forKey: .zdrojProSkl)
     }
 
+    /// Creates a new invoice line.
+    /// - Parameters:
+    ///   - name: Display name of the product or service.
+    ///   - productCode: Optional FlexiBee price-list code; when supplied the line links to stock.
+    ///   - quantity: Number of units.
+    ///   - unitPrice: Price per unit (VAT inclusive).
+    ///   - vatRate: VAT rate in percent (default 21 %).
     init(name: String, productCode: String? = nil, quantity: Double, unitPrice: Double, vatRate: Double = 21.0) {
         self.name        = name
         self.productCode = productCode
@@ -508,6 +578,7 @@ struct NewInvoiceLine: Encodable {
     }
 }
 
+/// The full payload sent to FlexiBee when creating or replacing an issued invoice.
 struct NewInvoice: Encodable {
     let documentType:  String
     let clientCode:    String
@@ -541,6 +612,7 @@ struct NewInvoice: Encodable {
     }
 }
 
+/// Top-level `winstrom` envelope that wraps a `NewInvoice` for the create/update POST body.
 struct CreateInvoiceEnvelope: Encodable {
     let winstrom: Winstrom
     struct Winstrom: Encodable {
@@ -551,6 +623,7 @@ struct CreateInvoiceEnvelope: Encodable {
 
 // MARK: - Create Stock Movement Request
 
+/// A single product line in a new warehouse outflow document.
 struct NewStockMovementLine: Encodable {
     let productCode: String
     let quantity:    Double
@@ -561,6 +634,7 @@ struct NewStockMovementLine: Encodable {
     }
 }
 
+/// Payload for creating a STANDARD warehouse outflow movement (`skladovy-pohyb`).
 struct NewStockMovement: Encodable {
     let description: String?
     let lines:       [NewStockMovementLine]
@@ -585,6 +659,7 @@ struct NewStockMovement: Encodable {
     }
 }
 
+/// Top-level `winstrom` envelope wrapping a `NewStockMovement` for the POST body.
 struct CreateStockMovementEnvelope: Encodable {
     let winstrom: Winstrom
     struct Winstrom: Encodable {
@@ -595,6 +670,7 @@ struct CreateStockMovementEnvelope: Encodable {
 
 // MARK: - Create Cash Receipt Request
 
+/// Payload for creating a cash receipt (`pokladni-pohyb`) linked to a paid invoice.
 struct NewCashReceipt: Encodable {
     let clientCode:  String  // raw code, e.g. "BULANAVA" — "code:" prefix added in encode
     let description: String
@@ -625,6 +701,7 @@ struct NewCashReceipt: Encodable {
     }
 }
 
+/// Top-level `winstrom` envelope wrapping a `NewCashReceipt` for the POST body.
 struct CreateCashReceiptEnvelope: Encodable {
     let winstrom: Winstrom
     struct Winstrom: Encodable {
@@ -635,6 +712,7 @@ struct CreateCashReceiptEnvelope: Encodable {
 
 // MARK: - Create Firm Request
 
+/// Payload for creating or updating a client (`adresar`) in FlexiBee.
 struct NewFirm: Encodable {
     let name:  String
     let ic:    String?
@@ -651,16 +729,22 @@ struct NewFirm: Encodable {
     }
 }
 
+/// Top-level `winstrom` envelope wrapping a `NewFirm` for the POST/PUT body.
 struct CreateFirmEnvelope: Encodable {
     let winstrom: Winstrom
     struct Winstrom: Encodable { let adresar: [NewFirm] }
 }
 
+/// Single result entry returned by FlexiBee after a successful create operation.
 struct FlexiBeeCreateResult: Decodable { let id: String }
+/// Winstrom payload wrapping a list of create results.
 struct FlexiBeeCreateWrapper: Decodable { let results: [FlexiBeeCreateResult] }
+/// Top-level response for FlexiBee create operations, containing the new record IDs.
 struct FlexiBeeCreateResponse: Decodable { let winstrom: FlexiBeeCreateWrapper }
 
+/// Lightweight cash-receipt record used only for building the receipt-ID lookup cache.
 struct CashReceiptItem: Decodable { let id: String; let popis: String? }
+/// Winstrom body wrapper for the `/pokladni-pohyb` list endpoint.
 struct CashReceiptListWrapper: Decodable {
     let items: [CashReceiptItem]
     enum CodingKeys: String, CodingKey { case items = "pokladni-pohyb" }

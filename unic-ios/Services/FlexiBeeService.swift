@@ -3,6 +3,7 @@ import SwiftUI
 import Combine
 import IdentifiedCollections
 
+/// Errors that can be thrown by `FlexiBeeService` network and decoding operations.
 enum FlexiBeeError: LocalizedError {
     case networkError(Error)
     case decodingError(Error)
@@ -21,6 +22,8 @@ enum FlexiBeeError: LocalizedError {
     }
 }
 
+/// Main-actor singleton that manages all communication with the FlexiBee REST API,
+/// including in-memory caches, disk persistence, and reactive `@Published` state.
 @MainActor
 final class FlexiBeeService: ObservableObject {
     static let shared = FlexiBeeService()
@@ -32,16 +35,26 @@ final class FlexiBeeService: ObservableObject {
         return "Basic " + Data(creds.utf8).base64EncodedString()
     }()
 
+    /// Throws `FlexiBeeError.unauthorized` when the given permission flag is `false`.
+    /// - Parameter permission: The permission flag from `AuthService`.
+    /// - Throws: `FlexiBeeError.unauthorized` when not permitted.
     private func require(_ permission: Bool) throws {
         guard permission else { throw FlexiBeeError.unauthorized }
     }
 
+    /// Current stock cards; updated on every sync.
     @Published var stock: [FlexiBeeStockCard] = []
+    /// Full price list; updated on every sync.
     @Published var priceList: [FlexiBeeCenikItem] = []
+    /// All issued invoices sorted newest-first.
     @Published private(set) var invoices: [FlexiBeeInvoice] = []
+    /// All invoice line items across all invoices.
     @Published private(set) var invoiceItems: [FlexiBeeInvoiceItem] = []
+    /// Outflow movement items relevant to the Sales tab.
     @Published private(set) var salesMovementItems: [FlexiBeeStockMovementItem] = []
+    /// `true` while a network sync is in progress.
     @Published var isLoading = false
+    /// Non-nil when the last sync encountered an error.
     @Published var errorMessage: String?
 
     // In-memory caches (session-lifetime, cleared on forceSync)
@@ -50,6 +63,7 @@ final class FlexiBeeService: ObservableObject {
     private var lineItemsByInvoiceId: [String: [FlexiBeeInvoiceItem]] = [:]
     private var cashReceiptCache: [String: String?] = [:]
 
+    /// The timestamp of the last successful full sync, persisted in `UserDefaults`.
     @Published private(set) var lastSyncDate: Date? = UserDefaults.standard.object(forKey: "flexibee_lastSync") as? Date
 
     private static let cacheTTL: TimeInterval = 60 * 60
@@ -65,15 +79,19 @@ final class FlexiBeeService: ObservableObject {
 
     // MARK: - Computed
 
+    /// `true` when the last sync happened within the session TTL (1 hour).
     var isCacheValid: Bool {
         guard let last = lastSyncDate else { return false }
         return Date().timeIntervalSince(last) < Self.cacheTTL
     }
 
+    /// Cached joined stock+price array; rebuilt after every sync via `rebuildStockWithPrices()`.
     @Published private(set) var cachedStockWithPrices: IdentifiedArrayOf<FlexiBeeStockItem> = []
 
+    /// Public accessor for the joined stock+price array.
     var stockWithPrices: IdentifiedArrayOf<FlexiBeeStockItem> { cachedStockWithPrices }
 
+    /// Joins `stock` and `priceList` by article code and replaces `cachedStockWithPrices`.
     private func rebuildStockWithPrices() {
         let priceByCode = Dictionary(uniqueKeysWithValues: priceList.map { ($0.code, $0) })
         cachedStockWithPrices = IdentifiedArray(uniqueElements: stock.map { FlexiBeeStockItem(card: $0, price: priceByCode[$0.code]) })
@@ -81,11 +99,13 @@ final class FlexiBeeService: ObservableObject {
 
     // MARK: - Load
 
+    /// Fetches all data from FlexiBee only when the cache has expired; no-op otherwise.
     func loadIfNeeded() async {
         guard !isCacheValid else { return }
         await fetchAll()
     }
 
+    /// Unconditionally re-fetches all data from FlexiBee, bypassing the cache.
     func forceSync() async {
         await fetchAll()
     }
@@ -171,6 +191,7 @@ final class FlexiBeeService: ObservableObject {
         isLoading = false
     }
 
+    /// Fetches only the invoices list (no stock, prices, or movements). Guards against concurrent calls.
     func fetchInvoicesOnly() async {
         guard !isLoading else { return }
         isLoading = true
@@ -179,6 +200,9 @@ final class FlexiBeeService: ObservableObject {
         isLoading = false
     }
 
+    /// Fetches all invoice line items (`faktura-vydana-polozka`) across all invoices.
+    /// - Returns: Valid line items sorted newest-first.
+    /// - Throws: `FlexiBeeError` on network or decoding failure.
     func fetchInvoiceItems() async throws -> [FlexiBeeInvoiceItem] {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeInvoiceItemsWrapper>.self,
@@ -190,6 +214,9 @@ final class FlexiBeeService: ObservableObject {
         return response.winstrom.items.filter { $0.isValid }
     }
 
+    /// Fetches all issued invoices (`faktura-vydana`) with full detail.
+    /// - Returns: Array of invoices sorted newest-first.
+    /// - Throws: `FlexiBeeError` on network or decoding failure.
     func fetchInvoices() async throws -> [FlexiBeeInvoice] {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeInvoicesWrapper>.self,
@@ -202,6 +229,9 @@ final class FlexiBeeService: ObservableObject {
         return response.winstrom.invoices
     }
 
+    /// Fetches all non-empty address-book entries sorted alphabetically by display name.
+    /// - Returns: Array of `FlexiBeeFirm` records.
+    /// - Throws: `FlexiBeeError` on network or decoding failure.
     func fetchFirms() async throws -> [FlexiBeeFirm] {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeFirmWrapper>.self,
@@ -214,6 +244,10 @@ final class FlexiBeeService: ObservableObject {
             .sorted { $0.displayName.localizedCompare($1.displayName) == .orderedAscending }
     }
 
+    /// Fetches the line items for a specific invoice, using an in-memory cache to avoid repeat requests.
+    /// - Parameter invoiceId: The FlexiBee internal ID of the invoice.
+    /// - Returns: Line items for the given invoice.
+    /// - Throws: `FlexiBeeError` on network or decoding failure.
     func fetchLineItemsForInvoice(_ invoiceId: String) async throws -> [FlexiBeeInvoiceItem] {
         if let cached = lineItemsByInvoiceId[invoiceId] { return cached }
         let response = try await fetch(
@@ -226,12 +260,22 @@ final class FlexiBeeService: ObservableObject {
         return response.winstrom.items
     }
 
+    /// Creates a new issued invoice in FlexiBee.
+    /// - Parameter invoice: The invoice data to submit.
+    /// - Returns: The FlexiBee internal ID of the newly created invoice.
+    /// - Throws: `FlexiBeeError.unauthorized` when the user lacks permission, or a network/API error.
     @discardableResult
     func createInvoice(_ invoice: NewInvoice) async throws -> String {
         try require(AuthService.shared.canCreateInvoice)
         return try await postInvoice(to: baseURL + "/faktura-vydana.json", invoice: invoice, method: "POST")
     }
 
+    /// Replaces all fields and line items of an existing invoice using a PUT request.
+    /// Uses `polozkyFaktury@removeAll` to atomically replace line items.
+    /// - Parameters:
+    ///   - id: The FlexiBee internal ID of the invoice to update.
+    ///   - invoice: The updated invoice payload.
+    /// - Throws: `FlexiBeeError.unauthorized` when the user lacks permission, or a network/API error.
     func updateInvoice(id: String, invoice: NewInvoice) async throws {
         try require(AuthService.shared.canEditInvoice)
 
@@ -267,6 +311,13 @@ final class FlexiBeeService: ObservableObject {
         lineItemsByInvoiceId.removeValue(forKey: id)
     }
 
+    /// Marks an invoice as manually paid in FlexiBee.
+    /// Only acts when `status == .paid`; other statuses are a no-op.
+    /// - Parameters:
+    ///   - id: FlexiBee internal ID of the invoice.
+    ///   - status: The target payment status (only `.paid` is applied).
+    ///   - method: Payment method to record (default: bank transfer).
+    /// - Throws: `FlexiBeeError.unauthorized` or a network/API error.
     func updateInvoicePaymentStatus(id: String, status: PaymentStatus, method: PaymentMethod = .prevod) async throws {
         try require(AuthService.shared.canEditInvoice)
         guard status == .paid else { return }
@@ -276,6 +327,9 @@ final class FlexiBeeService: ObservableObject {
         _ = try await execute(method: "PUT", urlString: baseURL + "/faktura-vydana/\(id).json", body: body)
     }
 
+    /// Flags an invoice as accounted (`zuctovano = true`) using the TRŽBA ZBOŽÍ accounting operation.
+    /// - Parameter id: FlexiBee internal ID of the invoice.
+    /// - Throws: `FlexiBeeError.unauthorized` or a network/API error.
     func markAsAccounted(id: String) async throws {
         try require(AuthService.shared.canEditInvoice)
         let body: [String: Any] = [
@@ -290,6 +344,9 @@ final class FlexiBeeService: ObservableObject {
         _ = try await execute(method: "PUT", urlString: baseURL + "/faktura-vydana/\(id).json", body: jsonData)
     }
 
+    /// Creates a cash receipt (`pokladni-pohyb`) for a paid invoice.
+    /// - Parameter invoice: The invoice for which the receipt is being recorded.
+    /// - Throws: `FlexiBeeError` on network or API failure. Silently skips when `clientCode` is nil.
     func createCashReceipt(for invoice: FlexiBeeInvoice) async throws {
         guard let clientCode = invoice.clientCode else { return }
         let receipt = NewCashReceipt(
@@ -303,6 +360,10 @@ final class FlexiBeeService: ObservableObject {
         _ = try await execute(method: "POST", urlString: baseURL + "/pokladni-pohyb.json", body: body)
     }
 
+    /// Downloads a PDF document from FlexiBee by its relative path.
+    /// - Parameter path: Relative URL path appended to the base URL (e.g. `/faktura-vydana/123.pdf`).
+    /// - Returns: Raw PDF data.
+    /// - Throws: `FlexiBeeError.apiError` when the response status is not 200.
     func fetchPDF(path: String) async throws -> Data {
         guard let url = URL(string: baseURL + path) else { throw FlexiBeeError.apiError("Invalid URL") }
         var request = URLRequest(url: url)
@@ -315,6 +376,11 @@ final class FlexiBeeService: ObservableObject {
         return data
     }
 
+    /// Returns the FlexiBee ID of the cash receipt linked to the given invoice number.
+    /// Triggers a full receipt prefetch on cache miss.
+    /// - Parameter invoiceNumber: The human-readable invoice number (e.g. "VF1-0004/2026").
+    /// - Returns: The FlexiBee internal ID of the matching cash receipt, or `nil` if not found.
+    /// - Throws: Never throws directly; network errors are silently absorbed during prefetch.
     func fetchCashReceiptId(for invoiceNumber: String) async throws -> String? {
         if cashReceiptCache.keys.contains(invoiceNumber) { return cashReceiptCache[invoiceNumber]! }
         // Cache miss — prefetch wasn't ready yet, fetch just this one
@@ -340,6 +406,10 @@ final class FlexiBeeService: ObservableObject {
 
     // Creates a STANDARD stock movement (vydej). typDokl must be "code:STANDARD".
     // Returns the FlexiBee internal ID of the created movement.
+    /// Creates a STANDARD warehouse outflow movement (`typDokl: code:STANDARD`).
+    /// - Parameter movement: The outflow document to create.
+    /// - Returns: The FlexiBee internal ID of the newly created movement.
+    /// - Throws: `FlexiBeeError.unauthorized` or a network/API error, including when no ID is returned.
     @discardableResult
     func createStockMovement(_ movement: NewStockMovement) async throws -> String {
         try require(AuthService.shared.canCreateStockMovement)
@@ -353,6 +423,10 @@ final class FlexiBeeService: ObservableObject {
         return id
     }
 
+    /// Fetches only the human-readable invoice number (`kod`) for a given internal ID.
+    /// - Parameter id: FlexiBee internal ID of the invoice.
+    /// - Returns: The formatted invoice number, or `nil` when not found.
+    /// - Throws: `FlexiBeeError` on network or decoding failure.
     func fetchInvoiceNumber(id: String) async throws -> String? {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeInvoicesWrapper>.self,
@@ -363,16 +437,26 @@ final class FlexiBeeService: ObservableObject {
         return response.winstrom.invoices.first?.invoiceNumber
     }
 
+    /// Permanently deletes an issued invoice from FlexiBee.
+    /// - Parameter id: FlexiBee internal ID of the invoice to delete.
+    /// - Throws: `FlexiBeeError.unauthorized` or a network/API error.
     func deleteInvoice(id: String) async throws {
         try require(AuthService.shared.canDeleteInvoice)
         _ = try await execute(method: "DELETE", urlString: baseURL + "/faktura-vydana/\(id).json", successRange: 200...204)
     }
 
+    /// Permanently deletes a client address-book entry from FlexiBee.
+    /// - Parameter id: FlexiBee internal ID of the firm to delete.
+    /// - Throws: `FlexiBeeError.unauthorized` or a network/API error.
     func deleteFirm(id: String) async throws {
         try require(AuthService.shared.canDeleteClient)
         _ = try await execute(method: "DELETE", urlString: baseURL + "/adresar/\(id).json", successRange: 200...204)
     }
 
+    /// Fetches a single address-book entry by its short code.
+    /// - Parameter code: The FlexiBee short code of the firm (e.g. "BULANAVA").
+    /// - Returns: The matching `FlexiBeeFirm`, or `nil` when not found.
+    /// - Throws: `FlexiBeeError` on network or decoding failure.
     func fetchFirm(code: String) async throws -> FlexiBeeFirm? {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeFirmWrapper>.self,
@@ -383,6 +467,11 @@ final class FlexiBeeService: ObservableObject {
         return response.winstrom.firms.first
     }
 
+    /// Updates an existing address-book entry in FlexiBee.
+    /// - Parameters:
+    ///   - code: The short code identifying the firm (used in the URL path).
+    ///   - firm: The updated firm data.
+    /// - Throws: `FlexiBeeError.unauthorized` or a network/API error.
     func updateFirm(code: String, firm: NewFirm) async throws {
         try require(AuthService.shared.canEditClient)
         let envelope = CreateFirmEnvelope(winstrom: .init(adresar: [firm]))
@@ -390,6 +479,10 @@ final class FlexiBeeService: ObservableObject {
         _ = try await execute(method: "PUT", urlString: baseURL + "/adresar/code:\(code).json", body: body)
     }
 
+    /// Creates a new address-book entry and re-fetches the created record to return a fully populated `FlexiBeeFirm`.
+    /// - Parameter firm: The new firm data to submit.
+    /// - Returns: The newly created `FlexiBeeFirm` with its generated ID and code.
+    /// - Throws: `FlexiBeeError.unauthorized`, a network/API error, or `.apiError` when the response omits an ID.
     func createFirm(_ firm: NewFirm) async throws -> FlexiBeeFirm {
         try require(AuthService.shared.canCreateClient)
         let envelope = CreateFirmEnvelope(winstrom: .init(adresar: [firm]))
@@ -411,6 +504,10 @@ final class FlexiBeeService: ObservableObject {
         return created
     }
 
+    /// Fetches a single invoice by its FlexiBee internal ID with full detail.
+    /// - Parameter id: FlexiBee internal ID of the invoice.
+    /// - Returns: The matching invoice, or `nil` when not found.
+    /// - Throws: `FlexiBeeError` on network or decoding failure.
     func fetchSingleInvoice(id: String) async throws -> FlexiBeeInvoice? {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeInvoicesWrapper>.self,
@@ -461,6 +558,9 @@ final class FlexiBeeService: ObservableObject {
         return (header, items)
     }
 
+    /// Finds and deletes (or stornos) the outflow movement whose description matches the given invoice number.
+    /// - Parameter invoiceNumber: The human-readable invoice number (e.g. "VF1-0004/2026").
+    /// - Throws: `FlexiBeeError` on network or API failure.
     func deleteStockMovement(for invoiceNumber: String) async throws {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeStockMovementWrapper>.self,
@@ -473,6 +573,9 @@ final class FlexiBeeService: ObservableObject {
         try await deleteOrStornoMovement(id: id)
     }
 
+    /// Deletes or stornos an outflow movement by its FlexiBee internal ID.
+    /// - Parameter id: FlexiBee internal ID of the movement.
+    /// - Throws: `FlexiBeeError` on network or API failure.
     func deleteStockMovementById(_ id: String) async throws {
         try await deleteOrStornoMovement(id: id)
     }
@@ -486,6 +589,9 @@ final class FlexiBeeService: ObservableObject {
         }
     }
 
+    /// Fetches all movement headers and items in two parallel requests, then groups them by parent movement ID.
+    /// - Returns: All outflow (`S-` prefixed) movement items.
+    /// - Throws: `FlexiBeeError` on network or decoding failure.
     func fetchStockMovementItems() async throws -> [FlexiBeeStockMovementItem] {
         // Request 1: all movement headers
         async let headersReq = fetch(
@@ -522,6 +628,9 @@ final class FlexiBeeService: ObservableObject {
         return outflowItems
     }
 
+    /// Fetches the full price list from FlexiBee.
+    /// - Returns: All price-list entries.
+    /// - Throws: `FlexiBeeError` on network or decoding failure.
     func fetchPriceList() async throws -> [FlexiBeeCenikItem] {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeCenikWrapper>.self,
@@ -533,6 +642,9 @@ final class FlexiBeeService: ObservableObject {
         return response.winstrom.cenik
     }
 
+    /// Fetches current stock levels for all warehouse cards.
+    /// - Returns: Resolved `FlexiBeeStockCard` array with quantities.
+    /// - Throws: `FlexiBeeError` on network or decoding failure.
     func fetchStock() async throws -> [FlexiBeeStockCard] {
         let response = try await fetch(
             FlexiBeeResponse<FlexiBeeStockWrapper>.self,

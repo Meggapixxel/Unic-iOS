@@ -8,6 +8,7 @@
 import SwiftUI
 import MapKit
 
+/// Full-screen map for a single salon with style picker, navigation to Google Maps, and an info card.
 struct SalonFullMapScreen: View {
     let salon: Salon
 

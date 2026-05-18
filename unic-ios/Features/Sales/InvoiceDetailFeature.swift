@@ -4,22 +4,36 @@ import Foundation
 
 // MARK: - InvoiceDetailFeature
 
+/// TCA feature that manages the full lifecycle of a single FlexiBee invoice detail screen,
+/// including line-item loading, payment-status changes, PDF sharing, stock movements, and deletion.
 @Reducer
 struct InvoiceDetailFeature {
+    /// Observable state for the invoice detail screen.
     @ObservableState
     struct State: Equatable {
+        /// The invoice being displayed.
         var invoice: FlexiBeeInvoice
+        /// Line items fetched from FlexiBee for the invoice.
         var lineItems: [FlexiBeeInvoiceItem] = []
+        /// Whether the initial load (line items, movement, cash receipt) is in progress.
         var isLoading: Bool = false
+        /// The associated stock movement record, if one has been created.
         var stockMovement: FlexiBeeStockMovement?
+        /// Items belonging to the linked stock movement.
         var stockMovementItems: [FlexiBeeStockMovementItem] = []
+        /// FlexiBee document ID of the cash receipt linked to this invoice, if any.
         var cashReceiptId: String?
+        /// Whether a PDF is currently being fetched for sharing.
         var isLoadingPDF: Bool = false
+        /// Loaded PDF data ready to be presented in a share sheet.
         var pdfShareItem: PDFShareItem?
         @Presents var destination: Destination.State?
 
+        /// Whether the invoice can still be edited (unpaid invoices only).
         var canEdit: Bool { invoice.paymentStatus != .paid }
+        /// Whether a stock-movement record has already been created for this invoice.
         var stockMovementCreated: Bool { stockMovement != nil }
+        /// Whether the invoice has been marked as accounted in FlexiBee.
         var isAccounted: Bool { invoice.isAccounted == true }
 
         static func == (lhs: Self, rhs: Self) -> Bool {
@@ -35,8 +49,10 @@ struct InvoiceDetailFeature {
 
     // MARK: - Destination
 
+    /// All modal destinations reachable from the invoice detail screen.
     @Reducer
     struct Destination {
+        /// Union of possible presentation states.
         @ObservableState
         enum State: Equatable {
             case editForm(InvoiceFormPlaceholderFeature.State)
@@ -348,11 +364,15 @@ struct InvoiceDetailFeature {
 
 // MARK: - StatusChangeFeature
 
+/// Minimal TCA feature that holds the payment status and method the user is about to confirm.
 @Reducer
 struct StatusChangeFeature {
+    /// Transient state for the payment-method picker sheet.
     @ObservableState
     struct State: Equatable {
+        /// The target payment status being set.
         var status: PaymentStatus
+        /// The payment method selected by the user.
         var method: PaymentMethod
     }
 
@@ -377,17 +397,24 @@ struct StatusChangeFeature {
 
 // MARK: - StockMovementPlaceholderFeature
 
+/// Thin TCA wrapper that carries the data needed to bootstrap `StockMovementScreen` from a TCA context.
 @Reducer
 struct StockMovementPlaceholderFeature {
+    /// Data required to pre-fill the stock-movement form.
     @ObservableState
     struct State: Equatable {
+        /// FlexiBee ID of the parent invoice.
         var invoiceId: String
+        /// Human-readable invoice number used as the movement description.
         var invoiceNumber: String
+        /// Pre-filled line items from the invoice, converted to movement drafts.
         var lineItems: [FlexiBeeInvoiceItem] = []
     }
 
     enum Action {
+        /// User submitted the stock movement form successfully.
         case submitted
+        /// User dismissed the form without creating a movement.
         case skipped
     }
 
@@ -398,13 +425,17 @@ struct StockMovementPlaceholderFeature {
 
 // MARK: - ConfirmationDialogFeature
 
+/// Generic two-button (confirm / cancel) alert feature, used for the delete-invoice confirmation.
 @Reducer
 struct ConfirmationDialogFeature {
+    /// Empty state — the alert carries no additional data.
     @ObservableState
     struct State: Equatable {}
 
     enum Action {
+        /// User confirmed the destructive action.
         case confirmed
+        /// User cancelled and dismissed the alert.
         case cancelled
     }
 

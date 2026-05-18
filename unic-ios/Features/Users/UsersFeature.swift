@@ -1,16 +1,20 @@
 import ComposableArchitecture
 import Foundation
 
+/// TCA feature for the users list, loading app users and navigating to their activity screens.
 @Reducer
 struct UsersFeature {
+    /// Observable state for the users list screen.
     @ObservableState
     struct State: Equatable {
+        /// Users visible to the current role (all users for admins; same-role only for others).
         var users: [AppUser] = []
         var isLoading = false
         var error: String?
         var path = StackState<Path.State>()
     }
 
+    /// Navigation stack destinations reachable from the users list.
     @Reducer
     enum Path {
         case userActivity(UserActivityFeature)
@@ -20,6 +24,7 @@ struct UsersFeature {
         case onLoad
         case loaded([AppUser])
         case failed(String)
+        /// Pushes the activity screen for the tapped user onto the navigation stack.
         case userTapped(AppUser)
         case path(StackActionOf<Path>)
     }

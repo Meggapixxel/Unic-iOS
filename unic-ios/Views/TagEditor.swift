@@ -5,11 +5,17 @@
 
 import SwiftUI
 
+/// Reusable inline tag editor with chip display, search-as-you-type suggestions, and optional new-tag creation.
 struct TagEditor: View {
+    /// IDs of the currently selected tags; updated in place as the user adds/removes chips.
     @Binding var selectedIds: [String]
+    /// Full catalogue of available tags to suggest from.
     let availableTags: [TagItem]
     let placeholder: LocalizedStringKey
+    /// When `false` the "+" add-new button is hidden even if `onAddNew` is provided.
     var canAddNew: Bool = true
+    /// Called with the new tag name; must return the Firestore document ID of the created tag.
+    /// Pass `nil` to disable tag creation.
     let onAddNew: ((String) async throws -> String)?
 
     @State private var inputText = ""

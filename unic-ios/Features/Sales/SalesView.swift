@@ -5,6 +5,7 @@ import SwiftUI
 
 // MARK: - Sales View
 
+/// Root view for the Sales tab; hosts an analytics sub-tab and an invoices sub-tab via `TabView`.
 struct SalesView: View {
     @Bindable var store: StoreOf<SalesFeature>
 
@@ -37,6 +38,7 @@ struct SalesView: View {
 
 // MARK: - Analytics Section
 
+/// Scrollable analytics view showing KPI cards, a monthly revenue chart, and ranked lists of top clients and products.
 private struct AnalyticsSection: View {
     let store: StoreOf<SalesFeature>
     private let pageSize = 10
@@ -162,6 +164,7 @@ private struct AnalyticsSection: View {
 
 // MARK: - Invoices Section
 
+/// Filterable, searchable list of all invoices with a floating create-invoice FAB.
 private struct InvoicesSection: View {
     @Bindable var store: StoreOf<SalesFeature>
 
@@ -235,6 +238,7 @@ private struct InvoicesSection: View {
 
 // MARK: - Invoice Row View
 
+/// Compact list row showing an invoice's number, client, date, total, and payment status badge.
 struct InvoiceRowView: View {
     let invoice: FlexiBeeInvoice
 
@@ -274,7 +278,9 @@ struct InvoiceRowView: View {
 
 // MARK: - KPI Card
 
+/// Fixed-width card displaying a single key performance indicator with an icon, value, and label.
 struct KPICard: View {
+    /// The formatted metric value to display (e.g. a currency string or count).
     let value: String
     let label: String
     let icon: String
@@ -299,6 +305,7 @@ struct KPICard: View {
 
 // MARK: - Monthly Revenue Chart
 
+/// Bar chart displaying revenue aggregated by month for the selected period.
 private struct MonthlyRevenueChart: View {
     let points: [MonthlyRevenuePoint]
 
@@ -326,8 +333,10 @@ private struct MonthlyRevenueChart: View {
 
 // MARK: - Ranking Section
 
+/// Card-style container for ranked lists (top clients, top products) with an optional "See All" action.
 private struct SalesRankingSection<Content: View>: View {
     let title: String
+    /// Optional label for the "See All" button; omit to hide the button.
     var seeAllLabel: String?
     var seeAllAction: (() -> Void)?
     @ViewBuilder let content: () -> Content
@@ -350,12 +359,15 @@ private struct SalesRankingSection<Content: View>: View {
     }
 }
 
+/// A single row in a ranking list showing position, name, optional subtitle, and a metric value.
 private struct SalesRankingRow: View {
     let rank: Int
     let title: String
     let subtitle: String?
     let value: String
+    /// Whether to show the separator below this row; pass `false` for the last item.
     let isLast: Bool
+    /// When `true` a disclosure chevron is shown, indicating the row is tappable.
     var showChevron: Bool = false
 
     var body: some View {
@@ -386,6 +398,7 @@ private struct SalesRankingRow: View {
 
 // MARK: - Filter Chip
 
+/// Capsule-shaped toggle chip used in the invoice status filter row.
 private struct SalesFilterChip: View {
     let title: String
     let isSelected: Bool
@@ -407,6 +420,7 @@ private struct SalesFilterChip: View {
 
 // MARK: - All Top Products View
 
+/// Full-screen searchable list of all top-selling products, navigated to from the "See All" button.
 struct AllTopProductsView: View {
     @Bindable var store: StoreOf<AllTopProductsFeature>
 
@@ -451,6 +465,8 @@ struct AllTopProductsView: View {
 
 // MARK: - Invoice Form Bridge View
 
+/// Bridges the TCA `InvoiceFormPlaceholderFeature` store to the MVVM `InvoiceFormScreen`,
+/// wiring up FlexiBee API calls and forwarding the submit/dismiss outcome back as TCA actions.
 struct InvoiceFormBridgeView: View {
     let store: StoreOf<InvoiceFormPlaceholderFeature>
 
@@ -492,6 +508,7 @@ struct InvoiceFormBridgeView: View {
 
 // MARK: - All Top Clients View
 
+/// Full-screen searchable list of all top clients by revenue, navigated to from the "See All" button.
 struct AllTopClientsView: View {
     @Bindable var store: StoreOf<AllTopClientsFeature>
 

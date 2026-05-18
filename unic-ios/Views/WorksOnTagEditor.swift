@@ -5,7 +5,8 @@
 
 import SwiftUI
 
-// Thin wrapper kept for backwards-compat call sites
+/// Thin wrapper around `TagEditor` pre-wired to the `worksOnTags` collection in `FirebaseService`.
+/// Kept for backwards-compatible call sites that don't need to inject the tag catalogue directly.
 struct WorksOnTagEditor: View {
     @Binding var selectedTags: [String]
     @ObservedObject private var service = FirebaseService.shared
@@ -22,6 +23,7 @@ struct WorksOnTagEditor: View {
 
 // MARK: - Tag Chip
 
+/// Capsule chip displaying a tag name with an `xmark` remove button.
 struct TagChip: View {
     let title: String
     let onRemove: () -> Void
@@ -45,7 +47,9 @@ struct TagChip: View {
 
 // MARK: - Flow Layout
 
+/// Custom `Layout` that wraps child views into multiple rows like CSS `flex-wrap`.
 struct FlowLayout: Layout {
+    /// Horizontal and vertical gap between adjacent views.
     var spacing: CGFloat
 
     init(spacing: CGFloat = 8) {

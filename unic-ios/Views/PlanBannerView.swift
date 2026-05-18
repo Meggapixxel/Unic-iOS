@@ -4,14 +4,18 @@ import SwiftUI
 
 // MARK: - Plan ViewModel (used in MainScreen)
 
+/// MVVM view model that fetches the active plan from Firebase and tracks whether the banner has been dismissed.
 @MainActor
 final class PlanViewModel: ObservableObject {
+    /// The currently active plan, or `nil` if no plan is running.
     @Published var activePlan: Plan?
+    /// Whether the user has dismissed the banner for this session.
     @Published var isDismissed = false
 
     private let service = FirebaseService.shared
     private var tasks: [Task<Void, Never>] = []
 
+    /// Starts an async task to fetch the active plan; subsequent calls before the task completes are tracked.
     func load() {
         let task = Task {
             do {
@@ -21,11 +25,13 @@ final class PlanViewModel: ObservableObject {
         tasks.append(task)
     }
 
+    /// Cancels all in-flight tasks (call on view disappear or deinit).
     func cancel() {
         tasks.forEach { $0.cancel() }
         tasks.removeAll()
     }
 
+    /// `true` when there is an active plan and the user has not dismissed the banner.
     var shouldShow: Bool {
         guard let plan = activePlan, plan.isActive else { return false }
         return !isDismissed
@@ -34,6 +40,7 @@ final class PlanViewModel: ObservableObject {
 
 // MARK: - Plan Banner View (MVVM — used in MainScreen)
 
+/// Collapsible plan banner driven by `PlanViewModel`; hides itself when dismissed or when no plan is active.
 struct PlanBannerView: View {
     @ObservedObject var viewModel: PlanViewModel
     @State private var isExpanded = false
@@ -49,9 +56,11 @@ struct PlanBannerView: View {
 
 // MARK: - Plan Banner View (TCA — used in MainView)
 
+/// TCA-backed variant of the plan banner; reads plan state from a `PlanBannerFeature` store.
 struct TCAPlankBannerView: View {
     let store: StoreOf<PlanBannerFeature>
     @State private var isExpanded = false
+    /// Local dismissal flag; not persisted, resets when the view is recreated.
     @State private var isDismissed = false
 
     var body: some View {
@@ -66,6 +75,7 @@ struct TCAPlankBannerView: View {
 
 // MARK: - Shared content
 
+/// Internal banner body shared between `PlanBannerView` and `TCAPlankBannerView`.
 private struct _PlanBannerContent: View {
     let plan: Plan
     @Binding var isExpanded: Bool

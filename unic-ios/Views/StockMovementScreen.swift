@@ -2,13 +2,18 @@ import SwiftUI
 
 // MARK: - Picker Target
 
+/// Identifies which item the product picker was triggered for, distinguishing regular rows from bundle components.
 private enum PickerTarget {
+    /// A regular (non-bundle) movement item identified by its draft `id`.
     case regularItem(UUID)
+    /// A component within a bundle section, identified by section and item IDs.
     case bundleComponent(sectionId: UUID, itemId: UUID)
 }
 
 // MARK: - View
 
+/// Form screen for creating a stock movement tied to an invoice, driven by `StockMovementViewModel`.
+/// Displays regular item rows and optional bundle sections, with a product picker sheet.
 struct StockMovementScreen: View {
     @StateObject private var viewModel: StockMovementViewModel
     @Binding var isPresented: Bool
@@ -16,11 +21,13 @@ struct StockMovementScreen: View {
     @State private var showProductPicker = false
     @State private var pickerTarget: PickerTarget?
 
+    /// Convenience initializer that creates a `StockMovementViewModel` from a `PendingMovement`.
     init(pending: PendingMovement, isPresented: Binding<Bool>) {
         _viewModel = StateObject(wrappedValue: StockMovementViewModel(pending: pending))
         self._isPresented = isPresented
     }
 
+    /// Initializer used by `StockMovementBridgeView` (TCA), which pre-builds the view model.
     init(viewModel: StockMovementViewModel, isPresented: Binding<Bool>) {
         _viewModel = StateObject(wrappedValue: viewModel)
         self._isPresented = isPresented
@@ -78,6 +85,7 @@ struct StockMovementScreen: View {
 
     // MARK: - Product Picker Handler
 
+    /// Updates the correct item when a product is selected from the picker, based on `pickerTarget`.
     private func handleProductPicked(_ item: FlexiBeeCenikItem) {
         guard let target = pickerTarget else { return }
         switch target {
@@ -149,8 +157,10 @@ struct StockMovementScreen: View {
 
 // MARK: - Row
 
+/// Editable row for a single stock-movement item showing the product name, code, and quantity field.
 private struct MovementItemRow: View {
     @Binding var item: StockMovementItemDraft
+    /// Called when the user taps the product-search button to open the picker.
     let onPickProduct: () -> Void
 
     var body: some View {

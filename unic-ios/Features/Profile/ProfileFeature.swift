@@ -3,11 +3,13 @@
 import ComposableArchitecture
 import Foundation
 
+/// TCA reducer for the Profile tab, managing user stats, plan history, logout, and deep navigation into sub-screens.
 @Reducer
 struct ProfileFeature {
 
     // MARK: - Path
 
+    /// All screens reachable via the profile navigation stack.
     @Reducer
     enum Path {
         case userActivity(UserActivityFeature)
@@ -23,12 +25,16 @@ struct ProfileFeature {
 
     // MARK: - State
 
+    /// State for the profile tab and its navigation stack.
     @ObservableState
     struct State: Equatable {
         var currentUser: AppUser
+        /// Activity log entries used to compute in-plan KPIs.
         var activityEntries: [UserActivityEntry] = []
+        /// Previously completed plan periods shown in the history section.
         var planHistory: [UserPlanHistoryEntry] = []
         var path: StackState<Path.State> = StackState()
+        /// Controls visibility of the logout confirmation dialog.
         var showLogoutConfirm: Bool = false
 
         // Permissions (resolved at onLoad)
@@ -36,20 +42,24 @@ struct ProfileFeature {
         var canViewUsers: Bool = false
         var canManagePlans: Bool = false
 
+        /// - Parameter currentUser: The authenticated user whose profile is displayed.
         init(currentUser: AppUser) {
             self.currentUser = currentUser
         }
 
+        /// Number of salons visited within the active plan period.
         var salonsInPlan: Int {
             guard let plan = currentUser.activePlan else { return 0 }
             return activityEntries.filter { $0.timestamp >= plan.startDate && $0.timestamp <= plan.endDate }.count
         }
 
+        /// Number of test-drive activities recorded within the active plan period.
         var testDrivesInPlan: Int {
             guard let plan = currentUser.activePlan else { return 0 }
             return activityEntries.filter { $0.timestamp >= plan.startDate && $0.timestamp <= plan.endDate && $0.status == .testDrive }.count
         }
 
+        /// Number of salons first contacted during the active plan period (not previously contacted before the plan started).
         var newClientsInPlan: Int {
             guard let plan = currentUser.activePlan else { return 0 }
             let contactedStatuses: Set<SalonStatus> = [.contacted, .testDrive, .demoScheduled, .ordered]
@@ -66,6 +76,7 @@ struct ProfileFeature {
             return inPlanContacted.filter { !prePlanContacted.contains($0) }.count
         }
 
+        /// Number of salons re-contacted during the active plan period that were already contacted before it started.
         var returningClientsInPlan: Int {
             guard let plan = currentUser.activePlan else { return 0 }
             let contactedStatuses: Set<SalonStatus> = [.contacted, .testDrive, .demoScheduled, .ordered]
@@ -85,16 +96,21 @@ struct ProfileFeature {
 
     // MARK: - Action
 
+    /// Actions dispatched by the profile screen and its sub-navigation.
     enum Action: BindableAction {
         case binding(BindingAction<State>)
+        /// Loads permissions, refreshes the current user, and fetches activity and plan history.
         case onLoad
         case activityLoaded([UserActivityEntry])
         case planHistoryLoaded([UserPlanHistoryEntry])
+        /// Shows the logout confirmation dialog.
         case logoutTapped
+        /// Signs out the current user after confirmation.
         case logoutConfirmed
         case navigateToActivity
         case navigateToSales
         case navigateToUsers
+        /// Navigates to the full ranked-clients list, built from cached FlexiBee invoices.
         case navigateToClients
         case navigateToPlans
         case path(StackActionOf<Path>)

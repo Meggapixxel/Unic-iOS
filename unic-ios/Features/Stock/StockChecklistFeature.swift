@@ -4,8 +4,10 @@ import Foundation
 
 // MARK: - Checklist Item
 
+/// A single article-code entry in the stock checklist with an adjustable quantity.
 struct StockChecklistItem: Identifiable, Equatable {
     let id: UUID
+    /// FlexiBee article code used to identify the product.
     let code: String
     let name: String
     var quantity: Int
@@ -20,17 +22,23 @@ struct StockChecklistItem: Identifiable, Equatable {
 
 // MARK: - StockChecklistFeature
 
+/// TCA feature for building a stock checklist by barcode scanning, with quantity adjustment and JSON export.
 @Reducer
 struct StockChecklistFeature {
+    /// Observable state for the stock checklist screen.
     @ObservableState
     struct State: Equatable {
+        /// Items currently in the checklist, keyed by their UUID.
         var items: IdentifiedArrayOf<StockChecklistItem> = []
+        /// `true` while the barcode scanner sheet is shown.
         var showScanner: Bool = false
         var isLoading: Bool = false
         var errorMessage: String?
 
+        /// Sum of all item quantities in the checklist.
         var totalQuantity: Int { items.reduce(0) { $0 + $1.quantity } }
 
+        /// Pretty-printed JSON array suitable for pasting into FlexiBee or another system.
         var jsonPayload: String {
             let entries: [[String: Any]] = items.map { ["article": $0.code, "quantity": $0.quantity] }
             guard let data = try? JSONSerialization.data(withJSONObject: entries, options: .prettyPrinted),
@@ -42,10 +50,14 @@ struct StockChecklistFeature {
     enum Action {
         case onLoad
         case loaded([StockChecklistItem])
+        /// Increments the quantity of the item with the given article code.
         case increment(String)
+        /// Decrements the quantity of the item with the given article code, removing it when it reaches zero.
         case decrement(String)
         case scanTapped
+        /// Sent when the camera scanner successfully reads a barcode string.
         case barcodeScanned(String)
+        /// Sent with the result of looking up the scanned barcode in the FlexiBee stock index.
         case barcodeSearchCompleted(Result<StockChecklistItem?, Error>)
         case dismiss
         case scannerDismissed
@@ -148,6 +160,9 @@ struct StockChecklistFeature {
     }
 }
 
+/// Strips all non-alphanumeric characters from a string and uppercases the result for barcode comparison.
+/// - Parameter s: The raw article code or barcode string to normalise.
+/// - Returns: An uppercase alphanumeric-only string.
 nonisolated private func normalize(_ s: String) -> String {
     s.replacingOccurrences(of: #"[^A-Za-z0-9]+"#, with: "", options: .regularExpression)
      .uppercased()

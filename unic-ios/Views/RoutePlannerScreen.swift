@@ -9,6 +9,7 @@ import SwiftUI
 import MapKit
 import IdentifiedCollections
 
+/// Two-phase modal screen: first the user selects salons (list or map), then sees the optimized route on a map.
 struct RoutePlannerScreen: View {
     @StateObject private var viewModel: RouteViewModel
 
@@ -304,6 +305,7 @@ struct RoutePlannerScreen: View {
 
 // MARK: - Route Stat Badge
 
+/// Small vertical badge displaying a route statistic (distance, time, or stop count).
 struct RouteStatBadge: View {
     let title: String
     let value: String
@@ -328,7 +330,9 @@ struct RouteStatBadge: View {
 
 // MARK: - Route Stop Chip
 
+/// Horizontally scrollable chip showing a stop's order number, name, and a remove button.
 struct RouteStopChip: View {
+    /// 1-based position in the route.
     let index: Int
     let salon: Salon
     let onRemove: () -> Void

@@ -1,27 +1,41 @@
 import ComposableArchitecture
 import Foundation
 
+/// TCA reducer for the post-login splash/loading screen that preloads salon data before entering the main interface.
 @Reducer
 struct WelcomeFeature {
+    /// State for the welcome/loading phase.
     @ObservableState
     struct State: Equatable {
+        /// The freshly authenticated user shown in the greeting.
         let user: AppUser
+        /// Salons fetched in the background to hand off to ``MainFeature``.
         var salons: IdentifiedArrayOf<Salon> = []
+        /// True once the Firebase fetch has completed (success or failure).
         var isDataReady = false
+        /// True once the minimum splash display time has elapsed.
         var minTimePassed = false
 
+        /// Whether both data and minimum display time are satisfied, allowing entry to the main screen.
         var canProceed: Bool { isDataReady && minTimePassed }
     }
 
+    /// Actions handled by the welcome feature.
     enum Action {
+        /// Starts the parallel data-fetch and minimum-time effects.
         case onAppear
+        /// Fired when salon data has been successfully fetched from Firebase.
         case dataLoaded(IdentifiedArrayOf<Salon>)
+        /// Fired when the Firebase fetch fails; the feature proceeds with an empty salon list.
         case dataFailed
+        /// Fired when the minimum splash display duration has elapsed.
         case minTimeElapsed
         case delegate(Delegate)
 
+        /// Delegate actions surfaced to the parent ``AppFeature``.
         @CasePathable
         enum Delegate: Equatable {
+            /// Both readiness conditions are met; carry the user and preloaded salons into `MainFeature`.
             case readyToEnter(AppUser, IdentifiedArrayOf<Salon>)
         }
     }

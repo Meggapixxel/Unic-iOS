@@ -8,19 +8,23 @@ import Combine
 
 // MARK: - Model
 
+/// A single active test-drive, combining a salon's latest status-history entry with deadline logic.
 struct TestDriveEntry: Identifiable {
     let id: String           // salonId
     let salon: Salon
+    /// The timestamp of the latest status-history entry that triggered the test drive.
     let date: Date
     let note: String?
     let createdBy: String?
 
+    /// Computed deadline based on `testDriveStartDate` (or `date`) plus the configured duration.
     @MainActor var deadline: Date {
         let start = salon.testDriveStartDate ?? date
         let days = FirebaseService.shared.testDriveDuration
         return Calendar.current.date(byAdding: .day, value: days, to: start) ?? start
     }
 
+    /// Color coding: red when overdue or due today, orange when one day away, secondary otherwise.
     @MainActor var deadlineColor: Color {
         let days = Calendar.current.dateComponents([.day], from: Date(), to: deadline).day ?? 0
         if days < 0 { return .red }
@@ -29,6 +33,7 @@ struct TestDriveEntry: Identifiable {
         return .secondary
     }
 
+    /// The first line of the note (comma-separated article codes), or `nil` if empty.
     var articleLine: String? {
         guard let note, !note.isEmpty else { return nil }
         // First line of note contains articles (comma-separated)
@@ -36,6 +41,7 @@ struct TestDriveEntry: Identifiable {
         return firstLine.nilIfEmpty
     }
 
+    /// Everything after the first line of the note (free-text comment), or `nil` if absent.
     var commentLine: String? {
         let lines = note?.components(separatedBy: "\n") ?? []
         guard lines.count > 1 else { return nil }
@@ -46,8 +52,11 @@ struct TestDriveEntry: Identifiable {
 
 // MARK: - View
 
+/// List screen showing active test drives with deadline badges and an optional notifications-disabled banner.
 struct TestDriveScreen: View {
+    /// The full salon array from which test-drive entries are derived.
     let salons: [Salon]
+    /// Called when the user taps a row, passing the corresponding salon for navigation.
     let onSalonTapped: (Salon) -> Void
 
     @StateObject private var viewModel = TestDriveViewModel()

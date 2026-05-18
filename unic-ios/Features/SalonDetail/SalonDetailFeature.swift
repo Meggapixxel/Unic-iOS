@@ -4,11 +4,13 @@ import ComposableArchitecture
 import Foundation
 import IdentifiedCollections
 
+/// TCA feature managing the salon detail screen: status changes, form editing, history, and deletion.
 @Reducer
 struct SalonDetailFeature {
 
     // MARK: - Destination
 
+    /// All modal presentations that can be shown from the salon detail screen.
     @Reducer
     struct Destination {
         @ObservableState
@@ -37,16 +39,22 @@ struct SalonDetailFeature {
 
     // MARK: - State
 
+    /// Observable state for the salon detail screen.
     @ObservableState
     struct State: Equatable {
+        /// The salon being displayed; updated in place when edits are saved.
         var salon: Salon
+        /// Full status history loaded when the history sheet is opened.
         var statusHistory: IdentifiedArrayOf<StatusHistoryEntry> = []
+        /// Most recent status history entry, shown inline on the detail screen.
         var latestEntry: StatusHistoryEntry?
         var isLoadingHistory = false
         var isSaving = false
+        /// Set to `true` just before `@Dependency(\.dismiss)` is called so parent can react.
         var shouldDismiss = false
         var canEdit: Bool = false
         var canDelete: Bool = false
+        /// `true` for admin users who may edit or delete status history entries.
         var canEditHistory: Bool = false
         @Presents var destination: Destination.State?
 
@@ -55,6 +63,7 @@ struct SalonDetailFeature {
             self.latestEntry = salon.latestStatusEntry
         }
 
+        /// The salon's current pipeline status derived from the stored value.
         var currentStatus: SalonStatus { salon.statusEnum }
     }
 
@@ -245,6 +254,9 @@ struct SalonDetailFeature {
         .ifLet(\.$destination, action: \.destination) { Destination() }
     }
 
+    /// Fetches the full status history for a salon and dispatches the result.
+    /// - Parameter salonId: The Firestore document ID of the salon.
+    /// - Returns: An effect sending `.historyLoaded` on success or `.failed` on error.
     private func loadHistory(salonId: String) -> Effect<Action> {
         let firebase = firebase
         return .run { [firebase] send in
@@ -260,20 +272,29 @@ struct SalonDetailFeature {
 
 // MARK: - AddStatusFeature
 
+/// TCA feature for the "Add Status" sheet, including location capture and optional article / demo-date selection.
 @Reducer
 struct AddStatusFeature {
+    /// Observable state for the add-status form.
     @ObservableState
     struct State: Equatable {
         var salonId: String
+        /// The salon's status at the time the sheet was opened.
         var currentStatus: SalonStatus
         var currentUserId: String
+        /// Status chosen by the user in the picker.
         var selectedStatus: SalonStatus
         var note: String = ""
+        /// Scheduled demo date, used only when `selectedStatus == .demoScheduled`.
         var selectedDate: Date
+        /// Earliest selectable demo date (tomorrow).
         var minScheduledDate: Date
         var isSaving = false
+        /// `true` when location could not be obtained; triggers an alert.
         var locationError: Bool = false
+        /// Article codes chosen for a test-drive entry.
         var selectedArticleCodes: [String] = []
+        /// Stock items used to populate the article picker.
         var stockItems: [FlexiBeeStockItem] = []
 
         init(salonId: String, currentStatus: SalonStatus, currentUserId: String) {
@@ -293,6 +314,7 @@ struct AddStatusFeature {
         case binding(BindingAction<State>)
         case onLoad
         case saveTapped
+        /// Sent after the entry has been persisted; `updatedSalon` may carry a refreshed salon.
         case entryAdded(StatusHistoryEntry, updatedSalon: Salon?)
         case failed(String)
         case locationErrorDismissed
@@ -374,13 +396,17 @@ struct AddStatusFeature {
 
 // MARK: - StatusHistoryFeature
 
+/// Child feature that models the status history list; actual data loading is delegated to the parent via action forwarding.
 @Reducer
 struct StatusHistoryFeature {
+    /// Observable state for the status history sheet.
     @ObservableState
     struct State: Equatable {
         var salonId: String
+        /// Chronologically ordered status history entries.
         var history: IdentifiedArrayOf<StatusHistoryEntry> = []
         var isLoading: Bool = false
+        /// `true` for admins who may edit or delete entries.
         var canEditHistory: Bool = false
 
         init(
@@ -397,9 +423,12 @@ struct StatusHistoryFeature {
     }
 
     enum Action {
+        /// Requests history to be loaded; actual fetch is handled by the parent reducer.
         case loadHistory
         case historyLoaded([StatusHistoryEntry])
+        /// Requests a note update; handled by the parent reducer.
         case updateNote(String, entryId: String)
+        /// Requests deletion of an entry; handled by the parent reducer.
         case deleteEntry(String)
         case failed(String)
     }
