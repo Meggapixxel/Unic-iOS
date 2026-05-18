@@ -147,6 +147,7 @@ struct ProfileFeature {
         case binding(BindingAction<State>)
         /// Loads permissions, refreshes the current user, and fetches activity and plan history.
         case onLoad
+        case userRefreshed(AppUser?)
         case activityLoaded([UserActivityEntry])
         case planHistoryLoaded([UserPlanHistoryEntry])
         /// Shows the logout confirmation dialog.
@@ -185,6 +186,7 @@ struct ProfileFeature {
                 let userId = state.currentUser.id
                 return .run { send in
                     let refreshed = await auth.refreshCurrentUser()
+                    await send(.userRefreshed(refreshed))
                     let hasPlan = refreshed?.activePlan != nil
                     if hasPlan {
                         let entries = (try? await firebase.fetchUserActivity(userId)) ?? []
@@ -193,6 +195,10 @@ struct ProfileFeature {
                     let history = (try? await firebase.fetchPlanHistory(userId)) ?? []
                     await send(.planHistoryLoaded(history))
                 }
+
+            case let .userRefreshed(user):
+                if let user { state.currentUser = user }
+                return .none
 
             case let .activityLoaded(entries):
                 state.activityEntries = entries
