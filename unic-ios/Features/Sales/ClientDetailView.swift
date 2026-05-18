@@ -103,11 +103,11 @@ struct ClientDetailView: View {
     private var statsSection: some View {
         Section {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                KPICard(value: czk(store.totalRevenue),   label: String.sales_kpi_revenue, icon: "banknote",              color: .blue)
-                KPICard(value: czk(store.paidRevenue),    label: String.sales_kpi_paid,    icon: "checkmark.circle.fill", color: .green)
-                KPICard(value: czk(store.unpaidRevenue),  label: String.sales_kpi_unpaid,  icon: "clock",                 color: .orange)
+                KPICard(value: (store.totalRevenue).czk,   label: String.sales_kpi_revenue, icon: "banknote",              color: .blue)
+                KPICard(value: (store.paidRevenue).czk,    label: String.sales_kpi_paid,    icon: "checkmark.circle.fill", color: .green)
+                KPICard(value: (store.unpaidRevenue).czk,  label: String.sales_kpi_unpaid,  icon: "clock",                 color: .orange)
                 KPICard(
-                    value: store.overdueCount > 0 ? czk(store.overdueRevenue) : "—",
+                    value: store.overdueCount > 0 ? (store.overdueRevenue).czk : "—",
                     label: String.sales_kpi_overdue,
                     icon: "exclamationmark.circle.fill",
                     color: store.overdueCount > 0 ? .red : .secondary

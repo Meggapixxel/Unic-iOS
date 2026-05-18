@@ -341,7 +341,7 @@ struct ProductDetailView: View {
         HStack {
             Label(String.product_sell_price, systemImage: "tag")
             Spacer()
-            Text(czk(store.product.sellPriceVAT)).font(.body.bold())
+            Text((store.product.sellPriceVAT).czk).font(.body.bold())
         }
     }
 
@@ -349,7 +349,7 @@ struct ProductDetailView: View {
         HStack {
             Label(String.product_purchase_price, systemImage: "cart")
             Spacer()
-            Text(czk(store.product.purchasePrice)).foregroundStyle(.secondary)
+            Text(store.product.formattedPurchasePrice).foregroundStyle(.secondary)
         }
     }
 

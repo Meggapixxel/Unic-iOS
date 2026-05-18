@@ -13,23 +13,37 @@ struct FlexiBeeCenikItem: Identifiable, Codable {
     let id: String
     let code: String
     let name: String?
-    private let priceWithVATRaw: String?
-    private let purchasePriceRaw: String?
+    let sellPriceVAT: Double
+    let purchasePrice: Double
 
     enum CodingKeys: String, CodingKey, CaseIterable {
         case id
-        case code             = "kod"
-        case name             = "nazev"
-        case priceWithVATRaw  = "cenaZaklVcDph"
-        case purchasePriceRaw = "nakupCena"
+        case code          = "kod"
+        case name          = "nazev"
+        case sellPriceVAT  = "cenaZaklVcDph"
+        case purchasePrice = "nakupCena"
     }
 
     static var apiFields: String { CodingKeys.allCases.map(\.rawValue).joined(separator: ",") }
 
-    var sellPriceVAT: Double  { Double(priceWithVATRaw  ?? "") ?? 0 }
-    var purchasePrice: Double { Double(purchasePriceRaw ?? "") ?? 0 }
-    var displayName: String   { name ?? code }
-    var unitPrice: String     { sellPriceVAT > 0 ? String(format: "%.0f", sellPriceVAT) : "" }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id            = try c.decode(String.self, forKey: .id)
+        code          = try c.decode(String.self, forKey: .code)
+        name          = try c.decodeIfPresent(String.self, forKey: .name)
+        sellPriceVAT  = Self.flexiDouble(c, key: .sellPriceVAT)
+        purchasePrice = Self.flexiDouble(c, key: .purchasePrice)
+    }
+
+    // FlexiBee returns numeric fields as either JSON strings ("281.0") or numbers (2.34)
+    private static func flexiDouble(_ c: KeyedDecodingContainer<CodingKeys>, key: CodingKeys) -> Double {
+        if let d = try? c.decode(Double.self, forKey: key) { return d }
+        if let s = try? c.decode(String.self, forKey: key), let d = Double(s) { return d }
+        return 0
+    }
+
+    var displayName: String { name ?? code }
+    var unitPrice: String   { sellPriceVAT > 0 ? String(format: "%.0f", sellPriceVAT) : "" }
 
     var marginPercent: Double? {
         guard purchasePrice > 0, sellPriceVAT > 0 else { return nil }
@@ -111,12 +125,13 @@ struct FlexiBeeStockItem: Identifiable, Hashable {
     static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 
-    var code:          String  { card.code }
-    var name:          String  { card.name }
-    var quantity:      Double  { card.quantity }
-    var sellPriceVAT:  Double  { price?.sellPriceVAT  ?? 0 }
-    var purchasePrice: Double  { price?.purchasePrice ?? 0 }
-    var marginPercent: Double? { price?.marginPercent }
+    var code:                   String  { card.code }
+    var name:                   String  { card.name }
+    var quantity:               Double  { card.quantity }
+    var sellPriceVAT:           Double  { price?.sellPriceVAT  ?? 0 }
+    var purchasePrice:          Double  { price?.purchasePrice ?? 0 }
+    var marginPercent:          Double? { price?.marginPercent }
+    var formattedPurchasePrice: String  { purchasePrice.eur }
 
     var productLine: String {
         guard let range = name.range(of: " - ") else { return "—" }

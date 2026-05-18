@@ -527,7 +527,8 @@ final class FlexiBeeService: ObservableObject {
             FlexiBeeResponse<FlexiBeeCenikWrapper>.self,
             path: "/cenik.json",
             fields: FlexiBeeCenikItem.apiFields,
-            limit: 2000
+            limit: 2000,
+            detail: true
         )
         return response.winstrom.cenik
     }

@@ -125,7 +125,7 @@ struct InvoiceDetailView: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 6) {
-                    Text(czk(store.invoice.total))
+                    Text((store.invoice.total).czk)
                         .font(.title3.bold())
                     HStack(spacing: 4) {
                         if let method = store.invoice.paymentMethod {
@@ -263,7 +263,7 @@ struct InvoiceDetailView: View {
                         .textCase(.uppercase)
                     Spacer()
                     if !store.isLoading, !store.lineItems.isEmpty {
-                        Text(czk(store.lineItems.reduce(0) { $0 + $1.total }))
+                        Text((store.lineItems.reduce(0) { $0 + $1.total }).czk)
                             .font(.caption.bold())
                     }
                 }
@@ -290,7 +290,7 @@ struct InvoiceDetailView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text(czk(item.total)).font(.callout.bold())
+                Text((item.total).czk).font(.callout.bold())
                 if !item.productCode.isEmpty {
                     Image(systemName: "chevron.right")
                         .font(.caption2)

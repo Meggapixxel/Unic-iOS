@@ -76,9 +76,9 @@ private struct AnalyticsSection: View {
                 if store.hasPeriodData {
                     // KPI cards
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        KPICard(value: czk(store.totalRevenue),  label: String.sales_kpi_revenue, icon: "banknote",              color: .blue)
-                        KPICard(value: czk(store.paidRevenue),   label: String.sales_kpi_paid,    icon: "checkmark.circle.fill", color: .green)
-                        KPICard(value: czk(store.unpaidRevenue), label: String.sales_kpi_unpaid,  icon: "clock",                 color: .orange)
+                        KPICard(value: (store.totalRevenue).czk,  label: String.sales_kpi_revenue, icon: "banknote",              color: .blue)
+                        KPICard(value: (store.paidRevenue).czk,   label: String.sales_kpi_paid,    icon: "checkmark.circle.fill", color: .green)
+                        KPICard(value: (store.unpaidRevenue).czk, label: String.sales_kpi_unpaid,  icon: "clock",                 color: .orange)
                         KPICard(
                             value: "\(store.overdueCount)",
                             label: String.sales_kpi_overdue,
@@ -111,7 +111,7 @@ private struct AnalyticsSection: View {
                                         rank: idx + 1,
                                         title: client.name,
                                         subtitle: nil,
-                                        value: czk(client.revenue),
+                                        value: (client.revenue).czk,
                                         isLast: idx == clients.count - 1,
                                         showChevron: true
                                     )
@@ -261,7 +261,7 @@ struct InvoiceRowView: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Text(czk(invoice.total)).font(.subheadline.bold())
+                    Text((invoice.total).czk).font(.subheadline.bold())
                 }
             }
             Image(systemName: "chevron.right")
@@ -508,7 +508,7 @@ struct AllTopClientsView: View {
                             .frame(width: 20, alignment: .leading)
                         Text(client.name).font(.callout).lineLimit(2)
                         Spacer()
-                        Text(czk(client.revenue)).font(.callout.bold())
+                        Text((client.revenue).czk).font(.callout.bold())
                         Image(systemName: "chevron.right")
                             .font(.caption2)
                             .foregroundStyle(.tertiary)

@@ -183,7 +183,7 @@ struct InvoiceFormScreen: View {
                 Text(String.create_invoice_items)
                 Spacer()
                 if viewModel.grandTotal > 0 {
-                    Text(czk(viewModel.grandTotal))
+                    Text((viewModel.grandTotal).czk)
                         .font(.caption.bold())
                         .textCase(nil)
                         .foregroundStyle(.primary)
@@ -261,7 +261,7 @@ private struct LineItemRow: View {
                 }
                 Spacer()
                 if item.total > 0 {
-                    Text(czk(item.total))
+                    Text((item.total).czk)
                         .font(.title3.bold())
                         .foregroundStyle(.primary)
                 }
@@ -485,7 +485,7 @@ struct ProductPickerForInvoiceView: View {
                             }
                             Spacer()
                             if item.sellPriceVAT > 0 {
-                                Text(czk(item.sellPriceVAT))
+                                Text((item.sellPriceVAT).czk)
                                     .font(.callout.bold())
                                     .foregroundStyle(.secondary)
                             }

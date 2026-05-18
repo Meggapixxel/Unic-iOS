@@ -20,22 +20,6 @@ func planDateString(_ date: Date) -> String {
     _planDayMonthYearFmt.string(from: date)
 }
 
-// MARK: - CZK Formatter
-
-private extension NumberFormatter {
-    static let czk: NumberFormatter = {
-        let fmt = NumberFormatter()
-        fmt.numberStyle = .currency
-        fmt.currencyCode = "CZK"
-        fmt.maximumFractionDigits = 0
-        return fmt
-    }()
-}
-
-func czk(_ amount: Double) -> String {
-    guard amount > 0 else { return "—" }
-    return NumberFormatter.czk.string(from: NSNumber(value: amount)) ?? "\(Int(amount)) Kč"
-}
 
 // MARK: - Sync Date Label
 
@@ -867,7 +851,7 @@ struct StockWithPriceRow: View {
     }
 
     private var priceInfo: some View {
-        Text(czk(item.sellPriceVAT))
+        Text((item.sellPriceVAT).czk)
             .font(.caption.bold())
             .foregroundStyle(.primary)
     }
