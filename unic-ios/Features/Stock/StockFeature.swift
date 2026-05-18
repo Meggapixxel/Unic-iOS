@@ -20,6 +20,7 @@ struct StockFeature {
 
         // Backing store — populated on load/sync
         var allStock: [FlexiBeeStockItem] = []
+        var collapsedSections: Set<String> = []
 
         var filteredStock: [FlexiBeeStockItem] {
             let q = searchText.lowercased()
@@ -78,6 +79,9 @@ struct StockFeature {
         case syncCompleted([FlexiBeeStockItem], Date?)
         case syncFailed(String)
         case destinationChanged
+        case toggleSection(String)
+        case collapseAll([String])
+        case expandAll
         case openProduct(FlexiBeeStockItem)
         case openChecklist
         case openBarcodeScanner
@@ -135,6 +139,22 @@ struct StockFeature {
             case let .syncFailed(msg):
                 state.isLoading = false
                 state.errorMessage = msg
+                return .none
+
+            case let .toggleSection(line):
+                if state.collapsedSections.contains(line) {
+                    state.collapsedSections.remove(line)
+                } else {
+                    state.collapsedSections.insert(line)
+                }
+                return .none
+
+            case let .collapseAll(lines):
+                state.collapsedSections = Set(lines)
+                return .none
+
+            case .expandAll:
+                state.collapsedSections = []
                 return .none
 
             case .destinationChanged:

@@ -34,6 +34,7 @@ struct SalesFeature {
         // Backing data
         var allInvoices: [FlexiBeeInvoice] = []
         var allMovementItems: [FlexiBeeStockMovementItem] = []
+        var stockNameLookup: [String: String] = [:]
 
         init() {
             @Dependency(\.date) var date
@@ -92,7 +93,7 @@ struct SalesFeature {
                 .compactMap { code, items -> (code: String, name: String, quantity: Double)? in
                     guard !code.isEmpty else { return nil }
                     let qty = items.reduce(0) { $0 + $1.quantityIssued }
-                    let name = items.first?.productName ?? code
+                    let name = stockNameLookup[code] ?? items.first?.productName ?? code
                     return (code: code, name: name, quantity: qty)
                 }
                 .sorted { $0.quantity > $1.quantity }
@@ -192,14 +193,18 @@ struct SalesFeature {
                     state.allInvoices = cached
                     state.allMovementItems = flexiBeeClient.salesMovementItems()
                 }
+                state.stockNameLookup = Dictionary(
+                    uniqueKeysWithValues: flexiBeeClient.stockWithPrices().map { ($0.code, $0.productName) }
+                )
                 let flexiBeeClient = flexiBeeClient
                 return .run { [flexiBeeClient] send in
                     await flexiBeeClient.loadIfNeeded()
-                    let (invoices, movements, syncDate) = await MainActor.run {
-                        (flexiBeeClient.invoices(), flexiBeeClient.salesMovementItems(), flexiBeeClient.lastSyncDate())
+                    let (invoices, movements, stock, syncDate) = await MainActor.run {
+                        (flexiBeeClient.invoices(), flexiBeeClient.salesMovementItems(), flexiBeeClient.stockWithPrices(), flexiBeeClient.lastSyncDate())
                     }
                     await send(.syncCompleted(invoices, syncDate))
                     await send(.binding(.set(\.allMovementItems, movements)))
+                    await send(.binding(.set(\.stockNameLookup, Dictionary(uniqueKeysWithValues: stock.map { ($0.code, $0.productName) }))))
                 }
 
             case .forceSync:
@@ -207,11 +212,12 @@ struct SalesFeature {
                 let flexiBeeClient = flexiBeeClient
                 return .run { [flexiBeeClient] send in
                     await flexiBeeClient.forceSync()
-                    let (invoices, movements, syncDate) = await MainActor.run {
-                        (flexiBeeClient.invoices(), flexiBeeClient.salesMovementItems(), flexiBeeClient.lastSyncDate())
+                    let (invoices, movements, stock, syncDate) = await MainActor.run {
+                        (flexiBeeClient.invoices(), flexiBeeClient.salesMovementItems(), flexiBeeClient.stockWithPrices(), flexiBeeClient.lastSyncDate())
                     }
                     await send(.syncCompleted(invoices, syncDate))
                     await send(.binding(.set(\.allMovementItems, movements)))
+                    await send(.binding(.set(\.stockNameLookup, Dictionary(uniqueKeysWithValues: stock.map { ($0.code, $0.productName) }))))
                 }
 
             case let .syncCompleted(invoices, date):
@@ -452,6 +458,7 @@ struct ClientDetailFeature {
 
     enum Action {
         case onLoad
+        case firmLoaded(FlexiBeeFirm?)
         case invoiceTapped(FlexiBeeInvoice)
         case newInvoiceTapped
         case editClientTapped
@@ -465,9 +472,16 @@ struct ClientDetailFeature {
         Reduce { state, action in
             switch action {
             case .onLoad:
-                let first = state.invoices.first
-                state.clientIc = first?.clientIc.flatMap { $0.isEmpty ? nil : $0 }
-                state.clientDic = first?.clientDic.flatMap { $0.isEmpty ? nil : $0 }
+                guard let code = state.clientCode else { return .none }
+                let flexiBeeClient = flexiBeeClient
+                return .run { [flexiBeeClient] send in
+                    let firm = try? await flexiBeeClient.fetchFirm(code)
+                    await send(.firmLoaded(firm))
+                }
+
+            case let .firmLoaded(firm):
+                state.clientIc  = firm?.ic?.nilIfEmpty
+                state.clientDic = firm?.dic?.nilIfEmpty
                 return .none
             case .newInvoiceTapped:
                 state.destination = .createInvoice(

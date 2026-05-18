@@ -70,9 +70,13 @@ final class FlexiBeeService: ObservableObject {
         return Date().timeIntervalSince(last) < Self.cacheTTL
     }
 
-    var stockWithPrices: IdentifiedArrayOf<FlexiBeeStockItem> {
+    @Published private(set) var cachedStockWithPrices: IdentifiedArrayOf<FlexiBeeStockItem> = []
+
+    var stockWithPrices: IdentifiedArrayOf<FlexiBeeStockItem> { cachedStockWithPrices }
+
+    private func rebuildStockWithPrices() {
         let priceByCode = Dictionary(uniqueKeysWithValues: priceList.map { ($0.code, $0) })
-        return IdentifiedArray(uniqueElements: stock.map { FlexiBeeStockItem(card: $0, price: priceByCode[$0.code]) })
+        cachedStockWithPrices = IdentifiedArray(uniqueElements: stock.map { FlexiBeeStockItem(card: $0, price: priceByCode[$0.code]) })
     }
 
     // MARK: - Load
@@ -86,14 +90,16 @@ final class FlexiBeeService: ObservableObject {
         await fetchAll()
     }
 
-    /// Lightweight refresh after invoice mutations — only reloads invoices + line items,
+    /// Lightweight refresh after invoice mutations — only reloads invoices + line items + receipts,
     /// leaving stock/prices/movements untouched. Use instead of forceSync() for create/update/delete.
     func refreshInvoicesData() async {
         lineItemsByInvoiceId = [:]
         async let invoicesTask  = fetchInvoices()
         async let itemsTask     = fetchInvoiceItems()
+        async let receiptsTask  = prefetchReceiptCache()
         do { invoices     = try await invoicesTask } catch { }
         do { invoiceItems = try await itemsTask    } catch { }
+        await receiptsTask
         saveToDisk()
     }
 
@@ -141,6 +147,7 @@ final class FlexiBeeService: ObservableObject {
         async let invoicesTask      = fetchInvoices()
         async let itemsTask         = fetchInvoiceItems()
         async let movementsTask     = fetchStockMovementItems()
+        async let receiptsTask      = prefetchReceiptCache()
 
         var errors: [String] = []
 
@@ -149,6 +156,9 @@ final class FlexiBeeService: ObservableObject {
         do { invoices            = try await invoicesTask  } catch { }
         do { invoiceItems        = try await itemsTask     } catch { }
         do { salesMovementItems  = try await movementsTask } catch { }
+        await receiptsTask
+
+        rebuildStockWithPrices()
 
         if errors.isEmpty {
             let now = Date()
@@ -307,15 +317,25 @@ final class FlexiBeeService: ObservableObject {
 
     func fetchCashReceiptId(for invoiceNumber: String) async throws -> String? {
         if cashReceiptCache.keys.contains(invoiceNumber) { return cashReceiptCache[invoiceNumber]! }
-        let response = try await fetch(
+        // Cache miss — prefetch wasn't ready yet, fetch just this one
+        await prefetchReceiptCache()
+        return cashReceiptCache[invoiceNumber] ?? nil
+    }
+
+    private func prefetchReceiptCache() async {
+        guard let response = try? await fetch(
             FlexiBeeResponse<CashReceiptListWrapper>.self,
             path: "/pokladni-pohyb.json",
             fields: "id,popis",
-            limit: 200
-        )
-        let found = response.winstrom.items.first(where: { $0.popis?.contains(invoiceNumber) == true })?.id
-        cashReceiptCache[invoiceNumber] = found
-        return found
+            limit: 500
+        ) else { return }
+        for item in response.winstrom.items {
+            guard let popis = item.popis else { continue }
+            // popis = "Platba za VF1-0004/2026" — extract invoice number after last space
+            if let invoiceNumber = popis.components(separatedBy: " ").last {
+                cashReceiptCache[invoiceNumber] = item.id
+            }
+        }
     }
 
     // Creates a STANDARD stock movement (vydej). typDokl must be "code:STANDARD".
@@ -467,40 +487,39 @@ final class FlexiBeeService: ObservableObject {
     }
 
     func fetchStockMovementItems() async throws -> [FlexiBeeStockMovementItem] {
-        let headers = try await fetch(
+        // Request 1: all movement headers
+        async let headersReq = fetch(
             FlexiBeeResponse<FlexiBeeStockMovementWrapper>.self,
             path: "/skladovy-pohyb.json",
             fields: "id,kod,popis",
             limit: 1000
         )
-        movementHeaders = headers.winstrom.movements
-        let outflows = headers.winstrom.movements.filter { $0.code.hasPrefix("S-") }
-        guard !outflows.isEmpty else { return [] }
+        // Request 2: all movement items (doklSklad requires detail=full for the parent code)
+        async let itemsReq = fetch(
+            FlexiBeeResponse<FlexiBeeStockMovementItemsWrapper>.self,
+            path: "/skladovy-pohyb-polozka.json",
+            fields: FlexiBeeStockMovementItem.bulkApiFields,
+            limit: 5000,
+            detail: true
+        )
 
-        return await withTaskGroup(of: (String, [FlexiBeeStockMovementItem]).self) { group in
-            for movement in outflows {
-                let id = movement.id
-                group.addTask {
-                    do {
-                        let response = try await self.fetch(
-                            FlexiBeeResponse<FlexiBeeStockMovementItemsWrapper>.self,
-                            path: "/skladovy-pohyb/\(id)/skladovy-pohyb-polozka.json",
-                            fields: FlexiBeeStockMovementItem.apiFields,
-                            limit: 500
-                        )
-                        return (id, response.winstrom.items.filter { $0.isValid })
-                    } catch {
-                        return (id, [])
-                    }
-                }
-            }
-            var all: [FlexiBeeStockMovementItem] = []
-            for await (id, items) in group {
-                self.movementItemsById[id] = items
-                all.append(contentsOf: items)
-            }
-            return all
+        let (headersResp, itemsResp) = try await (headersReq, itemsReq)
+        movementHeaders = headersResp.winstrom.movements
+
+        // Build code→id lookup from headers
+        let codeToId = Dictionary(uniqueKeysWithValues: movementHeaders.map { ($0.code, $0.id) })
+
+        // Group items by parent movement ID using the doklSklad field
+        var byMovementId: [String: [FlexiBeeStockMovementItem]] = [:]
+        var outflowItems: [FlexiBeeStockMovementItem] = []
+        for item in itemsResp.winstrom.items where item.isValid {
+            guard let code = item.movementCode,
+                  let movementId = codeToId[code] else { continue }
+            byMovementId[movementId, default: []].append(item)
+            if code.hasPrefix("S-") { outflowItems.append(item) }
         }
+        movementItemsById.merge(byMovementId) { _, new in new }
+        return outflowItems
     }
 
     func fetchPriceList() async throws -> [FlexiBeeCenikItem] {
@@ -508,8 +527,7 @@ final class FlexiBeeService: ObservableObject {
             FlexiBeeResponse<FlexiBeeCenikWrapper>.self,
             path: "/cenik.json",
             fields: FlexiBeeCenikItem.apiFields,
-            limit: 2000,
-            detail: true
+            limit: 2000
         )
         return response.winstrom.cenik
     }

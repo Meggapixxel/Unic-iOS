@@ -101,8 +101,25 @@ struct StockView: View {
         }
         
         ToolbarItem(placement: .topBarTrailing) {
-            Button { store.send(.openCatalog) } label: {
-                Image(systemName: "book.pages").imageScale(.large)
+            HStack(spacing: 16) {
+                if store.sortField == .section {
+                    Button {
+                        let allLines = store.groupedStock.map(\.line)
+                        if store.collapsedSections.count == allLines.count {
+                            store.send(.expandAll)
+                        } else {
+                            store.send(.collapseAll(allLines))
+                        }
+                    } label: {
+                        Image(systemName: store.collapsedSections.count == store.groupedStock.count
+                              ? "rectangle.expand.vertical"
+                              : "rectangle.compress.vertical")
+                            .imageScale(.large)
+                    }
+                }
+                Button { store.send(.openCatalog) } label: {
+                    Image(systemName: "book.pages").imageScale(.large)
+                }
             }
         }
     }
@@ -125,19 +142,31 @@ private struct StockListContent: View {
                 }
                 if store.sortField == .section {
                     ForEach(store.groupedStock, id: \.line) { group in
-                        Section {
+                        Section(isExpanded: Binding(
+                            get: { !store.collapsedSections.contains(group.line) },
+                            set: { _ in store.send(.toggleSection(group.line)) }
+                        )) {
                             ForEach(group.items) { item in
                                 stockItemButton(item)
                             }
                         } header: {
-                            Text("\(group.line) (\(group.items.count))")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .glassBackgroundCapsule()
-                                .textCase(nil)
-                                .padding(.vertical, 4)
+                            let collapsed = store.collapsedSections.contains(group.line)
+                            HStack(spacing: 4) {
+                                Text("\(group.line) (\(group.items.count))")
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2.bold())
+                                    .rotationEffect(.degrees(collapsed ? 0 : 90))
+                                    .animation(.easeInOut(duration: 0.2), value: collapsed)
+                            }
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .glassBackgroundCapsule()
+                            .textCase(nil)
+                            .padding(.vertical, 4)
+                            .contentShape(Rectangle())
+                            .onTapGesture { store.send(.toggleSection(group.line)) }
                         }
                     }
                 } else {

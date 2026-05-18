@@ -129,12 +129,14 @@ struct FlexiBeeStockItem: Identifiable, Hashable {
         return parts.last
     }
 
-    var productName: String {
-        let parts = name.components(separatedBy: " - ")
-        guard parts.count >= 2 else { return name }
-        let withoutLine = parts.dropFirst()
-        return (parts.count >= 3 ? withoutLine.dropLast() : withoutLine).joined(separator: " - ")
-    }
+    var productName: String { _parsedProductName(name) }
+}
+
+private func _parsedProductName(_ raw: String) -> String {
+    let parts = raw.components(separatedBy: " - ")
+    guard parts.count >= 2 else { return raw }
+    let withoutLine = parts.dropFirst()
+    return (parts.count >= 3 ? withoutLine.dropLast() : withoutLine).joined(separator: " - ")
 }
 
 struct FlexiBeeErrorResponse: Decodable {
@@ -304,7 +306,7 @@ struct FlexiBeeInvoiceItem: Identifiable, Codable, Equatable {
     var quantity:    Double  { Double(quantityRaw ?? "") ?? 0 }
     var total:       Double  { Double(totalRaw    ?? "") ?? 0 }
     var productCode: String  { codeRaw ?? "" }
-    var productName: String  { nameRaw ?? codeRaw ?? "—" }
+    var productName: String  { _parsedProductName(nameRaw ?? codeRaw ?? "—") }
     var isValid:     Bool    { !productCode.isEmpty && quantity > 0 }
 
     // Canonical price list code (CFB/220), used for stock matching
@@ -348,29 +350,35 @@ struct FlexiBeeStockMovementWrapper: Decodable, Sendable {
 
 struct FlexiBeeStockMovementItem: Identifiable, Codable, Equatable, Sendable {
     let id:              String
-    private let codeRaw: String?
-    private let nameRaw: String?
-    private let dateRaw: String?
-    private let quantityRaw: String?
-    private let totalRaw:    String?
-    private let cenikRef:    String?  // "code:CFB/220" — canonical price-list code
+    private let codeRaw:         String?
+    private let nameRaw:         String?
+    private let dateRaw:         String?
+    private let quantityRaw:     String?
+    private let totalRaw:        String?
+    private let cenikRef:        String?  // "code:CFB/220" — canonical price-list code
+    let movementCodeRef:         String?  // "code:S-0001/2026" — parent movement (doklSklad, requires detail=full)
 
-    enum CodingKeys: String, CodingKey, CaseIterable {
+    enum CodingKeys: String, CodingKey {
         case id
-        case codeRaw     = "kod"
-        case nameRaw     = "nazev"
-        case dateRaw     = "datVyst"
-        case quantityRaw = "mnozMj"
-        case totalRaw    = "sumCelkem"
-        case cenikRef    = "cenik"
+        case codeRaw         = "kod"
+        case nameRaw         = "nazev"
+        case dateRaw         = "datVyst"
+        case quantityRaw     = "mnozMj"
+        case totalRaw        = "sumCelkem"
+        case cenikRef        = "cenik"
+        case movementCodeRef = "doklSklad"
     }
 
-    static var apiFields: String {
-        CodingKeys.allCases.map(\.rawValue).joined(separator: ",")
+    static let apiFields    = "id,kod,nazev,datVyst,mnozMj,sumCelkem,cenik"
+    static let bulkApiFields = apiFields + ",doklSklad"
+
+    var movementCode: String? {
+        guard let ref = movementCodeRef, ref.hasPrefix("code:") else { return nil }
+        return String(ref.dropFirst(5))
     }
 
     var productCode:    String { codeRaw ?? "" }
-    var productName:    String { nameRaw ?? codeRaw ?? "—" }
+    var productName:    String { _parsedProductName(nameRaw ?? codeRaw ?? "—") }
     var quantityIssued: Double { Double(quantityRaw ?? "") ?? 0 }
     var total:          Double { Double(totalRaw ?? "") ?? 0 }
 
