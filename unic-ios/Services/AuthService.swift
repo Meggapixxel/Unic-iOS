@@ -158,9 +158,7 @@ final class AuthService: ObservableObject {
         let roleString = data["role"] as? String ?? ""
         let role       = UserRole(rawValue: roleString) ?? .sales
 
-        let userActivePlan = try? await fetchCurrentPlanEntry(uid: uid)
-
-        let user = AppUser(id: uid, firstName: firstName, lastName: lastName, role: role, activePlan: userActivePlan)
+        let user = AppUser(id: uid, firstName: firstName, lastName: lastName, role: role)
         AppLogger.log(.debug, "Auth", "User loaded: \(firstName) \(lastName), role=\(roleString)")
 
         do {
@@ -170,32 +168,6 @@ final class AuthService: ObservableObject {
             // JSONEncoder failure for a simple Codable struct is unexpected; session remains active
         }
         currentUser = user
-    }
-
-    private func fetchCurrentPlanEntry(uid: String) async throws -> UserActivePlan? {
-        let snapshot = try await db.collection("users").document(uid).collection("planHistory")
-            .order(by: "startDate", descending: true)
-            .limit(to: 1)
-            .getDocuments()
-        guard let doc = snapshot.documents.first else {
-            AppLogger.log(.debug, "Auth", "No plan entry found for uid=\(uid)")
-            return nil
-        }
-        let d = doc.data()
-        guard let startTs = d["startDate"] as? Timestamp,
-              let endTs   = d["endDate"]   as? Timestamp
-        else { return nil }
-        let plan = UserActivePlan(
-            id: doc.documentID,
-            startDate: startTs.dateValue(),
-            endDate: endTs.dateValue(),
-            targetSalons: d["targetSalons"] as? Int,
-            targetSalonsPerDay: d["targetSalonsPerDay"] as? Int ?? 0,
-            targetTestDrives: d["targetTestDrives"] as? Int,
-            targetTestDrivesPerDay: d["targetTestDrivesPerDay"] as? Int ?? 0
-        )
-        AppLogger.log(.debug, "Auth", "Plan entry loaded: \(doc.documentID), active=\(plan.isActive), past=\(plan.isPast)")
-        return plan
     }
 
 }

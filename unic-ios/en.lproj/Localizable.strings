@@ -384,6 +384,7 @@
 "plans_nav_title" = "Plans";
 "plans_empty" = "No active plans";
 "plan_add" = "New Plan";
+"plan_edit" = "Edit Plan";
 "plan_title_placeholder" = "Plan title";
 "plan_description_placeholder" = "Task description...";
 "plan_start_date" = "Start Date";
@@ -398,6 +399,9 @@
 "plan_untitled" = "Untitled Plan";
 "plan_ended" = "Ended";
 "plan_default" = "Default Plan";
+"plan_status_active" = "Active";
+"plan_status_done" = "Done";
+"plan_status_upcoming" = "Upcoming";
 "profile_plans_progress" = "Plans & Progress";
 "plan_history" = "History";
 "stat_new_clients" = "New";

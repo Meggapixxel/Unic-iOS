@@ -384,6 +384,7 @@
 "plans_nav_title" = "Планы";
 "plans_empty" = "Нет активных планов";
 "plan_add" = "Новый план";
+"plan_edit" = "Редактировать план";
 "plan_title_placeholder" = "Заголовок плана";
 "plan_description_placeholder" = "Описание задачи...";
 "plan_start_date" = "Дата начала";
@@ -398,6 +399,9 @@
 "plan_untitled" = "Без названия";
 "plan_ended" = "Завершён";
 "plan_default" = "Шаблон плана";
+"plan_status_active" = "Активный";
+"plan_status_done" = "Завершён";
+"plan_status_upcoming" = "Запланирован";
 "profile_plans_progress" = "Планы и прогресс";
 "plan_history" = "История";
 "stat_new_clients" = "Новые";

@@ -9,6 +9,12 @@ struct PlansView: View {
         List {
             ForEach(store.plans, id: \.id) { plan in
                 PlanRow(plan: plan)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if store.canManagePlans {
+                            store.send(.editTapped(plan))
+                        }
+                    }
                     .swipeActions(edge: .trailing) {
                         if store.canManagePlans {
                             Button(role: .destructive) {
@@ -16,12 +22,6 @@ struct PlansView: View {
                             } label: {
                                 Label(String.plan_delete, systemImage: "trash")
                             }
-                            Button {
-                                store.send(.editTapped(plan))
-                            } label: {
-                                Image(systemName: "pencil")
-                            }
-                            .tint(.orange)
                         }
                     }
             }
@@ -119,7 +119,7 @@ struct PlansFormView: View {
                     }
                 }
             }
-            .navigationTitle(String.plan_add)
+            .navigationTitle(store.isEditing ? String.plan_edit : String.plan_add)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -220,11 +220,11 @@ private struct PlanRow: View {
     @ViewBuilder
     private var statusBadge: some View {
         if plan.isActive {
-            Text("● Active").font(.caption.bold()).foregroundStyle(.green)
+            Text("● \(String.plan_status_active)").font(.caption.bold()).foregroundStyle(.green)
         } else if plan.isPast {
-            Text("✓ Done").font(.caption).foregroundStyle(.secondary)
+            Text("✓ \(String.plan_status_done)").font(.caption).foregroundStyle(.secondary)
         } else {
-            Text("◌ Upcoming").font(.caption).foregroundStyle(.orange)
+            Text("◌ \(String.plan_status_upcoming)").font(.caption).foregroundStyle(.orange)
         }
     }
 }

@@ -398,6 +398,10 @@ extension String {
     static var plan_ended:                String { String(localized: "plan_ended") }
     static var plan_history:              String { String(localized: "plan_history") }
     static var plan_default:              String { String(localized: "plan_default") }
+    static var plan_edit:                 String { String(localized: "plan_edit") }
+    static var plan_status_active:        String { String(localized: "plan_status_active") }
+    static var plan_status_done:          String { String(localized: "plan_status_done") }
+    static var plan_status_upcoming:      String { String(localized: "plan_status_upcoming") }
     static var plan_banner_title:         String { String(localized: "plan_banner_title") }
     static var plan_active_until:         String { String(localized: "plan_active_until") }
     static var profile_plans_progress:    String { String(localized: "profile_plans_progress") }

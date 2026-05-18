@@ -26,8 +26,8 @@ import Foundation
 ///   then calls `firebase.deletePlan(id)` asynchronously. On failure, sends `.failed`.
 /// - `.cancelDelete` — Clears `pendingDeletePlan` without deleting.
 /// - `.destination(.presented(.form(.saved(plan))))` — Form sheet dismissed after a successful save.
-///   Upserts the plan locally (prepends if new, replaces in-place if editing). If the plan is **new**,
-///   also calls `firebase.setPlanForAllUsers(plan)` to assign it to every user.
+///   Upserts the plan locally (prepends if new, replaces in-place if editing). Always calls
+///   `firebase.setPlanForAllUsers(plan)` to propagate the plan (create or edit) to every user.
 ///
 /// **Navigation (`Destination`)**
 /// Uses a single `@Presents` destination:
@@ -39,8 +39,8 @@ import Foundation
 /// - `firebase.fetchDefaultPlan()` — Firebase document read on `.onLoad`; failure is suppressed.
 /// - `firebase.deletePlan(id)` — Firebase document deletion on `.deleteConfirmed`.
 /// - `firebase.savePlan(plan)` — Firebase write inside `PlansFormFeature` on `.saveTapped`.
-/// - `firebase.setPlanForAllUsers(plan)` — Firebase batch write triggered after a new plan is saved;
-///   assigns the new plan to every user document. Errors are silently ignored.
+/// - `firebase.setPlanForAllUsers(plan)` — Firebase batch write triggered after every plan save (create or edit);
+///   propagates the plan to every user document. Errors are silently ignored.
 @Reducer
 struct PlansFeature {
 
@@ -169,14 +169,12 @@ struct PlansFeature {
                 return .none
 
             case .destination(.presented(.form(.saved(let plan)))):
-                let isNew = !state.plans.contains(where: { $0.id == plan.id })
                 state.destination = nil
                 if let idx = state.plans.firstIndex(where: { $0.id == plan.id }) {
                     state.plans[idx] = plan
                 } else {
                     state.plans.insert(plan, at: 0)
                 }
-                guard isNew else { return .none }
                 let firebase = firebase
                 return .run { [firebase] _ in
                     try? await firebase.setPlanForAllUsers(plan)
@@ -221,6 +219,8 @@ struct PlansFormFeature {
     struct State: Equatable {
         /// The plan being edited; `nil` means a new plan is being created.
         var existing: Plan?
+        /// `true` when the form was opened with an existing plan (edit mode).
+        var isEditing: Bool
         var startDate: Date
         var endDate: Date
         var salonsPerDay: Int = 0
@@ -242,6 +242,7 @@ struct PlansFormFeature {
             @Dependency(\.date) var date
             let now = date()
             self.existing = existing
+            self.isEditing = existing != nil
             startDate   = existing?.startDate ?? now
             endDate     = existing?.endDate ?? Calendar.current.date(byAdding: .day, value: 7, to: now) ?? now
             salonsPerDay     = existing?.targetSalonsPerDay ?? defaults?.targetSalonsPerDay ?? 0
@@ -265,6 +266,7 @@ struct PlansFormFeature {
 
     @Dependency(\.firebaseClient) var firebase
     @Dependency(\.authClient) var auth
+    @Dependency(\.dismiss) var dismiss
 
     var body: some Reducer<State, Action> {
         BindingReducer()
@@ -299,7 +301,9 @@ struct PlansFormFeature {
                 state.isSaving = false
                 state.error = msg
                 return .none
-            case .cancelTapped, .binding:
+            case .cancelTapped:
+                return .run { _ in await dismiss() }
+            case .binding:
                 return .none
             }
         }

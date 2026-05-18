@@ -384,6 +384,7 @@
 "plans_nav_title" = "Плани";
 "plans_empty" = "Немає активних планів";
 "plan_add" = "Новий план";
+"plan_edit" = "Редагувати план";
 "plan_title_placeholder" = "Заголовок плану";
 "plan_description_placeholder" = "Опис задачі...";
 "plan_start_date" = "Дата початку";
@@ -398,6 +399,9 @@
 "plan_untitled" = "Без назви";
 "plan_ended" = "Завершено";
 "plan_default" = "Шаблон плану";
+"plan_status_active" = "Активний";
+"plan_status_done" = "Завершено";
+"plan_status_upcoming" = "Заплановано";
 "profile_plans_progress" = "Плани та прогрес";
 "plan_history" = "Історія";
 "stat_new_clients" = "Нові";

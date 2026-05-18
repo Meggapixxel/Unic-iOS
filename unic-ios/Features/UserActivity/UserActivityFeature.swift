@@ -1,122 +1,81 @@
 import ComposableArchitecture
 import Foundation
 
-/// Manages the user-activity screen, which displays a filtered timeline of a single user's
-/// status-history entries with per-status counts, supporting single-day and custom date-range modes.
+/// Manages the user-activity screen, showing a horizontally pageable timeline of plan periods.
+/// Each page displays rings, status counts, and a day-by-day timeline for one plan period.
+/// Tapping the plan header opens the edit form when the user has `canManagePlans` permission.
 ///
 /// **Entry point**
-/// `.onLoad` is dispatched by the view's `.task` or `.onAppear`. It checks
-/// `auth.canDeleteActivity()` to set the deletion permission flag, then fetches all activity
-/// entries for the user from Firebase.
+/// `.onLoad` is dispatched by the view's `.task`. It resolves permissions, then fetches activity
+/// entries and plan periods concurrently.
 ///
 /// **Key action flows**
-/// - `.onLoad` — sets `isLoading = true`, calls `firebase.fetchUserActivity(userId)`, and
-///   dispatches `.loaded` on success or `.failed` on error.
-/// - `.loaded(_)` — stores entries sorted newest-first into `state.entries`; `filteredEntries`,
-///   `filteredStatusCounts`, and `filteredEntriesByDay` recompute automatically as derived state.
-/// - Binding on `groupMode`, `selectedDate`, `customStart`, `customEnd` — all handled by
-///   `BindingReducer`; no effects fired; the computed `filteredEntries` updates reactively.
-/// - `.deleteTapped(_)` — currently a no-op in the reducer; the view is expected to show a
-///   confirmation UI before dispatching `.deleteConfirmed`.
-/// - `.deleteConfirmed(_)` — removes the entry from `state.entries` optimistically, then calls
-///   `firebase.deleteActivityEntry(entry)` in the background; errors surface via `.failed`.
-/// - `.navigateToPlans` — no-op in this reducer; intended for the parent to intercept and push
-///   or present a Plans screen.
-/// - `.failed(_)` — clears `isLoading` and stores the error message for display.
-///
-/// **Navigation** — no `Path` or `Destination`; this feature is a leaf screen pushed onto the
-/// `UsersFeature` navigation stack. `.navigateToPlans` is a hook for the parent.
-///
-/// **Side effects**
-/// - `firebase.fetchUserActivity(userId)` — Firestore read on `.onLoad`.
-/// - `firebase.deleteActivityEntry(entry)` — Firestore write on `.deleteConfirmed`.
+/// - `.onLoad` — resolves `canManagePlans`, sets `isLoading = true`, fires two concurrent requests:
+///   1. `firebase.fetchUserActivity(userId)` → `.loaded`.
+///   2. `firebase.fetchAllPlanPeriods(userId)` → `.planPeriodsLoaded`.
+/// - `.loaded(_)` — stores entries sorted newest-first; clears `isLoading`.
+/// - `.planPeriodsLoaded(_)` — stores plan periods; `entriesByPlan` recomputes automatically.
+/// - `.editPlanTapped(period)` — converts `PlanPeriod` to `Plan` and presents the edit form sheet.
+/// - `.destination(.presented(.editPlan(.saved(plan))))` — updates the local plan period and
+///   calls `firebase.setPlanForAllUsers` to propagate the change.
+/// - `.deleteConfirmed(_)` — removes entry optimistically, then calls `firebase.deleteActivityEntry`.
 @Reducer
 struct UserActivityFeature {
-    /// Observable state for the user activity screen.
+
+    // MARK: - Destination
+
+    @Reducer
+    enum Destination {
+        case editPlan(PlansFormFeature)
+    }
+
+    // MARK: - State
+
     @ObservableState
     struct State: Equatable {
-        /// The user whose activity is being displayed.
         var user: AppUser
-        /// All status history entries belonging to the user, sorted newest-first.
         var entries: [UserActivityEntry] = []
+        var planPeriods: [PlanPeriod] = []
+        var selectedPlanIndex: Int = 0
         var isLoading = false
         var error: String?
-        /// Whether the date control shows a single-day picker or a custom range selector.
-        var groupMode: GroupMode = .day
-        /// The day selected in single-day mode.
-        var selectedDate: Date
-        /// Start of the custom date range.
-        var customStart: Date
-        /// End of the custom date range.
-        var customEnd: Date
-        /// The maximum selectable date (today at load time).
-        var maxDate: Date
         var canDeleteActivity = false
-
-        /// Controls how dates are grouped in the activity view.
-        enum GroupMode: String, CaseIterable, Equatable {
-            case day, custom
-        }
+        var canManagePlans = false
+        @Presents var destination: Destination.State?
 
         init(user: AppUser) {
-            @Dependency(\.date) var date
-            let now = date()
             self.user = user
-            self.maxDate = now
-            self.selectedDate = now
-            self.customEnd = now
-            self.customStart = Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now
         }
 
-        /// Entries that fall within the currently active date selection (single day or custom range).
-        var filteredEntries: [UserActivityEntry] {
-            let cal = Calendar(identifier: .gregorian)
-            switch groupMode {
-            case .day:
-                return entries.filter { cal.isDate($0.timestamp, inSameDayAs: selectedDate) }
-            case .custom:
-                let start = cal.startOfDay(for: customStart)
-                let end = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: customEnd)) ?? customEnd
-                return entries.filter { $0.timestamp >= start && $0.timestamp < end }
+        /// Activity entries split by plan period, parallel to `planPeriods`.
+        var entriesByPlan: [[UserActivityEntry]] {
+            planPeriods.map { period in
+                entries
+                    .filter { $0.timestamp >= period.startDate && $0.timestamp <= period.endDate }
+                    .sorted { $0.timestamp > $1.timestamp }
             }
-        }
-
-        /// Count of filtered entries grouped by their salon status.
-        var filteredStatusCounts: [SalonStatus: Int] {
-            Dictionary(grouping: filteredEntries, by: \.status).mapValues(\.count)
-        }
-
-        /// Filtered entries grouped by calendar day (start-of-day key), sorted newest-first.
-        var filteredEntriesByDay: [(Date, [UserActivityEntry])] {
-            let cal = Calendar(identifier: .gregorian)
-            let grouped = Dictionary(grouping: filteredEntries) { cal.startOfDay(for: $0.timestamp) }
-            return grouped.sorted { $0.key > $1.key }
-        }
-
-        /// Human-readable label for the currently selected day (e.g. "Today", "Yesterday", "3 May").
-        var dayLabel: String {
-            let cal = Calendar(identifier: .gregorian)
-            if cal.isDateInToday(selectedDate) { return "Today" }
-            if cal.isDateInYesterday(selectedDate) { return "Yesterday" }
-            let fmt = DateFormatter()
-            fmt.dateFormat = "d MMM"
-            return fmt.string(from: selectedDate)
         }
     }
 
-    @CasePathable
+    // MARK: - Action
+
     enum Action: BindableAction {
         case binding(BindingAction<State>)
         case onLoad
         case loaded([UserActivityEntry])
+        case planPeriodsLoaded([PlanPeriod])
         case failed(String)
-        case deleteTapped(UserActivityEntry)
+        case editPlanTapped(PlanPeriod)
         case deleteConfirmed(UserActivityEntry)
-        case navigateToPlans
+        case destination(PresentationAction<Destination.Action>)
     }
+
+    // MARK: - Dependencies
 
     @Dependency(\.firebaseClient) var firebase
     @Dependency(\.authClient) var auth
+
+    // MARK: - Body
 
     var body: some Reducer<State, Action> {
         BindingReducer()
@@ -124,11 +83,10 @@ struct UserActivityFeature {
             switch action {
             case .binding:
                 return .none
-            case .navigateToPlans:
-                return .none
 
             case .onLoad:
                 state.canDeleteActivity = auth.canDeleteActivity()
+                state.canManagePlans = auth.canManagePlans()
                 state.isLoading = true
                 let userId = state.user.id
                 let firebase = firebase
@@ -139,17 +97,59 @@ struct UserActivityFeature {
                     } catch {
                         await send(.failed(error.localizedDescription))
                     }
+                    let periods = (try? await firebase.fetchAllPlanPeriods(userId)) ?? []
+                    await send(.planPeriodsLoaded(periods))
                 }
+
             case .loaded(let entries):
                 state.isLoading = false
                 state.entries = entries.sorted { $0.timestamp > $1.timestamp }
                 return .none
+
+            case .planPeriodsLoaded(let periods):
+                state.planPeriods = periods
+                return .none
+
             case .failed(let msg):
                 state.isLoading = false
                 state.error = msg
                 return .none
-            case .deleteTapped:
+
+            case .editPlanTapped(let period):
+                guard state.canManagePlans else { return .none }
+                let plan = Plan(
+                    id: period.id,
+                    startDate: period.startDate,
+                    endDate: period.endDate,
+                    createdBy: auth.currentUser()?.id ?? "",
+                    targetSalons: period.targetSalons,
+                    targetSalonsPerDay: period.targetSalonsPerDay,
+                    targetTestDrives: period.targetTestDrives,
+                    targetTestDrivesPerDay: period.targetTestDrivesPerDay
+                )
+                state.destination = .editPlan(PlansFormFeature.State(existing: plan))
                 return .none
+
+            case .destination(.presented(.editPlan(.saved(let plan)))):
+                state.destination = nil
+                if let idx = state.planPeriods.firstIndex(where: { $0.id == (plan.id ?? "") }) {
+                    let old = state.planPeriods[idx]
+                    state.planPeriods[idx] = PlanPeriod(
+                        id: plan.id ?? old.id,
+                        startDate: plan.startDate,
+                        endDate: plan.endDate,
+                        targetSalons: plan.targetSalons,
+                        targetSalonsPerDay: plan.targetSalonsPerDay,
+                        targetTestDrives: plan.targetTestDrives,
+                        targetTestDrivesPerDay: plan.targetTestDrivesPerDay,
+                        result: old.result
+                    )
+                }
+                let firebase = firebase
+                return .run { [firebase] _ in
+                    try? await firebase.setPlanForAllUsers(plan)
+                }
+
             case .deleteConfirmed(let entry):
                 state.entries.removeAll { $0.id == entry.id }
                 let firebase = firebase
@@ -160,7 +160,13 @@ struct UserActivityFeature {
                         await send(.failed(error.localizedDescription))
                     }
                 }
-}
+
+            case .destination:
+                return .none
+            }
         }
+        .ifLet(\.$destination, action: \.destination)
     }
 }
+
+extension UserActivityFeature.Destination.State: Equatable {}

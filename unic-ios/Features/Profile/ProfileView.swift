@@ -31,9 +31,9 @@ struct ProfileView: View {
                 }
 
                 // MARK: Progress
-                if store.currentUser.activePlan != nil {
+                if store.activePlan != nil {
                     Section {
-                        if let plan = store.currentUser.activePlan {
+                        if let plan = store.activePlan {
                             VStack(alignment: .leading, spacing: 14) {
                                 HStack {
                                     Image(systemName: "target")
@@ -53,25 +53,71 @@ struct ProfileView: View {
                                     .font(.subheadline)
                                 }
 
-                                HStack(spacing: 28) {
-                                    if let target = plan.targetSalons, target > 0 {
-                                        RingProgressView(
-                                            value: store.salonsInPlan,
-                                            target: target,
-                                            label: String.plan_target_salons,
-                                            color: plan.isPast ? .secondary : .blue
-                                        )
+                                Group {
+                                    if store.isLoadingActivity {
+                                        HStack {
+                                            ProgressView()
+                                            Spacer()
+                                        }
+                                        .frame(height: 80)
+                                    } else {
+                                        let hasPlanRings = (plan.targetSalons ?? 0) > 0 || (plan.targetTestDrives ?? 0) > 0
+                                        let hasDayRings = plan.isActive && (plan.targetSalonsPerDay > 0 || plan.targetTestDrivesPerDay > 0)
+
+                                        VStack(alignment: .leading, spacing: 14) {
+                                            if hasPlanRings {
+                                                Text(String.plan_goal_total)
+                                                    .font(.caption.weight(.semibold))
+                                                    .foregroundStyle(.secondary)
+                                                HStack(spacing: 40) {
+                                                    if let target = plan.targetSalons, target > 0 {
+                                                        RingProgressView(
+                                                            value: store.salonsInPlan,
+                                                            target: target,
+                                                            label: String.plan_target_salons,
+                                                            color: plan.isPast ? .secondary : .blue
+                                                        )
+                                                    }
+                                                    if let target = plan.targetTestDrives, target > 0 {
+                                                        RingProgressView(
+                                                            value: store.testDrivesInPlan,
+                                                            target: target,
+                                                            label: String.plan_target_test_drives,
+                                                            color: plan.isPast ? .secondary : .green
+                                                        )
+                                                    }
+                                                }
+                                                .frame(maxWidth: .infinity, alignment: .center)
+                                            }
+
+                                            if hasDayRings {
+                                                Text(String.activity_today)
+                                                    .font(.caption.weight(.semibold))
+                                                    .foregroundStyle(.secondary)
+                                                HStack(spacing: 40) {
+                                                    if plan.targetSalonsPerDay > 0 {
+                                                        RingProgressView(
+                                                            value: store.salonsToday,
+                                                            target: plan.targetSalonsPerDay,
+                                                            label: String.plan_target_salons,
+                                                            color: .blue
+                                                        )
+                                                    }
+                                                    if plan.targetTestDrivesPerDay > 0 {
+                                                        RingProgressView(
+                                                            value: store.testDrivesToday,
+                                                            target: plan.targetTestDrivesPerDay,
+                                                            label: String.plan_target_test_drives,
+                                                            color: .green
+                                                        )
+                                                    }
+                                                }
+                                                .frame(maxWidth: .infinity, alignment: .center)
+                                            }
+                                        }
                                     }
-                                    if let target = plan.targetTestDrives, target > 0 {
-                                        RingProgressView(
-                                            value: store.testDrivesInPlan,
-                                            target: target,
-                                            label: String.plan_target_test_drives,
-                                            color: plan.isPast ? .secondary : .green
-                                        )
-                                    }
-                                    Spacer()
                                 }
+                                .animation(.easeInOut(duration: 0.35), value: store.isLoadingActivity)
 
                                 if store.newClientsInPlan > 0 || store.returningClientsInPlan > 0 {
                                     HStack(spacing: 20) {
@@ -90,15 +136,6 @@ struct ProfileView: View {
                                 }
                             }
                             .padding(.vertical, 4)
-                        }
-                    }
-                }
-
-                // MARK: Plan History
-                if !store.planHistory.isEmpty {
-                    Section(String.plan_history) {
-                        ForEach(store.planHistory) { entry in
-                            PlanHistoryRowView(entry: entry)
                         }
                     }
                 }

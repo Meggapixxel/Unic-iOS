@@ -2,65 +2,166 @@ import ComposableArchitecture
 import MapKit
 import SwiftUI
 
-/// Scrollable activity log for a single user, with date controls, status statistics chips, and a per-day route map.
+/// Horizontally pageable activity screen for a single user.
+/// Each page corresponds to one plan period (newest first), showing rings, status stats, and a day-by-day timeline.
 struct UserActivityView: View {
     @Bindable var store: StoreOf<UserActivityFeature>
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-
-                // MARK: Date controls
-                VStack(spacing: 10) {
-                    Picker("", selection: $store.groupMode) {
-                        Text(String.activity_group_day).tag(UserActivityFeature.State.GroupMode.day)
-                        Text(String.activity_group_custom).tag(UserActivityFeature.State.GroupMode.custom)
-                    }
-                    .pickerStyle(.segmented)
-
-                    if store.groupMode == .day {
-                        DatePicker(
-                            String.activity_group_day,
-                            selection: $store.selectedDate,
-                            in: ...store.maxDate,
-                            displayedComponents: .date
+        Group {
+            if store.isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if store.planPeriods.isEmpty {
+                ContentUnavailableView(String.activity_empty, systemImage: "clock.arrow.circlepath")
+            } else {
+                TabView(selection: $store.selectedPlanIndex) {
+                    ForEach(Array(store.planPeriods.enumerated()), id: \.offset) { index, period in
+                        PlanPeriodPageView(
+                            period: period,
+                            entries: index < store.entriesByPlan.count ? store.entriesByPlan[index] : [],
+                            canDelete: store.canDeleteActivity,
+                            canManagePlans: store.canManagePlans,
+                            onDelete: { entry in store.send(.deleteConfirmed(entry)) },
+                            onEditPlan: { store.send(.editPlanTapped(period)) }
                         )
-                        .labelsHidden()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    } else {
-                        HStack(spacing: 0) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(String.activity_from)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                DatePicker("", selection: $store.customStart, in: ...store.customEnd, displayedComponents: .date)
-                                    .labelsHidden()
-                            }
-                            Spacer()
-                            Image(systemName: "arrow.right")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text(String.activity_to)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                DatePicker("", selection: $store.customEnd, in: store.customStart...store.maxDate, displayedComponents: .date)
-                                    .labelsHidden()
-                            }
+                        .tag(index)
+                    }
+                }
+                .tabViewStyle(.page)
+                .indexViewStyle(.page(backgroundDisplayMode: .always))
+            }
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(store.user.fullName)
+        .navigationBarTitleDisplayMode(.large)
+        .overlay {
+            if store.isLoading { ProgressView() }
+        }
+        .task { store.send(.onLoad) }
+        .sheet(
+            item: $store.scope(state: \.destination?.editPlan, action: \.destination.editPlan)
+        ) { formStore in
+            PlansFormView(store: formStore)
+        }
+    }
+}
+
+// MARK: - Plan Period Page
+
+private struct PlanPeriodPageView: View {
+    let period: PlanPeriod
+    let entries: [UserActivityEntry]
+    let canDelete: Bool
+    let canManagePlans: Bool
+    let onDelete: (UserActivityEntry) -> Void
+    let onEditPlan: () -> Void
+
+    private var statusCounts: [SalonStatus: Int] {
+        Dictionary(grouping: entries, by: \.status).mapValues(\.count)
+    }
+
+    private var entriesByDay: [(Date, [UserActivityEntry])] {
+        let cal = Calendar(identifier: .gregorian)
+        let grouped = Dictionary(grouping: entries) { cal.startOfDay(for: $0.timestamp) }
+        return grouped.sorted { $0.key > $1.key }
+    }
+
+    private var salonsCount: Int { entries.count }
+    private var testDrivesCount: Int { entries.filter { $0.status == .testDrive }.count }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+
+                // MARK: Period header
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text(planPeriodString(from: period.startDate, to: period.endDate))
+                            .font(.headline)
+                        Spacer()
+                        periodBadge
+                        if canManagePlans {
+                            Image(systemName: "square.and.pencil")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
                     }
+                    Text("\(period.daysTotal) \(String.day_abbr)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 .padding(14)
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+                .contentShape(Rectangle())
+                .onTapGesture { if canManagePlans { onEditPlan() } }
 
-                // MARK: Stats
-                let counts = store.filteredStatusCounts
-                if !counts.isEmpty {
+                // MARK: Rings
+                let hasTotalRings = (period.targetSalons ?? 0) > 0 || (period.targetTestDrives ?? 0) > 0
+                let hasDayRings   = period.isActive && (period.targetSalonsPerDay > 0 || period.targetTestDrivesPerDay > 0)
+
+                if hasTotalRings || hasDayRings {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if hasTotalRings {
+                            Text(String.plan_goal_total)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            HStack(spacing: 40) {
+                                if let target = period.targetSalons, target > 0 {
+                                    RingProgressView(
+                                        value: salonsCount,
+                                        target: target,
+                                        label: String.plan_target_salons,
+                                        color: period.isPast ? .secondary : .blue
+                                    )
+                                }
+                                if let target = period.targetTestDrives, target > 0 {
+                                    RingProgressView(
+                                        value: testDrivesCount,
+                                        target: target,
+                                        label: String.plan_target_test_drives,
+                                        color: period.isPast ? .secondary : .green
+                                    )
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        }
+
+                        if hasDayRings {
+                            Text(String.activity_today)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            HStack(spacing: 40) {
+                                if period.targetSalonsPerDay > 0 {
+                                    RingProgressView(
+                                        value: todaySalons,
+                                        target: period.targetSalonsPerDay,
+                                        label: String.plan_target_salons,
+                                        color: .blue
+                                    )
+                                }
+                                if period.targetTestDrivesPerDay > 0 {
+                                    RingProgressView(
+                                        value: todayTestDrives,
+                                        target: period.targetTestDrivesPerDay,
+                                        label: String.plan_target_test_drives,
+                                        color: .green
+                                    )
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                    }
+                    .padding(14)
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+                }
+
+                // MARK: Status chips
+                if !statusCounts.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 10) {
                             ForEach(SalonStatus.allCases) { status in
-                                if let count = counts[status] {
+                                if let count = statusCounts[status] {
                                     StatChip(status: status, count: count)
                                 }
                             }
@@ -72,14 +173,14 @@ struct UserActivityView: View {
                 }
 
                 // MARK: Entries
-                if store.filteredEntriesByDay.isEmpty && !store.isLoading {
+                if entries.isEmpty {
                     ContentUnavailableView(
-                        store.entries.isEmpty ? String.activity_empty : String.activity_no_data,
-                        systemImage: store.entries.isEmpty ? "clock.arrow.circlepath" : "calendar.badge.minus"
+                        String.activity_no_data,
+                        systemImage: "calendar.badge.minus"
                     )
-                    .padding(.top, 40)
+                    .padding(.top, 20)
                 } else {
-                    ForEach(store.filteredEntriesByDay, id: \.0) { date, dayEntries in
+                    ForEach(entriesByDay, id: \.0) { date, dayEntries in
                         VStack(alignment: .leading, spacing: 8) {
                             Text(sectionHeader(date))
                                 .font(.footnote.weight(.semibold))
@@ -99,9 +200,9 @@ struct UserActivityView: View {
                                 ForEach(dayEntries) { entry in
                                     ActivityEntryCard(entry: entry)
                                         .contextMenu {
-                                            if store.canDeleteActivity {
+                                            if canDelete {
                                                 Button(role: .destructive) {
-                                                    store.send(.deleteConfirmed(entry))
+                                                    onDelete(entry)
                                                 } label: {
                                                     Label(String.delete, systemImage: "trash")
                                                 }
@@ -114,27 +215,36 @@ struct UserActivityView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 48) // space for page indicator dots
         }
-        .background(Color(.systemGroupedBackground))
-        .navigationTitle(store.user.fullName)
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { store.send(.navigateToPlans) } label: {
-                    Image(systemName: "target")
-                }
-            }
-        }
-        .overlay {
-            if store.isLoading { ProgressView() }
-        }
-        .task { store.send(.onLoad) }
     }
 
-    /// Returns a human-readable section header for the given calendar day.
-    /// - Parameter date: The start-of-day date for the section.
-    /// - Returns: "Today", "Yesterday", or a formatted weekday + date string.
+    // MARK: Helpers
+
+    private var todaySalons: Int {
+        let startOfDay = Calendar.current.startOfDay(for: Date())
+        guard let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay) else { return 0 }
+        return entries.filter { $0.timestamp >= startOfDay && $0.timestamp < endOfDay }.count
+    }
+
+    private var todayTestDrives: Int {
+        let startOfDay = Calendar.current.startOfDay(for: Date())
+        guard let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay) else { return 0 }
+        return entries.filter { $0.timestamp >= startOfDay && $0.timestamp < endOfDay && $0.status == .testDrive }.count
+    }
+
+    @ViewBuilder
+    private var periodBadge: some View {
+        if period.isActive {
+            Text("● \(String.plan_status_active)").font(.caption.bold()).foregroundStyle(.green)
+        } else if period.isPast {
+            Text("✓ \(String.plan_status_done)").font(.caption).foregroundStyle(.secondary)
+        } else {
+            Text("◌ \(String.plan_status_upcoming)").font(.caption).foregroundStyle(.orange)
+        }
+    }
+
     private func sectionHeader(_ date: Date) -> String {
         let cal = Calendar(identifier: .gregorian)
         if cal.isDateInToday(date) { return String.activity_today }
@@ -145,7 +255,6 @@ struct UserActivityView: View {
 
 // MARK: - Stat Chip
 
-/// Compact chip displaying the activity count for a single salon status, colour-coded by status.
 private struct StatChip: View {
     let status: SalonStatus
     let count: Int
@@ -169,7 +278,6 @@ private struct StatChip: View {
 
 // MARK: - Activity Entry Card
 
-/// Card view for a single activity entry showing the salon name, status badge, time, and optional note.
 private struct ActivityEntryCard: View {
     let entry: UserActivityEntry
 
@@ -217,20 +325,15 @@ private struct ActivityEntryCard: View {
 
 // MARK: - Route Map
 
-/// Non-interactive map showing sequentially numbered pins for a day's activity entries connected by a polyline.
 private struct RouteMapView: View {
-    /// Entries to display, pre-filtered to those with a non-nil coordinate, sorted oldest-first.
     let entries: [UserActivityEntry]
 
     @State private var position: MapCameraPosition = .automatic
 
-    /// Coordinates extracted from entries in chronological order.
     private var coordinates: [CLLocationCoordinate2D] {
         entries.compactMap(\.coordinate)
     }
 
-    /// Computes a map region that tightly fits all entry coordinates with padding.
-    /// - Returns: An `MKCoordinateRegion` centred on the bounding box of all coordinates.
     private func makeRegion() -> MKCoordinateRegion {
         let coords = coordinates
         guard !coords.isEmpty else {
@@ -256,11 +359,7 @@ private struct RouteMapView: View {
             ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
                 if let coord = entry.coordinate {
                     Annotation(entry.salonName, coordinate: coord) {
-                        AvatarCircle(
-                            text: "\(index + 1)",
-                            color: entry.status.color,
-                            size: 28
-                        )
+                        AvatarCircle(text: "\(index + 1)", color: entry.status.color, size: 28)
                     }
                 }
             }

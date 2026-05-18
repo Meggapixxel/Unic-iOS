@@ -52,6 +52,10 @@ struct FirebaseClient: @unchecked Sendable {
     /// Returns the default plan template used when creating new user plans.
     var fetchDefaultPlan: () async throws -> DefaultPlan? = { nil }
     // Plan History
+    /// Fetches the most recent entry from the user's `planHistory` subcollection.
+    var fetchCurrentPlan: (_ userId: String) async throws -> UserActivePlan? = { _ in nil }
+    /// Fetches all plan periods (active + completed) from the user's `planHistory` subcollection.
+    var fetchAllPlanPeriods: (_ userId: String) async throws -> [PlanPeriod] = { _ in [] }
     /// Fetches the plan history subcollection for a given user ID.
     var fetchPlanHistory: (_ userId: String) async throws -> [UserPlanHistoryEntry] = { _ in [] }
     /// Writes the given plan into the history subcollection for all users.
@@ -113,6 +117,8 @@ extension FirebaseClient: DependencyKey {
                 savePlan: { plan in try await s.savePlan(plan) },
                 deletePlan: { id in try await s.deletePlan(id: id) },
                 fetchDefaultPlan: { try await s.fetchDefaultPlan() },
+                fetchCurrentPlan: { userId in try await s.fetchCurrentPlan(userId: userId) },
+                fetchAllPlanPeriods: { userId in try await s.fetchAllPlanPeriods(userId: userId) },
                 fetchPlanHistory: { userId in try await s.fetchPlanHistory(userId: userId) },
                 setPlanForAllUsers: { plan in try await s.setPlanForAllUsers(plan: plan) },
                 fetchPromoCategories: { try await s.fetchPromoCategories() },

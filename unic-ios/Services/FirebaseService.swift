@@ -596,8 +596,7 @@ final class FirebaseService: ObservableObject {
                 id: doc.documentID,
                 firstName: d["first_name"] as? String ?? "",
                 lastName: d["last_name"] as? String ?? "",
-                role: role,
-                activePlan: nil
+                role: role
             )
         }
     }
@@ -826,6 +825,79 @@ final class FirebaseService: ObservableObject {
         }
         AppLogger.log(.debug, "Firebase", "fetchPlanHistory → \(entries.count) archived entries")
         return entries
+    }
+
+    /// Fetches all entries from the user's `planHistory` subcollection ordered newest-first.
+    /// Includes both active (no result) and completed (has result) periods.
+    /// - Parameter userId: The Firestore UID of the user.
+    /// - Returns: All `PlanPeriod` values, sorted by `startDate` descending.
+    /// - Throws: A Firestore error if the query fails.
+    func fetchAllPlanPeriods(userId: String) async throws -> [PlanPeriod] {
+        AppLogger.log(.debug, "Firebase", "fetchAllPlanPeriods: userId=\(userId)")
+        let snapshot = try await db.collection("users").document(userId).collection("planHistory")
+            .order(by: "startDate", descending: true)
+            .getDocuments()
+        let periods = snapshot.documents.compactMap { doc -> PlanPeriod? in
+            let d = doc.data()
+            guard let startTs = d["startDate"] as? Timestamp,
+                  let endTs   = d["endDate"]   as? Timestamp
+            else { return nil }
+            let result: PlanResult?
+            if let rm = d["result"] as? [String: Any],
+               let createdAtTs = rm["createdAt"] as? Timestamp {
+                result = PlanResult(
+                    salons: rm["salons"] as? Int ?? 0,
+                    testDrives: rm["testDrives"] as? Int ?? 0,
+                    createdAt: createdAtTs.dateValue()
+                )
+            } else {
+                result = nil
+            }
+            return PlanPeriod(
+                id: doc.documentID,
+                startDate: startTs.dateValue(),
+                endDate: endTs.dateValue(),
+                targetSalons: d["targetSalons"] as? Int,
+                targetSalonsPerDay: d["targetSalonsPerDay"] as? Int ?? 0,
+                targetTestDrives: d["targetTestDrives"] as? Int,
+                targetTestDrivesPerDay: d["targetTestDrivesPerDay"] as? Int ?? 0,
+                result: result
+            )
+        }
+        AppLogger.log(.debug, "Firebase", "fetchAllPlanPeriods → \(periods.count) periods")
+        return periods
+    }
+
+    /// Fetches the most recent entry from the user's `planHistory` subcollection.
+    /// Returns `nil` if the user has no plan entries at all.
+    /// - Parameter userId: The Firestore UID of the user.
+    /// - Returns: The latest `UserActivePlan`, or `nil` if none exists.
+    /// - Throws: A Firestore error if the query fails.
+    func fetchCurrentPlan(userId: String) async throws -> UserActivePlan? {
+        AppLogger.log(.debug, "Firebase", "fetchCurrentPlan: userId=\(userId)")
+        let snapshot = try await db.collection("users").document(userId).collection("planHistory")
+            .order(by: "startDate", descending: true)
+            .limit(to: 1)
+            .getDocuments()
+        guard let doc = snapshot.documents.first else {
+            AppLogger.log(.debug, "Firebase", "fetchCurrentPlan: no entry for userId=\(userId)")
+            return nil
+        }
+        let d = doc.data()
+        guard let startTs = d["startDate"] as? Timestamp,
+              let endTs   = d["endDate"]   as? Timestamp
+        else { return nil }
+        let plan = UserActivePlan(
+            id: doc.documentID,
+            startDate: startTs.dateValue(),
+            endDate: endTs.dateValue(),
+            targetSalons: d["targetSalons"] as? Int,
+            targetSalonsPerDay: d["targetSalonsPerDay"] as? Int ?? 0,
+            targetTestDrives: d["targetTestDrives"] as? Int,
+            targetTestDrivesPerDay: d["targetTestDrivesPerDay"] as? Int ?? 0
+        )
+        AppLogger.log(.debug, "Firebase", "fetchCurrentPlan → \(doc.documentID), active=\(plan.isActive), past=\(plan.isPast)")
+        return plan
     }
 
     /// Distributes a new plan to every user's `planHistory` subcollection.

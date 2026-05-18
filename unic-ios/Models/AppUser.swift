@@ -26,6 +26,23 @@ struct PlanResult: Codable, Equatable, Hashable {
     var createdAt: Date
 }
 
+/// A plan period from the user's `planHistory` subcollection — either active (no result yet) or completed.
+struct PlanPeriod: Equatable, Identifiable {
+    let id: String
+    let startDate: Date
+    let endDate: Date
+    let targetSalons: Int?
+    let targetSalonsPerDay: Int
+    let targetTestDrives: Int?
+    let targetTestDrivesPerDay: Int
+    /// `nil` while the period is still active; populated once the period closes.
+    let result: PlanResult?
+
+    var isActive: Bool { Date() >= startDate && Date() <= endDate }
+    var isPast: Bool   { Date() > endDate }
+    var daysTotal: Int { max(1, Calendar.current.dateComponents([.day], from: startDate, to: endDate).day ?? 1) }
+}
+
 /// An archived plan period stored in the user's `planHistory` subcollection.
 struct UserPlanHistoryEntry: Codable, Equatable, Hashable, Identifiable {
     /// Firestore document ID.
@@ -42,7 +59,7 @@ struct UserPlanHistoryEntry: Codable, Equatable, Hashable, Identifiable {
     var result: PlanResult
 }
 
-/// Snapshot of the active plan stored inline in the user document, with embedded progress counters.
+/// Snapshot of the current plan entry loaded from the user's `planHistory` subcollection.
 struct UserActivePlan: Codable, Equatable, Hashable {
     /// Firestore document ID, mirroring the corresponding `Plan` document.
     var id: String?
@@ -73,8 +90,6 @@ struct AppUser: Codable, Equatable, Hashable, Identifiable {
     let lastName: String
     /// Role that determines which features and permissions the user has.
     let role: UserRole
-    /// The user's currently active plan, if one has been assigned.
-    var activePlan: UserActivePlan?
 
     /// Concatenation of `firstName` and `lastName`.
     var fullName: String { "\(firstName) \(lastName)" }

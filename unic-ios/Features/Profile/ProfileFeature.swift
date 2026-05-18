@@ -15,9 +15,9 @@ import Foundation
 /// **Key action flows**
 /// - `.onLoad` — Resolves `canViewSales`, `canViewUsers`, `canManagePlans` from `authClient` synchronously.
 ///   Then runs a single `Effect.run` that:
-///   1. Calls `auth.refreshCurrentUser()`.
-///   2. If the refreshed user has an active plan, fetches `firebase.fetchUserActivity(userId)` → `.activityLoaded`.
-///   3. Always fetches `firebase.fetchPlanHistory(userId)` → `.planHistoryLoaded`.
+///   1. Calls `auth.refreshCurrentUser()` → `.userRefreshed`.
+///   2. Calls `firebase.fetchCurrentPlan(userId)` → `.planLoaded` (latest `planHistory` entry).
+///   3. If a plan exists, fetches `firebase.fetchUserActivity(userId)` → `.activityLoaded`.
 /// - `.logoutTapped` — Sets `showLogoutConfirm = true` to show a confirmation dialog.
 /// - `.logoutConfirmed` — Calls `auth.logout()` synchronously; `AppFeature`'s auth stream drives the
 ///   transition back to `.auth`.
@@ -75,10 +75,12 @@ struct ProfileFeature {
     @ObservableState
     struct State: Equatable {
         var currentUser: AppUser
+        /// The most recent plan entry fetched from the user's `planHistory` subcollection.
+        var activePlan: UserActivePlan?
         /// Activity log entries used to compute in-plan KPIs.
         var activityEntries: [UserActivityEntry] = []
-        /// Previously completed plan periods shown in the history section.
-        var planHistory: [UserPlanHistoryEntry] = []
+        /// `true` while activity entries are being fetched from Firebase.
+        var isLoadingActivity: Bool = false
         var path: StackState<Path.State> = StackState()
         /// Controls visibility of the logout confirmation dialog.
         var showLogoutConfirm: Bool = false
@@ -95,19 +97,19 @@ struct ProfileFeature {
 
         /// Number of salons visited within the active plan period.
         var salonsInPlan: Int {
-            guard let plan = currentUser.activePlan else { return 0 }
+            guard let plan = activePlan else { return 0 }
             return activityEntries.filter { $0.timestamp >= plan.startDate && $0.timestamp <= plan.endDate }.count
         }
 
         /// Number of test-drive activities recorded within the active plan period.
         var testDrivesInPlan: Int {
-            guard let plan = currentUser.activePlan else { return 0 }
+            guard let plan = activePlan else { return 0 }
             return activityEntries.filter { $0.timestamp >= plan.startDate && $0.timestamp <= plan.endDate && $0.status == .testDrive }.count
         }
 
         /// Number of salons first contacted during the active plan period (not previously contacted before the plan started).
         var newClientsInPlan: Int {
-            guard let plan = currentUser.activePlan else { return 0 }
+            guard let plan = activePlan else { return 0 }
             let contactedStatuses: Set<SalonStatus> = [.contacted, .testDrive, .demoScheduled, .ordered]
             let prePlanContacted = Set(
                 activityEntries
@@ -124,7 +126,7 @@ struct ProfileFeature {
 
         /// Number of salons re-contacted during the active plan period that were already contacted before it started.
         var returningClientsInPlan: Int {
-            guard let plan = currentUser.activePlan else { return 0 }
+            guard let plan = activePlan else { return 0 }
             let contactedStatuses: Set<SalonStatus> = [.contacted, .testDrive, .demoScheduled, .ordered]
             let prePlanContacted = Set(
                 activityEntries
@@ -138,6 +140,24 @@ struct ProfileFeature {
             )
             return inPlanContacted.filter { prePlanContacted.contains($0) }.count
         }
+
+        /// Number of salons visited today (only meaningful while the plan is active).
+        var salonsToday: Int {
+            guard let plan = activePlan, plan.isActive else { return 0 }
+            @Dependency(\.date) var date
+            let startOfDay = Calendar.current.startOfDay(for: date())
+            guard let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay) else { return 0 }
+            return activityEntries.filter { $0.timestamp >= startOfDay && $0.timestamp < endOfDay }.count
+        }
+
+        /// Number of test-drive activities recorded today (only meaningful while the plan is active).
+        var testDrivesToday: Int {
+            guard let plan = activePlan, plan.isActive else { return 0 }
+            @Dependency(\.date) var date
+            let startOfDay = Calendar.current.startOfDay(for: date())
+            guard let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay) else { return 0 }
+            return activityEntries.filter { $0.timestamp >= startOfDay && $0.timestamp < endOfDay && $0.status == .testDrive }.count
+        }
     }
 
     // MARK: - Action
@@ -145,11 +165,12 @@ struct ProfileFeature {
     /// Actions dispatched by the profile screen and its sub-navigation.
     enum Action: BindableAction {
         case binding(BindingAction<State>)
-        /// Loads permissions, refreshes the current user, and fetches activity and plan history.
+        /// Loads permissions, refreshes the current user, and fetches the current plan, activity, and plan history.
         case onLoad
         case userRefreshed(AppUser?)
+        case planLoaded(UserActivePlan?)
+        case activityLoadingStarted
         case activityLoaded([UserActivityEntry])
-        case planHistoryLoaded([UserPlanHistoryEntry])
         /// Shows the logout confirmation dialog.
         case logoutTapped
         /// Signs out the current user after confirmation.
@@ -187,25 +208,30 @@ struct ProfileFeature {
                 return .run { send in
                     let refreshed = await auth.refreshCurrentUser()
                     await send(.userRefreshed(refreshed))
-                    let hasPlan = refreshed?.activePlan != nil
-                    if hasPlan {
+                    let currentPlan = try? await firebase.fetchCurrentPlan(userId)
+                    await send(.planLoaded(currentPlan))
+                    if currentPlan != nil {
+                        await send(.activityLoadingStarted)
                         let entries = (try? await firebase.fetchUserActivity(userId)) ?? []
                         await send(.activityLoaded(entries))
                     }
-                    let history = (try? await firebase.fetchPlanHistory(userId)) ?? []
-                    await send(.planHistoryLoaded(history))
                 }
 
             case let .userRefreshed(user):
                 if let user { state.currentUser = user }
                 return .none
 
-            case let .activityLoaded(entries):
-                state.activityEntries = entries
+            case let .planLoaded(plan):
+                state.activePlan = plan
                 return .none
 
-            case let .planHistoryLoaded(history):
-                state.planHistory = history
+            case .activityLoadingStarted:
+                state.isLoadingActivity = true
+                return .none
+
+            case let .activityLoaded(entries):
+                state.activityEntries = entries
+                state.isLoadingActivity = false
                 return .none
 
             case .logoutTapped:
@@ -327,10 +353,6 @@ struct ProfileFeature {
 
             case .path(.element(_, .clientDetail(.invoiceTapped(let invoice)))):
                 state.path.append(.invoiceDetail(InvoiceDetailFeature.State(invoice: invoice)))
-                return .none
-
-            case .path(.element(_, .userActivity(.navigateToPlans))):
-                state.path.append(.plans(PlansFeature.State()))
                 return .none
 
             case .path(.element(_, .users(.userTapped(let user)))):
