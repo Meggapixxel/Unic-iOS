@@ -208,15 +208,12 @@ struct RoutePlannerScreen: View {
             ForEach(Array(viewModel.stops.enumerated()), id: \.element.salonId) { index, salon in
                 if let coordinate = salon.coordinate {
                     Annotation(salon.displayName, coordinate: coordinate) {
-                        ZStack {
-                            Circle()
-                                .fill(salon.statusEnum.color)
-                                .frame(width: 32, height: 32)
-                                .shadow(radius: 2)
-                            Text("\(index + 1)")
-                                .font(.caption.bold())
-                                .foregroundColor(.white)
-                        }
+                        AvatarCircle(
+                            text: "\(index + 1)",
+                            color: salon.statusEnum.color,
+                            size: 32
+                        )
+                        .shadow(radius: 2)
                     }
                 }
             }

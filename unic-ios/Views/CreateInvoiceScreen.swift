@@ -387,47 +387,13 @@ struct CreateClientView: View {
         NavigationStack {
             Form {
                 Section {
-                    HStack(spacing: 12) {
-                        Image(systemName: "building.2.fill")
-                            .foregroundStyle(Color.accentColor)
-                            .frame(width: 20)
-                        TextField(String.create_client_name_placeholder, text: $clientVM.name)
-                            .autocorrectionDisabled()
-                    }
-                }
-                Section {
-                    HStack(spacing: 12) {
-                        Image(systemName: "number")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        TextField("IČO", text: $clientVM.ic)
-                            .keyboardType(.numberPad)
-                    }
-                    HStack(spacing: 12) {
-                        Image(systemName: "doc.text.fill")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        TextField("DIČ", text: $clientVM.dic)
-                            .autocorrectionDisabled()
-                    }
-                }
-                Section {
-                    HStack(spacing: 12) {
-                        Image(systemName: "envelope.fill")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        TextField("info@company.cz", text: $clientVM.email)
-                            .keyboardType(.emailAddress)
-                            .autocorrectionDisabled()
-                            .textInputAutocapitalization(.never)
-                    }
-                    HStack(spacing: 12) {
-                        Image(systemName: "phone.fill")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        TextField("+420 123 456 789", text: $clientVM.phone)
-                            .keyboardType(.phonePad)
-                    }
+                    ClientFormFields(
+                        name: $clientVM.name,
+                        ic: $clientVM.ic,
+                        dic: $clientVM.dic,
+                        email: $clientVM.email,
+                        phone: $clientVM.phone
+                    )
                 }
                 if let err = clientVM.error {
                     Section {

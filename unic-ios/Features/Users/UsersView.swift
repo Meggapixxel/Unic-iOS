@@ -28,14 +28,11 @@ struct UsersView: View {
     private func userRow(_ user: AppUser) -> some View {
         Button { store.send(.userTapped(user)) } label: {
             HStack(spacing: 12) {
-                Circle()
-                    .fill(roleColor(user.role).opacity(0.15))
-                    .frame(width: 44, height: 44)
-                    .overlay {
-                        Text(user.firstName.prefix(1) + user.lastName.prefix(1))
-                            .font(.subheadline.bold())
-                            .foregroundStyle(roleColor(user.role))
-                    }
+                AvatarCircle(
+                    text: String(user.firstName.prefix(1)) + String(user.lastName.prefix(1)),
+                    color: roleColor(user.role),
+                    size: 44
+                )
                 VStack(alignment: .leading, spacing: 2) {
                     Text(user.fullName).font(.callout)
                     Text(user.role.displayName).font(.caption).foregroundStyle(.secondary)

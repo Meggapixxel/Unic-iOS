@@ -178,14 +178,14 @@ private struct InvoicesSection: View {
             // Status filter chips
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    SalesFilterChip(
+                    FilterChip(
                         title: String.filter_all,
                         isSelected: store.statusFilter == nil
                     ) {
                         store.send(.statusFilterChanged(nil))
                     }
                     ForEach(PaymentStatus.allCases, id: \.self) { status in
-                        SalesFilterChip(
+                        FilterChip(
                             title: status.label,
                             isSelected: store.statusFilter == status,
                             color: status.color
@@ -393,28 +393,6 @@ private struct SalesRankingRow: View {
             }
             if !isLast { Divider() }
         }
-    }
-}
-
-// MARK: - Filter Chip
-
-/// Capsule-shaped toggle chip used in the invoice status filter row.
-private struct SalesFilterChip: View {
-    let title: String
-    let isSelected: Bool
-    var color: Color = .accentColor
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.caption.bold())
-                .foregroundStyle(isSelected ? .white : color)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(isSelected ? color : color.opacity(0.12), in: Capsule())
-        }
-        .buttonStyle(.plain)
     }
 }
 

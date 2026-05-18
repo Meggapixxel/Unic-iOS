@@ -13,14 +13,11 @@ struct ProfileView: View {
                 // MARK: User Card
                 Section {
                     HStack(spacing: 14) {
-                        Circle()
-                            .fill(roleColor(store.currentUser.role).opacity(0.15))
-                            .frame(width: 56, height: 56)
-                            .overlay {
-                                Text(initials(store.currentUser))
-                                    .font(.title3.bold())
-                                    .foregroundStyle(roleColor(store.currentUser.role))
-                            }
+                        AvatarCircle(
+                            text: initials(store.currentUser),
+                            color: roleColor(store.currentUser.role),
+                            size: 56
+                        )
                         VStack(alignment: .leading, spacing: 3) {
                             Text(store.currentUser.fullName)
                                 .font(.headline)
@@ -78,14 +75,14 @@ struct ProfileView: View {
 
                                 if store.newClientsInPlan > 0 || store.returningClientsInPlan > 0 {
                                     HStack(spacing: 20) {
-                                        ClientStatChip(
-                                            count: store.newClientsInPlan,
-                                            label: String.stat_new_clients,
+                                        StatBadge(
+                                            title: String.stat_new_clients,
+                                            value: store.newClientsInPlan,
                                             color: plan.isPast ? .secondary : .orange
                                         )
-                                        ClientStatChip(
-                                            count: store.returningClientsInPlan,
-                                            label: String.stat_returning_clients,
+                                        StatBadge(
+                                            title: String.stat_returning_clients,
+                                            value: store.returningClientsInPlan,
                                             color: plan.isPast ? .secondary : .purple
                                         )
                                         Spacer()

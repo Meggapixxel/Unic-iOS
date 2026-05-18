@@ -256,14 +256,11 @@ private struct RouteMapView: View {
             ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
                 if let coord = entry.coordinate {
                     Annotation(entry.salonName, coordinate: coord) {
-                        ZStack {
-                            Circle()
-                                .fill(entry.status.color)
-                                .frame(width: 28, height: 28)
-                            Text("\(index + 1)")
-                                .font(.caption2.bold())
-                                .foregroundStyle(.white)
-                        }
+                        AvatarCircle(
+                            text: "\(index + 1)",
+                            color: entry.status.color,
+                            size: 28
+                        )
                     }
                 }
             }

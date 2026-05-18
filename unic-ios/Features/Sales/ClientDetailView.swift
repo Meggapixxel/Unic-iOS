@@ -150,47 +150,13 @@ struct ClientEditView: View {
         NavigationStack {
             Form {
                 Section {
-                    HStack(spacing: 12) {
-                        Image(systemName: "building.2.fill")
-                            .foregroundStyle(Color.accentColor)
-                            .frame(width: 20)
-                        TextField(String.create_client_name_placeholder, text: $store.name)
-                            .autocorrectionDisabled()
-                    }
-                }
-                Section {
-                    HStack(spacing: 12) {
-                        Image(systemName: "number")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        TextField("IČO", text: $store.ic)
-                            .keyboardType(.numberPad)
-                    }
-                    HStack(spacing: 12) {
-                        Image(systemName: "doc.text.fill")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        TextField("DIČ", text: $store.dic)
-                            .autocorrectionDisabled()
-                    }
-                }
-                Section {
-                    HStack(spacing: 12) {
-                        Image(systemName: "envelope.fill")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        TextField("info@company.cz", text: $store.email)
-                            .keyboardType(.emailAddress)
-                            .autocorrectionDisabled()
-                            .textInputAutocapitalization(.never)
-                    }
-                    HStack(spacing: 12) {
-                        Image(systemName: "phone.fill")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        TextField("+420 123 456 789", text: $store.phone)
-                            .keyboardType(.phonePad)
-                    }
+                    ClientFormFields(
+                        name: $store.name,
+                        ic: $store.ic,
+                        dic: $store.dic,
+                        email: $store.email,
+                        phone: $store.phone
+                    )
                 }
                 if let err = store.errorMessage {
                     Section {

@@ -381,17 +381,28 @@ struct StatBadge: View {
 
 // MARK: - FilterChip / FilterChipsView
 
-/// Pill-shaped toggle button used in horizontal filter chip rows.
+/// Pill-shaped toggle chip used in filter bars.
+/// - Parameters:
+///   - title: Label text.
+///   - isSelected: Whether the chip is active.
+///   - color: Accent color when selected. Defaults to `.accentColor`.
+///   - action: Called when the chip is tapped.
 struct FilterChip: View {
-    let title: String; let isSelected: Bool; let action: () -> Void
+    let title: String
+    let isSelected: Bool
+    var color: Color = .accentColor
+    let action: () -> Void
+
     var body: some View {
         Button(action: action) {
-            Text(title).font(.subheadline)
-                .padding(.horizontal, 12).padding(.vertical, 6)
-                .background(isSelected ? Color.accentColor : Color(.systemGray5))
-                .foregroundColor(isSelected ? .white : .primary)
-                .cornerRadius(16)
+            Text(title)
+                .font(.subheadline)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isSelected ? color : Color(.systemGray5), in: Capsule())
+                .foregroundStyle(isSelected ? .white : .primary)
         }
+        .buttonStyle(.plain)
     }
 }
 
@@ -641,6 +652,26 @@ struct CloseButton: View {
             Image(systemName: "xmark.circle.fill")
                 .foregroundStyle(.secondary)
                 .imageScale(.large)
+        }
+    }
+}
+
+// MARK: - Avatar Circle
+
+/// Circular avatar showing initials or a short label, used for users and map annotations.
+struct AvatarCircle: View {
+    let text: String
+    let color: Color
+    var size: CGFloat = 36
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(color.opacity(0.15))
+                .frame(width: size, height: size)
+            Text(text)
+                .font(.system(size: size * 0.36, weight: .semibold))
+                .foregroundStyle(color)
         }
     }
 }
@@ -906,5 +937,125 @@ struct StockWithPriceRow: View {
         Text((item.sellPriceVAT).czk)
             .font(.caption.bold())
             .foregroundStyle(.primary)
+    }
+}
+
+// MARK: - Client Form Fields
+
+/// Reusable set of form fields for creating or editing a client (firm).
+/// Used in both ClientEditView and CreateClientView.
+struct ClientFormFields: View {
+    @Binding var name: String
+    @Binding var ic: String
+    @Binding var dic: String
+    @Binding var email: String
+    @Binding var phone: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "building.2.fill")
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 20)
+            TextField(String.create_client_name_placeholder, text: $name)
+                .autocorrectionDisabled()
+        }
+        HStack(spacing: 12) {
+            Image(systemName: "number")
+                .foregroundStyle(.secondary)
+                .frame(width: 20)
+            TextField("IČO", text: $ic)
+                .keyboardType(.numberPad)
+        }
+        HStack(spacing: 12) {
+            Image(systemName: "doc.text")
+                .foregroundStyle(.secondary)
+                .frame(width: 20)
+            TextField("DIČ", text: $dic)
+                .autocorrectionDisabled()
+                .autocapitalization(.allCharacters)
+        }
+        HStack(spacing: 12) {
+            Image(systemName: "envelope")
+                .foregroundStyle(.secondary)
+                .frame(width: 20)
+            TextField("info@company.cz", text: $email)
+                .keyboardType(.emailAddress)
+                .autocorrectionDisabled()
+                .autocapitalization(.none)
+        }
+        HStack(spacing: 12) {
+            Image(systemName: "phone")
+                .foregroundStyle(.secondary)
+                .frame(width: 20)
+            TextField("+420 123 456 789", text: $phone)
+                .keyboardType(.phonePad)
+        }
+    }
+}
+
+// MARK: - Invoice Timeline Components
+
+/// A single icon + label step in the invoice timeline, springs in on first appearance.
+struct InvoiceTimelineStep: View {
+    let icon: String
+    let label: String
+    /// Whether this stage has been completed.
+    let done: Bool
+    /// Delay (in seconds) before the spring entrance animation fires.
+    let delay: Double
+
+    @State private var appeared = false
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundStyle(done ? Color.green : Color(.systemGray3))
+                .symbolEffect(.bounce, value: done)
+                .animation(.easeInOut(duration: 0.35), value: done)
+            Text(label)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(done ? Color.green : Color(.systemGray3))
+                .animation(.easeInOut(duration: 0.35), value: done)
+        }
+        .frame(minWidth: 44)
+        .scaleEffect(appeared ? 1 : 0.5)
+        .opacity(appeared ? 1 : 0)
+        .onAppear {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.65).delay(delay)) {
+                appeared = true
+            }
+        }
+    }
+}
+
+/// Horizontal line between two timeline steps; fills with green when the preceding stage is complete.
+struct InvoiceTimelineConnector: View {
+    /// Whether the preceding stage is complete, causing the line to animate to full width.
+    let done: Bool
+    /// Delay (in seconds) before the fade-in animation fires.
+    let delay: Double
+
+    @State private var appeared = false
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Rectangle()
+                .fill(Color(.systemGray4))
+                .frame(height: 2)
+            Rectangle()
+                .fill(Color.green)
+                .frame(height: 2)
+                .scaleEffect(x: done ? 1 : 0, anchor: .leading)
+                .animation(.easeInOut(duration: 0.4), value: done)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 18)
+        .opacity(appeared ? 1 : 0)
+        .onAppear {
+            withAnimation(.easeIn(duration: 0.25).delay(delay)) {
+                appeared = true
+            }
+        }
     }
 }
