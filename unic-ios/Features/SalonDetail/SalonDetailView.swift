@@ -21,8 +21,7 @@ struct SalonDetailView: View {
             }
             .padding()
         }
-        .navigationTitle(store.salon.displayName)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationInlineTitle(store.salon.displayName)
         .toolbar {
             if store.canEdit {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -504,9 +503,8 @@ struct AddStatusView: View {
                         .lineLimit(3...6)
                 }
             }
-            .navigationTitle(String.add_status)
+            .navigationInlineTitle(String.add_status)
             .task { store.send(.onLoad) }
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     CloseButton { store.send(.cancelTapped) }
@@ -583,8 +581,7 @@ struct StatusHistoryView: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationTitle(String.status_history)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(String.status_history)
         }
         .sheet(item: $editingEntry) { entry in
             EditNoteSheet(

@@ -43,8 +43,7 @@ struct SalonFullMapScreen: View {
                 )
             }
         }
-        .navigationTitle(salon.displayName)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationInlineTitle(salon.displayName)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {

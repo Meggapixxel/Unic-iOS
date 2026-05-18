@@ -91,8 +91,7 @@ struct TestDriveScreen: View {
             }
         }
         .listStyle(.plain)
-        .navigationTitle(String.test_drive)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationInlineTitle(String.test_drive)
         .task { await viewModel.load(from: salons) }
     }
 }

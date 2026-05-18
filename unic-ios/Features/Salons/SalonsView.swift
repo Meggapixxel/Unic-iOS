@@ -10,8 +10,7 @@ struct SalonsView: View {
     var body: some View {
         NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
             mainContent
-                .navigationTitle("Salons")
-                .navigationBarTitleDisplayMode(.large)
+                .navigationInlineTitle("Salons")
                 .toolbar { toolbarContent }
                 .searchable(text: $store.searchText, prompt: Text(String.search_salons))
                 .task { store.send(.onLoad) }
@@ -20,6 +19,11 @@ struct SalonsView: View {
                 ) { formStore in
                     SalonFormView(store: formStore)
                 }
+                .fullScreenCover(
+                    item: $store.scope(state: \.destination?.routePlanner, action: \.destination.routePlanner)
+                ) { rpStore in
+                    RoutePlannerView(store: rpStore)
+                }
         } destination: { pathStore in
             Group {
                 switch pathStore.case {
@@ -27,8 +31,6 @@ struct SalonsView: View {
                     SalonDetailView(store: detailStore)
                 case let .testDrive(tdStore):
                     TestDriveView(store: tdStore)
-                case let .routePlanner(rpStore):
-                    RoutePlannerView(store: rpStore)
                 }
             }
             .toolbar(.hidden, for: .tabBar)
@@ -60,13 +62,12 @@ struct SalonsView: View {
     private var salonList: some View {
         List {
             Section {
-                NavigationLink(
-                    state: SalonsFeature.Path.State.testDrive(
-                        TestDriveFeature.State(salons: store.salons)
-                    )
-                ) {
+                Button {
+                    store.send(.navigateToTestDrive)
+                } label: {
                     TestDriveListRow(count: store.statCounts.testDrive)
                 }
+                .buttonStyle(.plain)
             }
 
             ForEach(store.displayedSalons) { salon in
@@ -128,11 +129,9 @@ struct SalonsView: View {
                     Image(systemName: "plus").imageScale(.large)
                 }
 
-                NavigationLink(
-                    state: SalonsFeature.Path.State.routePlanner(
-                        RoutePlannerFeature.State(salons: store.displayedSalons)
-                    )
-                ) {
+                Button {
+                    store.send(.navigateToRoutePlanner)
+                } label: {
                     Image(systemName: "point.topleft.down.to.point.bottomright.curvepath.fill")
                         .imageScale(.large)
                 }

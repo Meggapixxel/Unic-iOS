@@ -62,7 +62,6 @@ struct SalonsFeature {
     enum Path {
         case salonDetail(SalonDetailFeature)
         case testDrive(TestDriveFeature)
-        case routePlanner(RoutePlannerFeature)
     }
 
     // MARK: - Destination
@@ -71,6 +70,7 @@ struct SalonsFeature {
     @Reducer
     enum Destination {
         case form(SalonFormFeature)
+        case routePlanner(RoutePlannerFeature)
     }
 
     // MARK: - State
@@ -218,6 +218,8 @@ struct SalonsFeature {
         case salonDeleted(String)
         case failed(String)
         case clearFilters
+        case navigateToTestDrive
+        case navigateToRoutePlanner
         case path(StackActionOf<Path>)
         case destination(PresentationAction<Destination.Action>)
     }
@@ -301,6 +303,14 @@ struct SalonsFeature {
                 state.dateRangeFilter = []
                 return .none
 
+            case .navigateToTestDrive:
+                state.path.append(.testDrive(TestDriveFeature.State(salons: state.salons)))
+                return .none
+
+            case .navigateToRoutePlanner:
+                state.destination = .routePlanner(RoutePlannerFeature.State(salons: state.displayedSalons))
+                return .none
+
             // MARK: Path propagation
             case let .path(.element(id: _, action: .testDrive(.salonTapped(salon)))):
                 state.path.append(.salonDetail(SalonDetailFeature.State(salon: salon)))
@@ -332,6 +342,10 @@ struct SalonsFeature {
                 return .send(.salonSaved(salon))
 
             case .destination:
+                return .none
+
+            case .binding(\.showMap):
+                state.showFilterPopover = false
                 return .none
 
             case .binding:

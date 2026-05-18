@@ -356,8 +356,7 @@ struct SalonFormView: View {
                         .lineLimit(3...6)
                 }
             }
-            .navigationTitle(String.add_salon)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(String.add_salon)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     CloseButton { store.send(.requestDismiss) }

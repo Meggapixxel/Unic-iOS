@@ -33,8 +33,7 @@ struct UserActivityView: View {
             }
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(store.user.fullName)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationInlineTitle(store.user.fullName)
         .overlay {
             if store.isLoading { ProgressView() }
         }

@@ -27,8 +27,7 @@ struct PlansView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(String.plans_nav_title)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationInlineTitle(String.plans_nav_title)
         .toolbar {
             if store.canManagePlans {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -119,8 +118,7 @@ struct PlansFormView: View {
                     }
                 }
             }
-            .navigationTitle(store.isEditing ? String.plan_edit : String.plan_add)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(store.isEditing ? String.plan_edit : String.plan_add)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     CloseButton { store.send(.cancelTapped) }

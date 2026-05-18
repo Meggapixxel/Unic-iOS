@@ -26,8 +26,7 @@ struct RoutePlannerScreen: View {
                     selectionView
                 }
             }
-            .navigationTitle(viewModel.showRoute ? "route_planner" : "route_select_salons")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(viewModel.showRoute ? "route_planner" : "route_select_salons")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if viewModel.showRoute {

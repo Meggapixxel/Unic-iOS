@@ -24,8 +24,7 @@ struct InvoiceDetailView: View {
             stockMovementSection
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(store.invoice.invoiceNumber)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationInlineTitle(store.invoice.invoiceNumber)
         .toolbar {
             if store.canEdit && !store.isLoading {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -192,52 +191,55 @@ struct InvoiceDetailView: View {
 
             Spacer()
 
-            HStack(spacing: 20) {
-                // Accounting (Registered)
+            HStack(spacing: 12) {
+                // Заúčtování — active (text+icon) until done, then hidden
                 if !store.isAccounted {
-                    Button {
-                        store.send(.accountingTapped)
-                    } label: {
-                        Image(systemName: "checkmark.seal")
+                    Button { store.send(.accountingTapped) } label: {
+                        Label(String.invoice_stage_registered, systemImage: "checkmark.seal")
                     }
                 }
 
-                // Stock movement
+                // Vydej — icon only until accounting done, then text+icon, hidden when created
                 if !store.stockMovementCreated {
-                    Button {
-                        store.send(.openStockMovement)
-                    } label: {
-                        Image(systemName: "shippingbox")
+                    Button { store.send(.openStockMovement) } label: {
+                        if store.isAccounted {
+                            Label(String.stock_movement_create, systemImage: "shippingbox")
+                        } else {
+                            Image(systemName: "shippingbox")
+                        }
                     }
-                    .disabled(store.invoice.paymentStatus == .paid)
                 }
 
-                // Payment status
+                // Оплата — icon only until vydej done, then text+icon, hidden when paid
                 if store.invoice.paymentStatus != .paid {
-                    Button {
-                        store.send(.setPaymentStatus(.paid, nil))
-                    } label: {
-                        Image(systemName: "checkmark.circle.fill")
+                    Button { store.send(.setPaymentStatus(.paid, nil)) } label: {
+                        if store.isAccounted && store.stockMovementCreated {
+                            Label(String.invoice_stage_paid, systemImage: "checkmark.circle.fill")
+                        } else {
+                            Image(systemName: "checkmark.circle.fill")
+                        }
                     }
                     .tint(.green)
                 }
 
-                // Documents / PDF
-                Button {
-                    let isCash = store.invoice.paymentMethod == .hotove && store.cashReceiptId != nil
-                    if isCash {
-                        store.send(.shareBothPDFs)
-                    } else {
-                        store.send(.shareInvoicePDF)
+                // Documents — visible only after payment
+                if store.invoice.paymentStatus == .paid {
+                    Button {
+                        let isCash = store.invoice.paymentMethod == .hotove && store.cashReceiptId != nil
+                        if isCash {
+                            store.send(.shareBothPDFs)
+                        } else {
+                            store.send(.shareInvoicePDF)
+                        }
+                    } label: {
+                        if store.isLoadingPDF {
+                            ProgressView().scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "doc.text.fill")
+                        }
                     }
-                } label: {
-                    if store.isLoadingPDF {
-                        ProgressView().scaleEffect(0.8)
-                    } else {
-                        Image(systemName: "doc.text.fill")
-                    }
+                    .disabled(store.isLoadingPDF)
                 }
-                .disabled(store.isLoadingPDF)
             }
             .padding(.trailing, 8)
         }

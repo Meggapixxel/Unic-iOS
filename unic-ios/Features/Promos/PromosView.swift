@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Kingfisher
 import SwiftUI
 
 /// Root view for the Promos tab, showing a filterable list of promo offers with swipe actions.
@@ -64,8 +65,7 @@ struct PromosView: View {
                     .padding(.bottom, 8)
                 }
             }
-            .navigationTitle(String.promos_nav_title)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationInlineTitle(String.promos_nav_title)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Picker("", selection: Binding(
@@ -130,29 +130,39 @@ private struct PromoRowView: View {
     let language: AppLanguage
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(promo.localizedTitle(for: language))
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text(promo.category)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(promo.isEnabled ? Color.accentColor : Color.gray, in: Capsule())
+        HStack(alignment: .top, spacing: 12) {
+            if let urlString = promo.imageURL, let url = URL(string: urlString) {
+                KFImage(url)
+                    .resizable()
+                    .placeholder { Color(.systemGray5) }
+                    .scaledToFill()
+                    .frame(width: 56, height: 56)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            let desc = promo.localizedDescription(for: language)
-            if !desc.isEmpty {
-                Text(desc)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-            if let vf = promo.validFrom, let vt = promo.validTo {
-                Text(planPeriodString(from: vf, to: vt))
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(promo.localizedTitle(for: language))
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(promo.category)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(promo.isEnabled ? Color.accentColor : Color.gray, in: Capsule())
+                }
+                let desc = promo.localizedDescription(for: language)
+                if !desc.isEmpty {
+                    Text(desc)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+                if let vf = promo.validFrom, let vt = promo.validTo {
+                    Text(planPeriodString(from: vf, to: vt))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
             }
         }
         .padding(.vertical, 4)
@@ -170,6 +180,20 @@ struct PromoDetailView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    if let urlString = store.promo.imageURL, let url = URL(string: urlString) {
+                        KFImage(url)
+                            .resizable()
+                            .placeholder {
+                                Color(.systemGray5)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 220)
+                            }
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 220)
+                            .clipped()
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 8) {
                             Text(store.promo.category)
@@ -212,8 +236,7 @@ struct PromoDetailView: View {
                 }
                 .padding()
             }
-            .navigationTitle(store.promo.localizedTitle(for: store.language))
-            .navigationBarTitleDisplayMode(.large)
+            .navigationInlineTitle(store.promo.localizedTitle(for: store.language))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     CloseButton { store.send(.closeTapped) }
@@ -246,8 +269,7 @@ struct PromoDetailView: View {
                             DatePicker(String.promo_valid_to, selection: $store.activateTo, in: store.activateFrom..., displayedComponents: .date)
                         }
                     }
-                    .navigationTitle(String.promo_has_dates)
-                    .navigationBarTitleDisplayMode(.inline)
+                    .navigationInlineTitle(String.promo_has_dates)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             CloseButton { store.send(.activatePickerDismissed) }
@@ -373,8 +395,7 @@ struct PromoFormView: View {
                     }
                 }
             }
-            .navigationTitle(String.promo_add)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(String.promo_add)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     CloseButton { store.send(.closeTapped) }

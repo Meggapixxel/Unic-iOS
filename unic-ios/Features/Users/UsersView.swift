@@ -12,7 +12,7 @@ struct UsersView: View {
             }
         }
         .listStyle(.plain)
-        .navigationTitle(String.users_nav_title)
+        .navigationInlineTitle(String.users_nav_title)
         .overlay {
             if store.isLoading { ProgressView() }
             else if store.users.isEmpty {

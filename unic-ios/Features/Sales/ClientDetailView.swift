@@ -13,8 +13,7 @@ struct ClientDetailView: View {
             invoicesSection
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(store.clientName)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationInlineTitle(store.clientName)
         .task { store.send(.onLoad) }
         .toolbar {
             if store.canEditClient {
@@ -167,8 +166,7 @@ struct ClientEditView: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(store.name)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(store.name)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { store.send(.dismiss) } label: {

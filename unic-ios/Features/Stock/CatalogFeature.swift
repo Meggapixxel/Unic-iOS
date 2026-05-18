@@ -71,8 +71,7 @@ struct CatalogView: View {
                 )
             }
         }
-        .navigationTitle(String.catalog_nav_title)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationInlineTitle(String.catalog_nav_title)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

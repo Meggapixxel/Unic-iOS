@@ -12,8 +12,7 @@ struct StockView: View {
     var body: some View {
         NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
             StockListContent(store: store)
-                .navigationTitle(String.stock_nav_title)
-                .navigationBarTitleDisplayMode(.large)
+                .navigationInlineTitle(String.stock_nav_title)
                 .searchable(text: $store.searchText, prompt: String.search_stock)
                 .toolbar { stockToolbar }
                 .overlay {
@@ -297,8 +296,7 @@ struct ProductDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(store.product.code)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationInlineTitle(store.product.code)
     }
 
     private var headerCard: some View {
@@ -429,8 +427,7 @@ struct StockChecklistView: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationTitle(String.barcode_title)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(String.barcode_title)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(String.close) { store.send(.dismiss) }

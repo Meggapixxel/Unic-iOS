@@ -169,8 +169,7 @@ struct ProfileView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle(String.profile_nav_title)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationInlineTitle(String.profile_nav_title)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .destructive) {
@@ -352,14 +351,15 @@ struct TestDriveView: View {
     }
 }
 
-/// TCA-compatible bridge that wraps the legacy `RoutePlannerScreen` for use inside a `NavigationStack` destination.
+/// TCA-compatible bridge that wraps the legacy `RoutePlannerScreen` for use as a fullScreenCover.
 struct RoutePlannerView: View {
     let store: StoreOf<RoutePlannerFeature>
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         RoutePlannerScreen(
             salons: store.salons,
-            isPresented: .constant(true)
+            isPresented: Binding(get: { true }, set: { if !$0 { dismiss() } })
         )
     }
 }

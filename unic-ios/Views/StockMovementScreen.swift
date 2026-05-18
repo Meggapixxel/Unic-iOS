@@ -50,8 +50,7 @@ struct StockMovementScreen: View {
                     }
                 }
             }
-            .navigationTitle(String.stock_movement_title + " – " + viewModel.invoiceNumber)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(String.stock_movement_title + " – " + viewModel.invoiceNumber)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { viewModel.skip() } label: {

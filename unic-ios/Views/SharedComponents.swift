@@ -549,7 +549,7 @@ struct EditNoteSheet: View {
                     TextField(String.add_comment, text: $noteText, axis: .vertical).lineLimit(3...8)
                 }
             }
-            .navigationTitle(String.note_optional).navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(String.note_optional)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { CloseButton { isPresented = false } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -599,8 +599,7 @@ struct StatusInfoView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("salon_statuses")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle("salon_statuses")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     CloseButton { isPresented = false }
@@ -1057,5 +1056,13 @@ struct InvoiceTimelineConnector: View {
                 appeared = true
             }
         }
+    }
+}
+
+extension View {
+    func navigationInlineTitle(_ title: String) -> some View {
+        self
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
     }
 }

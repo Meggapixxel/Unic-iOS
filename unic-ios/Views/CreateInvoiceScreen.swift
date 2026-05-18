@@ -56,8 +56,7 @@ struct InvoiceFormScreen: View {
             }
         }
         .scrollDismissesKeyboard(.interactively)
-        .navigationTitle(viewModel.title)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationInlineTitle(viewModel.title)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button { onDismiss() } label: {
@@ -343,8 +342,7 @@ struct FirmPickerView: View {
                     .searchable(text: $viewModel.firmPickerSearch, prompt: String.create_invoice_client_search)
                 }
             }
-            .navigationTitle(String.create_invoice_client)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(String.create_invoice_client)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { isPresented = false } label: { Image(systemName: "xmark") }
@@ -403,8 +401,7 @@ struct CreateClientView: View {
                     }
                 }
             }
-            .navigationTitle(String.new_client)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(String.new_client)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { isPresented = false } label: {
@@ -478,8 +475,7 @@ struct ProductPickerForInvoiceView: View {
                 }
             }
             .searchable(text: $search, prompt: String.search_stock)
-            .navigationTitle(String.create_invoice_pick_product)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationInlineTitle(String.create_invoice_pick_product)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { isPresented = false } label: { Image(systemName: "xmark") }

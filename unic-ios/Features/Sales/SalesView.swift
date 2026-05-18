@@ -22,8 +22,7 @@ struct SalesView: View {
                 .tabItem { Label(SalesSection.invoices.label, systemImage: "doc.text.fill") }
                 .tag(SalesSection.invoices)
         }
-        .navigationTitle(String.sales_nav_title)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationInlineTitle(String.sales_nav_title)
         .task { store.send(.onLoad) }
         .sheet(
             item: $store.scope(
@@ -431,8 +430,7 @@ struct AllTopProductsView: View {
         }
         .listStyle(.plain)
         .searchable(text: $store.searchText, prompt: String.search_stock)
-        .navigationTitle(String.sales_top_products)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationInlineTitle(String.sales_top_products)
         .overlay {
             if store.filtered.isEmpty {
                 ContentUnavailableView(String.no_data, systemImage: "shippingbox")
@@ -516,8 +514,7 @@ struct AllTopClientsView: View {
         }
         .listStyle(.plain)
         .searchable(text: $store.searchText, prompt: String.sales_search_prompt)
-        .navigationTitle(String.sales_top_clients)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationInlineTitle(String.sales_top_clients)
         .overlay {
             if store.filtered.isEmpty {
                 ContentUnavailableView(String.no_data, systemImage: "person.2")
