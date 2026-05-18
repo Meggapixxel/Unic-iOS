@@ -266,24 +266,10 @@ struct SalonsFeature {
                     state.salons.append(salon)
                 }
                 state.destination = nil
-                // Propagate update into any open salonDetail path element
-                for id in state.path.ids {
-                    if case var .salonDetail(detail) = state.path[id: id],
-                       detail.salon.salonId == salon.salonId {
-                        detail.salon = salon
-                        state.path[id: id] = .salonDetail(detail)
-                    }
-                }
                 return .none
 
             case let .salonDeleted(salonId):
                 state.salons.removeAll { $0.salonId == salonId }
-                // Pop the detail from path if it's open
-                if let last = state.path.last,
-                   case let .salonDetail(detail) = last,
-                   detail.salon.salonId == salonId {
-                    state.path.removeLast()
-                }
                 return .none
 
             case let .failed(message):
