@@ -276,9 +276,6 @@ struct ProductDetailView: View {
                 if store.product.sellPriceVAT > 0 { sellPriceRow }
                 if store.showPurchaseDetails {
                     purchasePriceRow
-                    if let margin = store.product.marginPercent {
-                        marginRow(margin)
-                    }
                 }
                 Button {
                     store.send(.togglePurchaseDetails)
@@ -353,14 +350,6 @@ struct ProductDetailView: View {
         }
     }
 
-    private func marginRow(_ margin: Double) -> some View {
-        let color: Color = margin >= 30 ? .green : margin >= 15 ? .orange : .red
-        return HStack {
-            Label(String.product_margin, systemImage: "chart.line.uptrend.xyaxis")
-            Spacer()
-            Text("\(Int(margin))%").font(.body.bold()).foregroundStyle(color)
-        }
-    }
 }
 
 // MARK: - Barcode Scanner Wrapper

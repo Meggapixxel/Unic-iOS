@@ -45,11 +45,6 @@ struct FlexiBeeCenikItem: Identifiable, Codable {
     var displayName: String { name ?? code }
     var unitPrice: String   { sellPriceVAT > 0 ? String(format: "%.0f", sellPriceVAT) : "" }
 
-    var marginPercent: Double? {
-        guard purchasePrice > 0, sellPriceVAT > 0 else { return nil }
-        let sellNet = sellPriceVAT / 1.21
-        return (sellNet - purchasePrice) / sellNet * 100
-    }
 }
 
 // MARK: - Stock
@@ -130,7 +125,6 @@ struct FlexiBeeStockItem: Identifiable, Hashable {
     var quantity:               Double  { card.quantity }
     var sellPriceVAT:           Double  { price?.sellPriceVAT  ?? 0 }
     var purchasePrice:          Double  { price?.purchasePrice ?? 0 }
-    var marginPercent:          Double? { price?.marginPercent }
     var formattedPurchasePrice: String  { purchasePrice.eur }
 
     var productLine: String {
