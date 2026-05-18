@@ -11,9 +11,7 @@ struct StockView: View {
 
     var body: some View {
         StockListContent(store: store)
-            .navigationInlineTitle(String.stock_nav_title)
             .searchable(text: $store.searchText, prompt: String.search_stock)
-            .toolbar { stockToolbar }
             .overlay {
                 if store.isLoading && store.allStock.isEmpty {
                     LoadingOverlay()
@@ -50,10 +48,10 @@ struct StockView: View {
             }
     }
 
-    // MARK: - Toolbar
+    // MARK: - Toolbar (internal — reused by TabChildView extension)
 
     @ToolbarContentBuilder
-    private var stockToolbar: some ToolbarContent {
+    fileprivate var stockToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             Menu {
                 Picker(selection: $store.sortField) {
@@ -110,6 +108,16 @@ struct StockView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - TabChildView
+
+extension StockView: TabChildView {
+    var tabTitle: String { String.stock_nav_title }
+
+    @ToolbarContentBuilder var tabToolbar: some ToolbarContent {
+        stockToolbar
     }
 }
 

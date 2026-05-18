@@ -168,17 +168,6 @@ struct ProfileView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationInlineTitle(String.profile_nav_title)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(role: .destructive) {
-                        store.send(.logoutTapped)
-                    } label: {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                    }
-                    .tint(.red)
-                }
-            }
             .task { store.send(.onLoad) }
             .refreshable { await store.send(.onLoad).finish() }
             .confirmationDialog(
@@ -212,6 +201,23 @@ struct ProfileView: View {
         case .admin:   return .red
         case .manager: return .orange
         case .sales:   return .blue
+        }
+    }
+}
+
+// MARK: - TabChildView
+
+extension ProfileView: TabChildView {
+    var tabTitle: String { String.profile_nav_title }
+
+    @ToolbarContentBuilder var tabToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button(role: .destructive) {
+                store.send(.logoutTapped)
+            } label: {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+            }
+            .tint(.red)
         }
     }
 }

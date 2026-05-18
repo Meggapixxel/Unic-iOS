@@ -9,8 +9,6 @@ struct SalonsView: View {
 
     var body: some View {
         mainContent
-            .navigationInlineTitle("Salons")
-            .toolbar { toolbarContent }
             .searchable(text: $store.searchText, prompt: Text(String.search_salons))
             .task { store.send(.onLoad) }
             .sheet(
@@ -92,11 +90,14 @@ struct SalonsView: View {
         }
     }
 
-    // MARK: - Toolbar
+}
 
-    /// Toolbar items: filter popover (leading), and add / route-planner / map toggle (trailing).
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
+// MARK: - TabChildView
+
+extension SalonsView: TabChildView {
+    var tabTitle: String { "Salons" }
+
+    @ToolbarContentBuilder var tabToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             Button {
                 store.showFilterPopover = true
@@ -116,7 +117,6 @@ struct SalonsView: View {
                 Button { store.send(.openAdd) } label: {
                     Image(systemName: "plus").imageScale(.large)
                 }
-
                 Button {
                     store.send(.navigateToRoutePlanner)
                 } label: {
@@ -124,7 +124,6 @@ struct SalonsView: View {
                         .imageScale(.large)
                 }
                 .disabled(store.displayedSalons.filter { $0.coordinate != nil }.count < 2)
-
                 Button {
                     withAnimation { store.showMap.toggle() }
                 } label: {

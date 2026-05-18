@@ -64,31 +64,6 @@ struct PromosView: View {
                     .padding(.bottom, 8)
                 }
             }
-            .navigationInlineTitle(String.promos_nav_title)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Picker("", selection: Binding(
-                        get: { store.language },
-                        set: { store.send(.setLanguage($0)) }
-                    )) {
-                        ForEach(AppLanguage.allCases) { lang in
-                            Text(lang.label).tag(lang)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                }
-                if store.canManagePromos {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button { store.send(.toggleShowDisabled) } label: {
-                            Image(systemName: store.showAll ? "eye" : "eye.slash")
-                        }
-                        .tint(store.showAll ? .accentColor : .secondary)
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button { store.send(.openAdd) } label: { Image(systemName: "plus") }
-                    }
-                }
-            }
             .overlay {
                 if store.displayed.isEmpty {
                     ContentUnavailableView(String.promos_empty, systemImage: "tag")
@@ -416,6 +391,37 @@ struct PromoFormView: View {
                 Button("OK", role: .cancel) { store.send(.dismissAlert) }
             } message: {
                 Text(store.alertMessage ?? "")
+            }
+        }
+    }
+}
+
+// MARK: - TabChildView
+
+extension PromosView: TabChildView {
+    var tabTitle: String { String.promos_nav_title }
+
+    @ToolbarContentBuilder var tabToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Picker("", selection: Binding(
+                get: { store.language },
+                set: { store.send(.setLanguage($0)) }
+            )) {
+                ForEach(AppLanguage.allCases) { lang in
+                    Text(lang.label).tag(lang)
+                }
+            }
+            .pickerStyle(.menu)
+        }
+        if store.canManagePromos {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { store.send(.toggleShowDisabled) } label: {
+                    Image(systemName: store.showAll ? "eye" : "eye.slash")
+                }
+                .tint(store.showAll ? .accentColor : .secondary)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { store.send(.openAdd) } label: { Image(systemName: "plus") }
             }
         }
     }

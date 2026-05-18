@@ -8,22 +8,36 @@ struct MainView: View {
     @Bindable var store: StoreOf<MainFeature>
 
     var body: some View {
+        let salonsView  = SalonsView(store: store.scope(state: \.salons,  action: \.salons))
+        let promosView  = PromosView(store: store.scope(state: \.promos,  action: \.promos))
+        let stockView   = StockView(store: store.scope(state: \.stock,   action: \.stock))
+        let profileView = ProfileView(store: store.scope(state: \.profile, action: \.profile))
+
+        let currentTitle: String = {
+            switch store.selectedTab {
+            case .salons:  salonsView.tabTitle
+            case .promos:  promosView.tabTitle
+            case .stock:   stockView.tabTitle
+            case .profile: profileView.tabTitle
+            }
+        }()
+
         NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
             ZStack(alignment: .top) {
                 TabView(selection: $store.selectedTab) {
-                    SalonsView(store: store.scope(state: \.salons, action: \.salons))
+                    salonsView
                         .tabItem { Label("Salons", systemImage: "storefront") }
                         .tag(MainFeature.State.Tab.salons)
 
-                    PromosView(store: store.scope(state: \.promos, action: \.promos))
+                    promosView
                         .tabItem { Label(String.promos_nav_title, systemImage: "tag") }
                         .tag(MainFeature.State.Tab.promos)
 
-                    StockView(store: store.scope(state: \.stock, action: \.stock))
+                    stockView
                         .tabItem { Label(String.stock_nav_title, systemImage: "shippingbox") }
                         .tag(MainFeature.State.Tab.stock)
 
-                    ProfileView(store: store.scope(state: \.profile, action: \.profile))
+                    profileView
                         .tabItem { Label(String.profile_nav_title, systemImage: "person.circle") }
                         .tag(MainFeature.State.Tab.profile)
                 }
@@ -31,6 +45,19 @@ struct MainView: View {
                 TCAPlankBannerView(store: store.scope(state: \.planBanner, action: \.planBanner))
                     .padding(.top, 60)
                     .allowsHitTesting(false)
+            }
+            .navigationTitle(currentTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if store.selectedTab == .salons {
+                    salonsView.tabToolbar
+                } else if store.selectedTab == .promos {
+                    promosView.tabToolbar
+                } else if store.selectedTab == .stock {
+                    stockView.tabToolbar
+                } else {
+                    profileView.tabToolbar
+                }
             }
         } destination: { pathStore in
             switch pathStore.case {
